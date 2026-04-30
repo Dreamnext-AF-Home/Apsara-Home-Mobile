@@ -47,9 +47,9 @@ export default function Button({
 
 const styles = StyleSheet.create({
   base: {
-    height: 52,
+    height: 48,
     backgroundColor: '#0ea5e9',
-    borderRadius: 14,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
