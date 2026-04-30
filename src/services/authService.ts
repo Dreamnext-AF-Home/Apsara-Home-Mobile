@@ -26,6 +26,37 @@ export interface AuthError {
   token?: string;
 }
 
+export interface MobileRegisterPayload {
+  first_name: string;
+  last_name: string;
+  middle_name?: string;
+  name: string;
+  email: string;
+  username: string;
+  phone: string;
+  birth_date: string;
+  gender: string;
+  occupation: string;
+  work_location: string;
+  country: string;
+  referred_by: string;
+  password: string;
+  password_confirmation: string;
+  address: string;
+  barangay: string;
+  city: string;
+  province: string;
+  region: string;
+  zip_code: string;
+}
+
+export interface MobileRegisterResponse {
+  message: string;
+  requires_otp: boolean;
+  verification_token: string;
+  email: string;
+}
+
 export const authService = {
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
@@ -92,6 +123,35 @@ export const authService = {
         message: errorMessage,
         details: error.response?.data,
         status: status,
+      } as AuthError;
+    }
+  },
+
+  async mobileRegister(payload: MobileRegisterPayload): Promise<MobileRegisterResponse> {
+    try {
+      const response = await api.post('/auth/mobile/register', payload);
+      return response.data;
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Registration failed',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
+    }
+  },
+
+  async verifyRegisterOtp(verificationToken: string, otp: string): Promise<LoginResponse> {
+    try {
+      const response = await api.post('/auth/register/verify-otp', {
+        verification_token: verificationToken,
+        otp,
+      });
+      return response.data;
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'OTP verification failed',
+        details: error.response?.data,
+        status: error.response?.status,
       } as AuthError;
     }
   },
