@@ -1,31 +1,107 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, SafeAreaView, Modal, PanResponder } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View, Text, Image, TouchableOpacity, Pressable,
+  StyleSheet, Modal, PanResponder, Animated,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
+import axios from 'axios';
+import { API_CONFIG } from '../config/api';
+import AppHeader from '../components/AppHeader/AppHeader';
+import HomeScreen from '../screen/HomeScreen';
+import ProfileScreen from '../screen/ProfileScreen';
+import SearchScreen from '../screen/SearchScreen';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'cart' | 'profile';
 
 const TABS: TabKey[] = ['home', 'wishlist', 'shop', 'cart', 'profile'];
+const SLIDE_DISTANCE = 30;
+const OUT_DURATION = 120;
+const IN_DURATION = 160;
 
-export default function AppNavigator() {
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+}
+
+function extractCount(data: any): number {
+  if (typeof data?.total_items === 'number') return data.total_items;
+  if (typeof data?.total === 'number') return data.total;
+  if (typeof data?.count === 'number') return data.count;
+  if (Array.isArray(data?.cart_items)) return data.cart_items.length;
+  if (Array.isArray(data?.wishlist_items)) return data.wishlist_items.length;
+  if (Array.isArray(data?.data)) return data.data.length;
+  if (Array.isArray(data?.items)) return data.items.length;
+  if (Array.isArray(data)) return data.length;
+  return 0;
+}
+
+export default function AppNavigator({ user, token }: { user?: User | null; token?: string | null }) {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [previousTab, setPreviousTab] = useState<TabKey>('home');
+
+  useEffect(() => {
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      axios.get(`${API_CONFIG.BASE_URL}/cart`, { headers }),
+      axios.get(`${API_CONFIG.BASE_URL}/wishlist`, { headers }),
+    ]).then(([cartRes, wishlistRes]) => {
+      setCartCount(extractCount(cartRes.data));
+      setWishlistCount(extractCount(wishlistRes.data));
+    }).catch(() => {});
+  }, [token]);
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const activeTabRef = useRef<TabKey>('home');
+
+  function navigateTo(key: TabKey) {
+    if (key === activeTabRef.current) return;
+
+    setPreviousTab(activeTabRef.current);
+    const direction = TABS.indexOf(key) > TABS.indexOf(activeTabRef.current) ? 1 : -1;
+
+    // Update ref immediately so rapid taps don't double-fire
+    activeTabRef.current = key;
+
+    // Stop any in-progress animation cleanly
+    fadeAnim.stopAnimation();
+    slideAnim.stopAnimation();
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: OUT_DURATION, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: -direction * SLIDE_DISTANCE, duration: OUT_DURATION, useNativeDriver: true }),
+    ]).start(({ finished }) => {
+      if (!finished) return;
+      setActiveTab(key);
+      slideAnim.setValue(direction * SLIDE_DISTANCE);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: IN_DURATION, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: IN_DURATION, useNativeDriver: true }),
+      ]).start();
+    });
+  }
 
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, g) =>
         Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 12,
       onPanResponderRelease: (_, g) => {
         if (g.dx < -50) {
-          setActiveTab(prev => {
-            const i = TABS.indexOf(prev);
-            return i < TABS.length - 1 ? TABS[i + 1] : prev;
-          });
+          const i = TABS.indexOf(activeTabRef.current);
+          if (i < TABS.length - 1) navigateTo(TABS[i + 1]);
         } else if (g.dx > 50) {
-          setActiveTab(prev => {
-            const i = TABS.indexOf(prev);
-            return i > 0 ? TABS[i - 1] : prev;
-          });
+          const i = TABS.indexOf(activeTabRef.current);
+          if (i > 0) navigateTo(TABS[i - 1]);
         }
       },
     })
@@ -55,22 +131,43 @@ export default function AppNavigator() {
     profile: 'person-outline',
   };
 
+  const badgeCount: Partial<Record<TabKey, number>> = {
+    cart: cartCount,
+    wishlist: wishlistCount,
+  };
+
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => setMenuVisible(true)}>
-            <Ionicons name="menu-outline" size={22} color={Colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{labelMap[activeTab]}</Text>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="notifications-outline" size={20} color={Colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.content} {...panResponder.panHandlers}>
-          <Text style={styles.h1}>{labelMap[activeTab]}</Text>
-          <Text style={styles.body}>This is the {labelMap[activeTab].toLowerCase()} page.</Text>
+      <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
+        <View style={styles.body} {...panResponder.panHandlers}>
+          {activeTab === 'profile' ? (
+            <ProfileScreen user={user} />
+          ) : activeTab === 'home' ? (
+            <>
+              <AppHeader
+                user={user}
+                onSearchPress={() => {
+                  setPreviousTab(activeTabRef.current);
+                  setSearchVisible(true);
+                }}
+              />
+              <HomeScreen token={token} user={user} />
+            </>
+          ) : (
+            <>
+              <AppHeader
+                user={user}
+                onSearchPress={() => {
+                  setPreviousTab(activeTabRef.current);
+                  setSearchVisible(true);
+                }}
+              />
+              <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
+                <Text style={styles.h1}>{labelMap[activeTab]}</Text>
+                <Text style={styles.bodyText}>This is the {labelMap[activeTab].toLowerCase()} page.</Text>
+              </Animated.View>
+            </>
+          )}
         </View>
 
         <View style={styles.navBar}>
@@ -79,7 +176,7 @@ export default function AppNavigator() {
 
             if (key === 'shop') {
               return (
-                <Pressable key={key} style={styles.shopItem} onPress={() => setActiveTab(key)}>
+                <Pressable key={key} style={styles.shopItem} onPress={() => navigateTo(key)}>
                   <View style={styles.shopSlot}>
                     <View style={[styles.shopDiamond, active && styles.shopDiamondActive]}>
                       <View style={styles.shopDiamondInner}>
@@ -91,21 +188,28 @@ export default function AppNavigator() {
                       </View>
                     </View>
                   </View>
-                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>
-                    {labelMap[key]}
-                  </Text>
                 </Pressable>
               );
             }
 
             if (key === 'profile') {
+              const photoUrl = user?.avatar_url ?? null;
+              const initial = user?.name ? user.name.charAt(0).toUpperCase() : null;
               return (
-                <Pressable key={key} style={styles.navItem} onPress={() => setActiveTab(key)}>
+                <Pressable key={key} style={styles.navItem} onPress={() => navigateTo(key)}>
                   <View style={styles.indicator}>
                     {active && <View style={styles.indicatorLine} />}
                   </View>
                   <View style={[styles.avatar, active && styles.avatarActive]}>
-                    <Ionicons name="person" size={14} color={active ? Colors.sky : Colors.textSecondary} />
+                    {photoUrl ? (
+                      <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
+                    ) : initial ? (
+                      <Text style={[styles.avatarInitial, active && styles.avatarInitialActive]}>
+                        {initial}
+                      </Text>
+                    ) : (
+                      <Ionicons name="person" size={14} color={active ? Colors.sky : Colors.textSecondary} />
+                    )}
                   </View>
                   <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                     {labelMap[key]}
@@ -114,16 +218,24 @@ export default function AppNavigator() {
               );
             }
 
+            const count = badgeCount[key] ?? 0;
             return (
-              <Pressable key={key} style={styles.navItem} onPress={() => setActiveTab(key)}>
+              <Pressable key={key} style={styles.navItem} onPress={() => navigateTo(key)}>
                 <View style={styles.indicator}>
                   {active && <View style={styles.indicatorLine} />}
                 </View>
-                <Ionicons
-                  name={active ? iconActive[key] : iconInactive[key]}
-                  size={24}
-                  color={active ? Colors.sky : Colors.textSecondary}
-                />
+                <View style={styles.iconWrap}>
+                  <Ionicons
+                    name={active ? iconActive[key] : iconInactive[key]}
+                    size={24}
+                    color={active ? Colors.sky : Colors.textSecondary}
+                  />
+                  {count > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                   {labelMap[key]}
                 </Text>
@@ -141,7 +253,7 @@ export default function AppNavigator() {
                   key={item}
                   style={styles.menuItem}
                   onPress={() => {
-                    setActiveTab(item);
+                    navigateTo(item);
                     setMenuVisible(false);
                   }}
                 >
@@ -152,36 +264,27 @@ export default function AppNavigator() {
           </TouchableOpacity>
         </Modal>
       </SafeAreaView>
+
+      {searchVisible && (
+        <SearchScreen
+          token={token}
+          onBack={() => {
+            setSearchVisible(false);
+            setActiveTab(previousTab);
+            activeTabRef.current = previousTab;
+          }}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f8fbff' },
-  safe: { flex: 1, backgroundColor: '#f8fbff' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 10,
+  safe: { flex: 1, backgroundColor: Colors.white },
+  body: {
+    flex: 1,
     backgroundColor: '#f8fbff',
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  headerTitle: {
-    color: Colors.text,
-    fontSize: 16,
-    fontWeight: '800',
   },
   content: {
     flex: 1,
@@ -196,7 +299,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 10,
   },
-  body: {
+  bodyText: {
     fontSize: 15,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -230,6 +333,29 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: Colors.sky,
   },
+  iconWrap: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: Colors.white,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.white,
+    lineHeight: 11,
+  },
   navLabel: {
     fontSize: 10,
     color: Colors.textSecondary,
@@ -253,6 +379,19 @@ const styles = StyleSheet.create({
     borderColor: Colors.sky,
     backgroundColor: '#e0f2fe',
   },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 13,
+  },
+  avatarInitial: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  avatarInitialActive: {
+    color: Colors.sky,
+  },
   shopItem: {
     flex: 1,
     alignItems: 'center',
@@ -261,7 +400,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   shopSlot: {
-    height: 33,
+    height: 37,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'flex-end',

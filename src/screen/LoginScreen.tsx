@@ -34,7 +34,7 @@ export default function LoginScreen({
   onAuthenticated,
 }: {
   onGoToSignup?: () => void;
-  onAuthenticated?: () => void;
+  onAuthenticated?: (user?: { id: string; email: string; name: string; avatar_url?: string }, token?: string) => void;
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,7 +79,7 @@ export default function LoginScreen({
         return;
       }
       Toast.show({ type: 'success', text1: 'Login successful!' });
-      setTimeout(() => onAuthenticated?.(), 700);
+      setTimeout(() => onAuthenticated?.(response.user, response.token ?? response.accessToken), 700);
     } catch (error: any) {
       if (error.type === '2FA_REQUIRED') {
         setAuthToken(error.token);
@@ -106,14 +106,14 @@ export default function LoginScreen({
     setLoading(true);
     setOtpError('');
     try {
-      await authService.verify2FA(authToken!, otp);
+      const twoFaResult = await authService.verify2FA(authToken!, otp);
       Toast.show({ type: 'success', text1: '2FA verification successful!' });
       setTimeout(() => {
         setAuthStep('login');
         setOtp('');
         setAuthToken(null);
         setOtpError('');
-        onAuthenticated?.();
+        onAuthenticated?.(twoFaResult.user, twoFaResult.token ?? twoFaResult.accessToken);
       }, 700);
     } catch (error: any) {
       setOtpError(error.message || '2FA verification failed');

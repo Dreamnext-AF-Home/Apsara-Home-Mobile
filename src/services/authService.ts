@@ -13,6 +13,7 @@ export interface LoginResponse {
     id: string;
     email: string;
     name: string;
+    avatar_url?: string;
   };
   accessToken?: string;
   token?: string;
@@ -24,6 +25,34 @@ export interface AuthError {
   message: string;
   type?: '2FA_REQUIRED' | 'MFA_APPROVAL_REQUIRED';
   token?: string;
+}
+
+export interface SearchHistoryItem {
+  id?: string | number;
+  query?: string;
+  term?: string;
+  name?: string;
+  keyword?: string;
+  created_at?: string;
+  createdAt?: string;
+}
+
+export interface CategoryItem {
+  id: number;
+  name: string;
+  description?: string;
+  url?: string;
+  image?: string | null;
+  images?: string[];
+  order?: number;
+  product_count?: number;
+}
+
+export interface BrandItem {
+  id: number;
+  name: string;
+  image?: string | null;
+  status?: number;
 }
 
 export interface MobileRegisterPayload {
@@ -262,6 +291,84 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       throw { message: error.response?.data?.message || 'Facebook login failed' } as AuthError;
+    }
+  },
+
+  async getSearchHistory(token: string): Promise<SearchHistoryItem[]> {
+    try {
+      const response = await api.get('/search/history', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.data)) return data.data;
+      if (Array.isArray(data?.history)) return data.history;
+      if (Array.isArray(data?.items)) return data.items;
+      return [];
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to load search history',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
+    }
+  },
+
+  async saveSearchHistory(token: string, query: string): Promise<void> {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    try {
+      await api.post('/search/history', {
+        query: trimmed,
+        search: trimmed,
+        keyword: trimmed,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to save search history',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
+    }
+  },
+
+  async getCategories(token: string): Promise<CategoryItem[]> {
+    try {
+      const response = await api.get('/categories', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.categories)) return data.categories;
+      if (Array.isArray(data?.data)) return data.data;
+      return [];
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to load categories',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
+    }
+  },
+
+  async getBrands(token: string): Promise<BrandItem[]> {
+    try {
+      const response = await api.get('/product-brands', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.brands)) return data.brands;
+      if (Array.isArray(data?.data)) return data.data;
+      return [];
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to load brands',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
     }
   },
 };
