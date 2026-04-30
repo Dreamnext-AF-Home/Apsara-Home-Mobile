@@ -36,7 +36,7 @@ export default function AppNavigator() {
     wishlist: 'Wishlist',
     shop: 'Shop',
     cart: 'Cart',
-    profile: 'My Profile',
+    profile: 'Me',
   };
 
   const iconActive: Record<TabKey, keyof typeof Ionicons.glyphMap> = {
