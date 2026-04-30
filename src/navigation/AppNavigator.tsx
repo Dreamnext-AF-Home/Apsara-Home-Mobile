@@ -98,6 +98,22 @@ export default function AppNavigator() {
               );
             }
 
+            if (key === 'profile') {
+              return (
+                <Pressable key={key} style={styles.navItem} onPress={() => setActiveTab(key)}>
+                  <View style={styles.indicator}>
+                    {active && <View style={styles.indicatorLine} />}
+                  </View>
+                  <View style={[styles.avatar, active && styles.avatarActive]}>
+                    <Ionicons name="person" size={14} color={active ? Colors.sky : Colors.textSecondary} />
+                  </View>
+                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+                    {labelMap[key]}
+                  </Text>
+                </Pressable>
+              );
+            }
+
             return (
               <Pressable key={key} style={styles.navItem} onPress={() => setActiveTab(key)}>
                 <View style={styles.indicator}>
@@ -222,6 +238,20 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: Colors.sky,
     fontWeight: '700',
+  },
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  avatarActive: {
+    borderColor: Colors.sky,
+    backgroundColor: '#e0f2fe',
   },
   shopItem: {
     flex: 1,
