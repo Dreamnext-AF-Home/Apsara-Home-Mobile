@@ -16,6 +16,7 @@ interface User {
 
 interface ProfileScreenProps {
   user?: User | null;
+  onLogout?: () => void;
 }
 
 const MENU_ITEMS = [
@@ -28,7 +29,7 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const,       label: 'Log Out',            chevron: false, danger: true },
 ];
 
-export default function ProfileScreen({ user }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
@@ -96,6 +97,11 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
                 index < MENU_ITEMS.length - 1 && styles.menuRowBorder,
               ]}
               activeOpacity={0.7}
+              onPress={() => {
+                if (item.label === 'Log Out' && onLogout) {
+                  onLogout();
+                }
+              }}
             >
               <View style={[styles.menuIcon, item.danger && styles.menuIconDanger]}>
                 <Ionicons
