@@ -12,6 +12,7 @@ import AppHeader from '../components/AppHeader/AppHeader';
 import HomeScreen from '../screen/HomeScreen';
 import ProfileScreen from '../screen/ProfileScreen';
 import SearchScreen from '../screen/SearchScreen';
+import ProductsScreen from '../screen/ProductsScreen';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'cart' | 'profile';
 
@@ -25,6 +26,11 @@ interface User {
   email: string;
   name: string;
   avatar_url?: string;
+  monthly_activation?: {
+    current_month_pv: number;
+    threshold_pv: number;
+    remaining_pv: number;
+  };
 }
 
 function extractCount(data: any): number {
@@ -39,7 +45,7 @@ function extractCount(data: any): number {
   return 0;
 }
 
-export default function AppNavigator({ user, token }: { user?: User | null; token?: string | null }) {
+export default function AppNavigator({ user, token, onLogout }: { user?: User | null; token?: string | null; onLogout?: () => void }) {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -141,7 +147,7 @@ export default function AppNavigator({ user, token }: { user?: User | null; toke
       <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
         <View style={styles.body} {...panResponder.panHandlers}>
           {activeTab === 'profile' ? (
-            <ProfileScreen user={user} />
+            <ProfileScreen user={user} onLogout={onLogout} />
           ) : activeTab === 'home' ? (
             <>
               <AppHeader
