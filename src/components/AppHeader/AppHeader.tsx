@@ -6,7 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
 interface AppHeaderProps {
-  user?: { name: string; avatar_url?: string } | null;
+  user?: { 
+    name: string; 
+    avatar_url?: string;
+    monthly_activation?: {
+      current_month_pv: number;
+      threshold_pv: number;
+      remaining_pv: number;
+    };
+  } | null;
   onNotificationPress?: () => void;
   onFilterPress?: () => void;
   onSearchPress?: () => void;
@@ -24,6 +32,8 @@ export default function AppHeader({
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : null;
   const firstName = user?.name ? user.name.split(' ')[0] : 'Guest';
+  const currentPV = user?.monthly_activation?.current_month_pv ?? 0;
+  const thresholdPV = user?.monthly_activation?.threshold_pv ?? 100;
 
   return (
     <LinearGradient
@@ -49,9 +59,15 @@ export default function AppHeader({
           </View>
         </View>
 
-        <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress} activeOpacity={0.7}>
-          <Ionicons name="notifications-outline" size={20} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={styles.rightActions}>
+          <View style={styles.pvBadge}>
+            <Ionicons name="trending-up" size={12} color={Colors.white} />
+            <Text style={styles.pvText}>{currentPV} PV</Text>
+          </View>
+          <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress} activeOpacity={0.7}>
+            <Ionicons name="notifications-outline" size={20} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.searchRow}>
@@ -90,6 +106,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pvBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.sky,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pvText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.white,
   },
   avatar: {
     width: 42,
