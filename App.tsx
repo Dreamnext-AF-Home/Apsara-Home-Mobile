@@ -6,6 +6,7 @@ import LoginScreen from './src/screen/LoginScreen';
 import SignupScreen from './src/screen/SignupScreen';
 import OtpScreen from './src/screen/OtpScreen';
 import AppNavigator from './src/navigation/AppNavigator';
+import OnboardingScreen from './src/screen/OnboardingScreen';
 import { storageService, StoredUser } from './src/services/storageService';
 import { HomeScreenSkeleton } from './src/components/SkeletonLoader/SkeletonLoader';
 
@@ -31,6 +32,7 @@ export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasOnboarded, setHasOnboarded] = useState(false);
 
   // Check for stored authentication on app startup
   useEffect(() => {
@@ -39,11 +41,14 @@ export default function App() {
 
   async function checkStoredAuth() {
     try {
-      const isAuth = await storageService.isAuthenticated();
+      const [isAuth, onboarded] = await Promise.all([
+        storageService.isAuthenticated(),
+        storageService.hasOnboarded(),
+      ]);
+      setHasOnboarded(onboarded);
       if (isAuth) {
         const token = await storageService.getToken();
         const user = await storageService.getUser();
-        
         if (token && user) {
           setAuthToken(token);
           setAuthUser(user);
@@ -55,6 +60,16 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function handleOnboardingDone() {
+    await storageService.setOnboarded();
+    setHasOnboarded(true);
+  }
+
+  async function resetOnboarding() {
+    await storageService.resetOnboarding();
+    setHasOnboarded(false);
   }
 
   async function goAuthenticated(user?: AuthUser, token?: string) {
@@ -110,13 +125,15 @@ export default function App() {
       );
     }
 
-    return <LoginScreen onGoToSignup={() => setScreen('signup')} onAuthenticated={(user, token) => goAuthenticated(user, token)} />;
+    return <LoginScreen onGoToSignup={() => setScreen('signup')} onAuthenticated={(user, token) => goAuthenticated(user, token)} onResetOnboarding={resetOnboarding} />;
   }
 
   return (
     <SafeAreaProvider>
       {isLoading ? (
         <HomeScreenSkeleton />
+      ) : !hasOnboarded ? (
+        <OnboardingScreen onDone={handleOnboardingDone} />
       ) : authenticated ? (
         <AppNavigator user={authUser} token={authToken} onLogout={logout} />
       ) : (
