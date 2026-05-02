@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity, Pressable,
-  StyleSheet, Modal, PanResponder, Animated,
+  StyleSheet, Modal, PanResponder, Animated, BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,8 +13,10 @@ import HomeScreen from '../screen/HomeScreen';
 import ProfileScreen from '../screen/ProfileScreen';
 import SearchScreen from '../screen/SearchScreen';
 import ProductsScreen from '../screen/ProductsScreen';
+import SearchResultScreen from '../screen/SearchResultScreen';
+import SettingsScreen from '../screen/SettingsScreen';
 
-type TabKey = 'home' | 'wishlist' | 'shop' | 'cart' | 'profile';
+type TabKey = 'home' | 'wishlist' | 'shop' | 'cart' | 'profile' | 'settings';
 
 const TABS: TabKey[] = ['home', 'wishlist', 'shop', 'cart', 'profile'];
 const SLIDE_DISTANCE = 30;
@@ -47,11 +49,13 @@ function extractCount(data: any): number {
 
 export default function AppNavigator({ user, token, onLogout }: { user?: User | null; token?: string | null; onLogout?: () => void }) {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
+  const [searchQuery, setSearchQuery] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -64,6 +68,17 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       setWishlistCount(extractCount(wishlistRes.data));
     }).catch(() => {});
   }, [token]);
+
+  useEffect(() => {
+    if (!searchVisible) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSearchVisible(false);
+      setActiveTab(previousTab);
+      activeTabRef.current = previousTab;
+      return true;
+    });
+    return () => sub.remove();
+  }, [searchVisible, previousTab]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -119,6 +134,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     shop: 'Shop',
     cart: 'Cart',
     profile: 'Me',
+    settings: 'Settings',
   };
 
   const iconActive: Record<TabKey, keyof typeof Ionicons.glyphMap> = {
@@ -146,8 +162,24 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     <View style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
         <View style={styles.body} {...panResponder.panHandlers}>
-          {activeTab === 'profile' ? (
-            <ProfileScreen user={user} onLogout={onLogout} />
+          {searchQuery ? (
+            <SearchResultScreen
+              token={token}
+              query={searchQuery}
+              onBack={() => setSearchQuery(null)}
+            />
+           ) : activeTab === 'settings' ? (
+            <SettingsScreen 
+              isDarkMode={isDarkMode} 
+              setIsDarkMode={setIsDarkMode} 
+              onBack={() => navigateTo('profile')} 
+            />
+          ) : activeTab === 'profile' ? (
+            <ProfileScreen 
+              user={user} 
+              onLogout={onLogout} 
+              onNavigateSettings={() => navigateTo('settings')}
+            />
           ) : activeTab === 'home' ? (
             <>
               <AppHeader
@@ -157,7 +189,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setSearchVisible(true);
                 }}
               />
-              <HomeScreen token={token} user={user} />
+              <HomeScreen token={token} user={user} isDarkMode={isDarkMode} />
             </>
           ) : (
             <>
@@ -176,9 +208,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           )}
         </View>
 
-        <View style={styles.navBar}>
-          {TABS.map(key => {
-            const active = activeTab === key;
+        {!searchQuery && activeTab !== 'settings' && (
+          <View style={styles.navBar}>
+            {TABS.map(key => {
+              const active = activeTab === key;
 
             if (key === 'shop') {
               return (
@@ -249,6 +282,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             );
           })}
         </View>
+        )}
 
         <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
           <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
@@ -278,6 +312,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             setSearchVisible(false);
             setActiveTab(previousTab);
             activeTabRef.current = previousTab;
+          }}
+          onSearchSubmit={(query) => {
+            setSearchQuery(query);
+            setSearchVisible(false);
           }}
         />
       )}
@@ -334,10 +372,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   indicatorLine: {
-    width: 32,
-    height: 3,
+    width: 18,
+    height: 4,
     borderRadius: 2,
     backgroundColor: Colors.sky,
+    marginTop: -1,
   },
   iconWrap: {
     position: 'relative',
