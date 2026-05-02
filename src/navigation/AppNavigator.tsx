@@ -15,6 +15,7 @@ import SearchScreen from '../screen/SearchScreen';
 import ProductsScreen from '../screen/ProductsScreen';
 import SearchResultScreen from '../screen/SearchResultScreen';
 import SettingsScreen from '../screen/SettingsScreen';
+import ProductDetailScreen from '../screen/ProductDetailScreen';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'cart' | 'profile' | 'settings';
 
@@ -56,6 +57,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [wishlistCount, setWishlistCount] = useState(0);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -79,6 +81,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     });
     return () => sub.remove();
   }, [searchVisible, previousTab]);
+
+  useEffect(() => {
+    if (selectedProductId === null) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSelectedProductId(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [selectedProductId]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -143,6 +154,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     shop: 'storefront',
     cart: 'cart',
     profile: 'person',
+    settings: 'settings',
   };
 
   const iconInactive: Record<TabKey, keyof typeof Ionicons.glyphMap> = {
@@ -151,6 +163,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     shop: 'storefront-outline',
     cart: 'cart-outline',
     profile: 'person-outline',
+    settings: 'settings-outline',
   };
 
   const badgeCount: Partial<Record<TabKey, number>> = {
@@ -162,22 +175,29 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     <View style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
         <View style={styles.body} {...panResponder.panHandlers}>
-          {searchQuery ? (
+          {selectedProductId !== null ? (
+            <ProductDetailScreen
+              productId={selectedProductId}
+              token={token}
+              onBack={() => setSelectedProductId(null)}
+              onProductPress={(id) => setSelectedProductId(id)}
+            />
+          ) : searchQuery ? (
             <SearchResultScreen
               token={token}
               query={searchQuery}
               onBack={() => setSearchQuery(null)}
             />
            ) : activeTab === 'settings' ? (
-            <SettingsScreen 
-              isDarkMode={isDarkMode} 
-              setIsDarkMode={setIsDarkMode} 
-              onBack={() => navigateTo('profile')} 
+            <SettingsScreen
+              isDarkMode={isDarkMode}
+              setIsDarkMode={setIsDarkMode}
+              onBack={() => navigateTo('profile')}
             />
           ) : activeTab === 'profile' ? (
-            <ProfileScreen 
-              user={user} 
-              onLogout={onLogout} 
+            <ProfileScreen
+              user={user}
+              onLogout={onLogout}
               onNavigateSettings={() => navigateTo('settings')}
             />
           ) : activeTab === 'home' ? (
@@ -189,7 +209,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setSearchVisible(true);
                 }}
               />
-              <HomeScreen token={token} user={user} isDarkMode={isDarkMode} />
+              <HomeScreen token={token} user={user} isDarkMode={isDarkMode} onProductPress={(id: number) => setSelectedProductId(id)} />
             </>
           ) : (
             <>
@@ -208,7 +228,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           )}
         </View>
 
-        {!searchQuery && activeTab !== 'settings' && (
+        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && (
           <View style={styles.navBar}>
             {TABS.map(key => {
               const active = activeTab === key;
