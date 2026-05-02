@@ -6,7 +6,9 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
+  View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ButtonProps {
   title: string;
@@ -15,6 +17,8 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  icon?: string;
+  iconPosition?: 'left' | 'right';
 }
 
 export default function Button({
@@ -24,6 +28,8 @@ export default function Button({
   loading = false,
   style,
   textStyle,
+  icon,
+  iconPosition = 'left',
 }: ButtonProps) {
   return (
     <Pressable
@@ -39,7 +45,15 @@ export default function Button({
       {loading ? (
         <ActivityIndicator color="#ffffff" size="small" />
       ) : (
-        <Text style={[styles.label, textStyle]}>{title}</Text>
+        <View style={styles.content}>
+          {icon && iconPosition === 'left' && (
+            <Ionicons name={icon as any} size={20} color="#ffffff" style={styles.iconLeft} />
+          )}
+          <Text style={[styles.label, textStyle]}>{title}</Text>
+          {icon && iconPosition === 'right' && (
+            <Ionicons name={icon as any} size={20} color="#ffffff" style={styles.iconRight} />
+          )}
+        </View>
       )}
     </Pressable>
   );
@@ -60,10 +74,21 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.6,
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: {
     fontSize: 16,
     fontWeight: '700',
     color: '#ffffff',
     letterSpacing: 0.3,
+  },
+  iconLeft: {
+    marginRight: 8,
+  },
+  iconRight: {
+    marginLeft: 8,
   },
 });

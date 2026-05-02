@@ -11,6 +11,7 @@ import { Colors } from '../constants/colors';
 import { productService, type Product, type ProductCard, type ProductReviewsResponse, type ProductReview } from '../services/productService';
 import { authService } from '../services/authService';
 import ItemCard from '../components/Items/ItemCard';
+import PrimaryButton from '../components/Button/PrimaryButton';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 
@@ -161,9 +162,9 @@ export default function ProductDetailScreen({
     return [];
   }, [product]);
 
-  const hasDiscount = product ? (product.priceDp ?? 0) < (product.priceSrp ?? 0) : false;
+  const hasDiscount = product ? (product.priceMember ?? 0) < (product.priceSrp ?? 0) : false;
   const discountPct = (hasDiscount && product)
-    ? Math.round(((product.priceSrp ?? 0) - (product.priceDp ?? 0)) / (product.priceSrp ?? 0) * 100)
+    ? Math.round(((product.priceSrp ?? 0) - (product.priceMember ?? 0)) / (product.priceSrp ?? 0) * 100)
     : 0;
 
   const activeBadges = product
@@ -177,11 +178,12 @@ export default function ProductDetailScreen({
           <ActivityIndicator size="large" color={Colors.sky} />
         </View>
       ) : product ? (
-        <ScrollView
-          ref={scrollRef}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
+        <>
+          <ScrollView
+            ref={scrollRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
           {/* Image Gallery */}
           <View style={styles.galleryWrap}>
             <ScrollView
@@ -235,7 +237,7 @@ export default function ProductDetailScreen({
           {/* Price and Sold */}
           <View style={styles.priceSoldContainer}>
             <View style={styles.priceRow}>
-              <Text style={styles.currentPrice}>₱{(product.priceDp ?? 0).toLocaleString()}</Text>
+              <Text style={styles.currentPrice}>₱{(product.priceMember ?? 0).toLocaleString()}</Text>
               {hasDiscount && (
                 <Text style={styles.originalPrice}>₱{(product.priceSrp ?? 0).toLocaleString()}</Text>
               )}
@@ -266,7 +268,7 @@ export default function ProductDetailScreen({
               >
                 <Ionicons name="pricetag" size={10} color={Colors.white} />
                 <Text style={styles.badgeLabel}>
-                  Save ₱{((product.priceSrp ?? 0) - (product.priceDp ?? 0)).toLocaleString()}
+                  Save ₱{((product.priceSrp ?? 0) - (product.priceMember ?? 0)).toLocaleString()}
                 </Text>
               </LinearGradient>
             )}
@@ -315,6 +317,16 @@ export default function ProductDetailScreen({
                     onPress={() => setSelectedVariant(variant.id)}
                     activeOpacity={0.7}
                   >
+                    {/* Color Circle */}
+                    {variant.colorHex && (
+                      <View style={[
+                        styles.colorCircle,
+                        selectedVariant === variant.id && styles.colorCircleSelected
+                      ]}>
+                        <View style={[styles.colorCircleInner, { backgroundColor: variant.colorHex }]} />
+                      </View>
+                    )}
+                    {/* Variant Text */}
                     <Text style={[
                       styles.variantChipText,
                       selectedVariant === variant.id && styles.variantChipTextSelected
@@ -630,6 +642,62 @@ export default function ProductDetailScreen({
             </View>
           )}
         </ScrollView>
+        
+        {/* Buy Now Button - Fixed Bottom */}
+        <View style={[
+          styles.buyNowContainer,
+          { paddingTop: 16, paddingBottom: insets.bottom }
+        ]}>
+          {/* Price Display */}
+          <View style={styles.priceDisplay}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Total Price:</Text>
+              <Text style={styles.totalPrice}>₱{(() => {
+                const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
+                return (variant ? variant.priceMember : product.priceMember ?? 0).toLocaleString();
+              })()}</Text>
+            </View>
+            {hasDiscount && (
+              <View style={styles.savingsRow}>
+                <Ionicons name="pricetag" size={12} color="#ef4444" />
+                <Text style={styles.savingsText}>
+                  You save ₱{(() => {
+                    const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
+                    const variantPrice = variant ? variant.priceMember : product.priceMember ?? 0;
+                    const variantSrp = variant ? variant.priceSrp : product.priceSrp ?? 0;
+                    return (variantSrp - variantPrice).toLocaleString();
+                  })()}
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          {/* Button Row */}
+          <View style={styles.buttonRow}>
+            {/* Add to Cart Button */}
+            <TouchableOpacity 
+              style={styles.addToCartButton}
+              onPress={() => {
+                // TODO: Implement add to cart functionality
+                console.log('Add to Cart pressed');
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="cart-outline" size={24} color={Colors.sky} />
+            </TouchableOpacity>
+            
+            {/* Buy Now Button */}
+            <PrimaryButton
+              title="Buy Now"
+              onPress={() => {
+                // TODO: Implement buy now functionality
+                console.log('Buy Now pressed');
+              }}
+              style={styles.buyNowButton}
+            />
+          </View>
+        </View>
+        </>
       ) : (
         <View style={styles.loadingWrap}>
           <Ionicons name="alert-circle-outline" size={36} color="#d1d5db" />
@@ -656,7 +724,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 80, // Reduced padding for Buy Now button
   },
   galleryWrap: {
     width: SCREEN_WIDTH,
@@ -1085,7 +1153,7 @@ const styles = StyleSheet.create({
   variantChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
     backgroundColor: '#f3f4f6',
     borderRadius: 20,
     paddingHorizontal: 14,
@@ -1093,9 +1161,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
+  colorCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  colorCircleSelected: {
+    borderColor: Colors.sky,
+  },
+  colorCircleInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
   variantChipSelected: {
     backgroundColor: Colors.sky,
     borderColor: Colors.sky,
+    borderWidth: 2,
   },
   variantChipText: {
     fontSize: 13,
@@ -1344,5 +1430,71 @@ const styles = StyleSheet.create({
   },
   onlineDotInactive: {
     backgroundColor: '#9ca3af',
+  },
+  // Buy Now Button Styles
+  buyNowContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.white, // Solid white background
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 0, // No padding - handled by insets
+  },
+  priceDisplay: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  totalPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  savingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-end',
+  },
+  savingsText: {
+    fontSize: 12,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addToCartButton: {
+    width: 56,
+    height: 52,
+    borderRadius: 10,
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: Colors.sky,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyNowButton: {
+    backgroundColor: Colors.sky,
+    height: 52,
+    flex: 1,
   },
 });
