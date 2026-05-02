@@ -96,7 +96,28 @@ export const storageService = {
     try {
       const token = await this.getToken();
       const user = await this.getUser();
-      return !!(token && user);
+      if (!token || !user) {
+        return false;
+      }
+
+      // Check if token is still valid (2 weeks = 14 days = 14 * 24 * 60 * 60 * 1000 = 1,209,600,000 ms)
+      const tokenTimestamp = await SecureStore.getItemAsync(TOKEN_TIMESTAMP_KEY);
+      if (!tokenTimestamp) {
+        return false;
+      }
+
+      const timestamp = parseInt(tokenTimestamp, 10);
+      const twoWeeksInMs = 14 * 24 * 60 * 60 * 1000; // 1,209,600,000 ms
+      const currentTime = Date.now();
+      const isExpired = (currentTime - timestamp) > twoWeeksInMs;
+
+      if (isExpired) {
+        // Clear expired authentication data
+        await this.clearAuthData();
+        return false;
+      }
+
+      return true;
     } catch (error) {
       console.error('Error checking authentication:', error);
       return false;
@@ -140,7 +161,28 @@ export const storageService = {
     } catch {}
   },
 
-  // Refresh token timestamp (to extend session)
+  // Get remaining time in session (in milliseconds)
+  async getSessionTimeRemaining(): Promise<number> {
+    try {
+      const tokenTimestamp = await SecureStore.getItemAsync(TOKEN_TIMESTAMP_KEY);
+      if (!tokenTimestamp) {
+        return 0;
+      }
+
+      const timestamp = parseInt(tokenTimestamp, 10);
+      const twoWeeksInMs = 14 * 24 * 60 * 60 * 1000; // 1,209,600,000 ms
+      const currentTime = Date.now();
+      const timeElapsed = currentTime - timestamp;
+      const timeRemaining = Math.max(0, twoWeeksInMs - timeElapsed);
+
+      return timeRemaining;
+    } catch (error) {
+      console.error('Error getting session time remaining:', error);
+      return 0;
+    }
+  },
+
+  // Refresh token timestamp (to extend session for 2 more weeks)
   async refreshTokenTimestamp(): Promise<void> {
     try {
       if (!isSecureStoreAvailable()) {
@@ -149,7 +191,9 @@ export const storageService = {
       }
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
       if (token) {
-        await SecureStore.setItemAsync(TOKEN_TIMESTAMP_KEY, Date.now().toString());
+        const now = Date.now();
+        await SecureStore.setItemAsync(TOKEN_TIMESTAMP_KEY, now.toString());
+        console.log('Authentication session extended for 2 more weeks');
       }
     } catch (error) {
       console.error('Error refreshing token timestamp:', error);
