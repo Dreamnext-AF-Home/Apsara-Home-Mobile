@@ -70,7 +70,37 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface ProductCard {
+  id: number;
+  name: string;
+  image: string;
+  soldCount: number;
+  originalPrice: number;
+  discountedPrice: number;
+  pv: number;
+  brandName: string;
+  variantCount: number;
+  badges: {
+    musthave: boolean;
+    bestseller: boolean;
+    salespromo: boolean;
+  };
+}
+
 export const productService = {
+  async getProductCards(token?: string): Promise<ProductCard[]> {
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    try {
+      const response = await api.get('/products/cards', { headers });
+      return response.data.products ?? [];
+    } catch (error) {
+      console.error('Error fetching product cards:', error);
+      throw error;
+    }
+  },
+
   async getProducts(token?: string): Promise<Product[]> {
     const headers: Record<string, string> = {};
     if (token) {
@@ -79,8 +109,6 @@ export const productService = {
     
     try {
       const response = await api.get('/products', { headers });
-      console.log('Products API response:', response.data);
-      
       // Handle different response structures
       let products: Product[] = [];
       
@@ -97,7 +125,6 @@ export const productService = {
         products = [];
       }
       
-      console.log('Processed products:', products);
       return products;
     } catch (error) {
       console.error('Error fetching products:', error);
