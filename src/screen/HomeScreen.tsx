@@ -34,6 +34,7 @@ interface HomeScreenProps {
     };
   } | null;
   isDarkMode?: boolean;
+  onProductPress?: (id: number) => void;
 }
 
 interface RoomType {
@@ -81,6 +82,29 @@ function getBrandImage(brand: BrandItem) {
 
 function getBrandInitial(brand: BrandItem) {
   return brand.name?.trim()?.charAt(0)?.toUpperCase() || '?';
+}
+
+function getBrandImageLayout(imageCount: number) {
+  switch (imageCount) {
+    case 1:
+      return { flex: 1, height: '100%' as any };
+    case 2:
+      return { flex: 1, height: '100%' as any };
+    case 3:
+      return { flex: 1, height: '100%' as any };
+    case 4:
+      return { width: '50%' as any, height: '50%' as any };
+    case 5:
+    case 6:
+    default:
+      return { width: '33.33%' as any, height: '50%' as any };
+  }
+}
+
+function getBrandLogo(brand: BrandItem) {
+  if (brand.brand_image) return brand.brand_image;
+  if (brand.image) return brand.image;
+  return null;
 }
 
 function CategoryCircle({ category, index }: { category: CategoryItem, index: number }) {
@@ -204,7 +228,7 @@ function RoomItemComponent({ item }: { item: RoomType }) {
   );
 }
 
-export default function HomeScreen({ token, user, isDarkMode = false }: HomeScreenProps) {
+export default function HomeScreen({ token, user, isDarkMode = false, onProductPress }: HomeScreenProps) {
   const colors = {
     bg: isDarkMode ? '#0f172a' : '#f8fbff',
     card: isDarkMode ? '#1e293b' : Colors.white,
@@ -237,27 +261,15 @@ export default function HomeScreen({ token, user, isDarkMode = false }: HomeScre
     try {
       const [categoryData, brandData, productData, roomData] = await Promise.all([
         authService.getCategories(token),
-        authService.getBrands(token),
+        authService.getBrandsWithProducts(token, 6),
         productService.getProductCards(token),
         axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
           headers: { Authorization: `Bearer ${token}` },
         }).then(res => res.data?.data || []).catch(() => []),
       ]);
 
-      const brandsWithProducts = await Promise.all(brandData.map(async (brand: any) => {
-        try {
-          const products = await productService.getProductsByBrand(brand.id, token);
-          return {
-            ...brand,
-            productImages: products.slice(0, 6).map(p => p.image)
-          };
-        } catch (e) {
-          return { ...brand, productImages: [] };
-        }
-      }));
-
       setCategories(sortByOrder(categoryData));
-      setBrands(brandsWithProducts);
+      setBrands(brandData);
       setFeaturedProducts(Array.isArray(productData) ? productData.slice(0, 4) : []);
       setRoomTypes(roomData);
       dataFetchedRef.current = true;
@@ -513,29 +525,33 @@ export default function HomeScreen({ token, user, isDarkMode = false }: HomeScre
               </View>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.brandRowHorizontal}>
-              {brands.map(item => (
-                <View key={`brand-${item.id}`} style={[styles.brandCard, { backgroundColor: colors.card }]}>
-                  <View style={styles.brandImagesGrid}>
-                    {[0, 1, 2, 3, 4, 5].map((idx) => {
-                      const img = item.productImages?.[idx];
-                      return (
-                        <View key={`${item.id}-img-${idx}`} style={[styles.brandMiniImageContainer, { borderColor: colors.border }]}>
-                          {img ? (
-                            <Image source={{ uri: `https://www.afhome.ph/storage/product-images/${img}` }} style={styles.brandMiniImage} />
-                          ) : (
-                            <View style={[styles.brandMiniImage, styles.brandMiniFallback]} />
-                          )}
+              {brands.map(item => {
+                const logo = getBrandLogo(item);
+                
+                return (
+                  <View key={`brand-${item.id}`} style={[styles.brandCard, { backgroundColor: colors.card }]}>
+                    <View style={styles.brandLogoContainer}>
+                      {logo ? (
+                        <Image source={{ uri: logo }} style={styles.brandLogoImage} />
+                      ) : (
+                        <View style={[styles.brandLogoFallback, { backgroundColor: Colors.sky }]}>
+                          <Text style={styles.brandFallbackInitialLarge}>{getBrandInitial(item)}</Text>
                         </View>
-                      );
-                    })}
+                      )}
+                      <View style={[styles.brandLogoOverlay, { backgroundColor: 'rgba(14, 165, 233, 0.85)' }]}>
+                        <Text style={[styles.brandCardNameOverlay, { color: Colors.white }]} numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        {item.total_products !== undefined && (
+                          <Text style={[styles.brandProductCountOverlay, { color: 'rgba(255,255,255,0.95)' }]}>
+                            {item.total_products} products
+                          </Text>
+                        )}
+                      </View>
+                    </View>
                   </View>
-                  <View style={[styles.brandNamePlate, { backgroundColor: colors.statsBg }]}>
-                    <Text style={[styles.brandCardName, { color: colors.text }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
           </View>
 
@@ -572,14 +588,14 @@ export default function HomeScreen({ token, user, isDarkMode = false }: HomeScre
                   <View style={styles.masonryColumn}>
                     {masonryColumns.leftColumn.map((item) => (
                       <View key={item.id} style={styles.featuredProductItem}>
-                        {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} />}
+                        {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} onPress={onProductPress ? (product) => onProductPress(product.id) : undefined} />}
                       </View>
                     ))}
                   </View>
                   <View style={styles.masonryColumn}>
                     {masonryColumns.rightColumn.map((item) => (
                       <View key={item.id} style={styles.featuredProductItem}>
-                        {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} />}
+                        {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} onPress={onProductPress ? (product) => onProductPress(product.id) : undefined} />}
                       </View>
                     ))}
                   </View>
@@ -739,6 +755,12 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     gap: 0,
   },
+  sectionOdd: {
+    backgroundColor: '#f8fbff',
+    paddingHorizontal: 8,
+    paddingVertical: 18,
+    gap: 0,
+  },
   sectionFeatured: {
     backgroundColor: '#f0f9ff',
     marginHorizontal: -8,
@@ -890,6 +912,48 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
   },
+  brandLogoContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  brandLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  brandLogoFallback: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandFallbackInitialLarge: {
+    fontSize: 48,
+    lineHeight: 52,
+    fontWeight: '900',
+    color: Colors.white,
+  },
+  brandLogoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  brandCardNameOverlay: {
+    fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  brandProductCountOverlay: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   brandCardImage: {
     width: '100%',
     height: '100%',
@@ -913,6 +977,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     textAlign: 'center',
+  },
+  brandProductCount: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
   },
   brandImagesGrid: {
     flex: 1,
