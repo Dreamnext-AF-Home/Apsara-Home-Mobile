@@ -2,56 +2,45 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import type { Product } from '../../services/productService';
+import type { ProductCard } from '../../services/productService';
 
 interface ItemCardProps {
-  product: Product;
-  onPress?: (product: Product) => void;
+  product: ProductCard;
+  onPress?: (product: ProductCard) => void;
   showMemberPrice?: boolean;
 }
 
-export default function ItemCard({ 
-  product, 
-  onPress, 
-  showMemberPrice = false 
-}: ItemCardProps) {
-  const displayPrice = showMemberPrice ? product.priceMember : product.priceSrp;
-  const hasDiscount = product.priceMember < product.priceSrp;
-  const hasVariants = product.variants && product.variants.length > 1;
-  const inStock = product.qty > 0;
+const BADGE_CONFIG = [
+  { key: 'musthave',   label: 'Must Have',  color: '#f97316',    icon: 'heart'        },
+  { key: 'bestseller', label: 'Bestseller', color: Colors.brass, icon: 'flame'        },
+  { key: 'salespromo', label: 'Sale',       color: Colors.forest, icon: 'pricetag'   },
+] as const;
 
-  const handlePress = () => {
-    if (onPress) {
-      onPress(product);
-    }
-  };
+export default function ItemCard({
+  product,
+  onPress,
+  showMemberPrice = false,
+}: ItemCardProps) {
+  const hasDiscount = product.discountedPrice < product.originalPrice;
+  const displayPrice = product.discountedPrice;
+  const discountPct = hasDiscount
+    ? Math.round(((product.originalPrice - product.discountedPrice) / product.originalPrice) * 100)
+    : 0;
+
+  const activeBadges = BADGE_CONFIG.filter(b => product.badges[b.key]);
 
   return (
-    <TouchableOpacity 
-      style={styles.container}
-      onPress={handlePress}
-      activeOpacity={0.8}
-    >
-      {/* Product Image */}
-      <View style={styles.imageContainer}>
-        <Image 
-          source={{ uri: product.image }} 
-          style={styles.productImage}
-          resizeMode="cover"
-        />
-        
-        {/* Stock Status Badge */}
-        {!inStock && (
-          <View style={styles.outOfStockBadge}>
-            <Text style={styles.outOfStockText}>Out of Stock</Text>
-          </View>
-        )}
+    <TouchableOpacity style={styles.container} onPress={() => onPress?.(product)} activeOpacity={0.8}>
 
-        {/* Bestseller Badge */}
-        {product.soldCount > 10 && (
-          <View style={styles.bestsellerBadge}>
-            <Ionicons name="flame" size={12} color={Colors.white} />
-            <Text style={styles.bestsellerText}>Bestseller</Text>
+      {/* Image */}
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: product.image }} style={styles.productImage} resizeMode="cover" />
+
+        {/* Top-left: Enjoy X% ribbon */}
+        {hasDiscount && (
+          <View style={styles.enjoyBadge}>
+            <Ionicons name="pricetag" size={10} color={Colors.white} />
+            <Text style={styles.enjoyBadgeText}>Enjoy {discountPct}% OFF</Text>
           </View>
         )}
       </View>
@@ -59,52 +48,58 @@ export default function ItemCard({
       {/* Border Below Image */}
       <View style={styles.imageBorder} />
 
-      {/* Product Info */}
+      {/* Info */}
       <View style={styles.infoContainer}>
-        {/* Brand */}
-        <Text style={styles.brandText} numberOfLines={1}>
-          {product.brand}
-        </Text>
+
+        {/* Brand + Sold Count */}
+        <View style={styles.brandRow}>
+          <Text style={styles.brandText} numberOfLines={1}>{product.brandName}</Text>
+          {product.soldCount > 0 && (
+            <Text style={styles.soldCountText}>{product.soldCount} sold</Text>
+          )}
+        </View>
 
         {/* Product Name */}
-        <Text style={styles.productName} numberOfLines={2}>
+        <Text style={styles.productName} numberOfLines={2} ellipsizeMode="tail">
           {product.name}
         </Text>
 
-        {/* Rating and Sold Count */}
-        <View style={styles.ratingContainer}>
-          <View style={styles.ratingLeft}>
-            <Ionicons name="star" size={12} color={Colors.brass} />
-            <Text style={styles.ratingText}>
-              {product.avgRating.toFixed(1)}
-            </Text>
-            {product.soldCount > 0 && (
-              <Text style={styles.soldCountText}>
-                ({product.soldCount} sold)
-              </Text>
-            )}
+        {/* Badges Row: PV + product badges + variants */}
+        <View style={styles.badgesRow}>
+          <View style={[styles.badge, { borderColor: Colors.sky }]}>
+            <View style={[styles.badgeIconWrap, { backgroundColor: Colors.sky }]}>
+              <Ionicons name="star" size={9} color={Colors.white} />
+            </View>
+            <Text style={[styles.badgeText, { color: Colors.sky }]}>PV {product.pv}</Text>
           </View>
+          {activeBadges.map(b => (
+            <View key={b.key} style={[styles.badge, { borderColor: b.color }]}>
+              <View style={[styles.badgeIconWrap, { backgroundColor: b.color }]}>
+                <Ionicons name={b.icon} size={9} color={Colors.white} />
+              </View>
+              <Text style={[styles.badgeText, { color: b.color }]}>{b.label}</Text>
+            </View>
+          ))}
+          {product.variantCount > 0 && (
+            <View style={[styles.badge, { borderColor: '#7c3aed' }]}>
+              <View style={[styles.badgeIconWrap, { backgroundColor: '#7c3aed' }]}>
+                <Ionicons name="layers" size={9} color={Colors.white} />
+              </View>
+              <Text style={[styles.badgeText, { color: '#7c3aed' }]}>{product.variantCount} variants</Text>
+            </View>
+          )}
         </View>
 
-        {/* Price Section */}
+        {/* Price */}
         <View style={styles.priceContainer}>
           <View style={styles.priceRow}>
-            <Text style={styles.currentPrice}>
-              ₱{displayPrice.toLocaleString()}
-            </Text>
-            
+            <Text style={styles.currentPrice}>₱{displayPrice.toLocaleString()}</Text>
             {hasDiscount && (
-              <Text style={styles.originalPrice}>
-                ₱{product.priceSrp.toLocaleString()}
-              </Text>
+              <Text style={styles.originalPrice}>₱{product.originalPrice.toLocaleString()}</Text>
             )}
           </View>
         </View>
 
-        {/* PV Section */}
-        <View style={styles.pvSection}>
-          <Text style={styles.pvTextInfo}>{product.prodpv} PV</Text>
-        </View>
       </View>
     </TouchableOpacity>
   );
@@ -129,68 +124,35 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  outOfStockBadge: {
+  enjoyBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    top: 0,
+    left: 0,
+    backgroundColor: Colors.sky,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  outOfStockText: {
-    color: Colors.white,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  bestsellerBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: Colors.brass,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    paddingVertical: 5,
+    borderBottomRightRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
-  bestsellerText: {
+  enjoyBadgeText: {
     color: Colors.white,
     fontSize: 10,
-    fontWeight: '600',
-  },
-  pvBadge: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    backgroundColor: 'rgba(59, 130, 246, 0.9)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  pvText: {
-    color: Colors.white,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  discountTopBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  discountTopText: {
-    color: Colors.white,
-    fontSize: 11,
     fontWeight: '700',
+  },
+  imageBorder: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
   },
   infoContainer: {
     padding: 12,
     gap: 6,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   brandText: {
     fontSize: 11,
@@ -199,42 +161,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  soldCountText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
   productName: {
     fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
     lineHeight: 18,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  ratingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  ratingText: {
-    fontSize: 12,
-    color: Colors.text,
-    fontWeight: '500',
-  },
-  soldCountText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  variantsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  variantsText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    flexShrink: 1,
   },
   priceContainer: {
-    gap: 4,
+    backgroundColor: Colors.white,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
   priceRow: {
     flexDirection: 'row',
@@ -251,47 +193,28 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textDecorationLine: 'line-through',
   },
-  discountBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
   },
-  discountText: {
-    color: Colors.white,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  imageBorder: {
-    height: 1,
-    backgroundColor: '#e5e7eb',
-  },
-  pvSection: {
-    backgroundColor: '#f0f9ff',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: 4,
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
     borderRadius: 6,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  pvTextInfo: {
-    fontSize: 12,
-    color: Colors.sky,
-    fontWeight: '600',
-    textAlign: 'center',
+  badgeIconWrap: {
+    paddingHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  dpText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
-  },
-  skuText: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-  },
-  warrantyText: {
-    fontSize: 10,
-    color: Colors.forest,
-    fontWeight: '500',
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
 });
