@@ -76,7 +76,7 @@ export interface ProductCard {
   image: string;
   soldCount: number;
   originalPrice: number;
-  discountedPrice: number;
+  memberPrice: number;
   pv: number;
   brandName: string;
   variantCount: number;
@@ -87,14 +87,79 @@ export interface ProductCard {
   };
 }
 
+export function toProductCard(p: Product): ProductCard {
+  return {
+    id: p.id,
+    name: p.name,
+    image: p.image,
+    soldCount: p.soldCount,
+    originalPrice: p.priceSrp,
+    memberPrice: p.priceMember,
+    pv: p.prodpv,
+    brandName: p.brand,
+    variantCount: p.variants?.length ?? 0,
+    badges: {
+      musthave: p.musthave,
+      bestseller: p.bestseller,
+      salespromo: p.salespromo,
+    },
+  };
+}
+
+export interface ProductReview {
+  id: number;
+  rating: number;
+  review: string;
+  review_image?: string;
+  review_video?: string;
+  review_images: string[];
+  review_videos: string[];
+  customer_name: string;
+  customer_avatar?: string;
+  created_at: string;
+}
+
+export interface ProductReviewsResponse {
+  summary: {
+    average: number;
+    count: number;
+    breakdown: {
+      1: number;
+      2: number;
+      3: number;
+      4: number;
+      5: number;
+    };
+  };
+  reviews: ProductReview[];
+}
+
 export const productService = {
   async getProductCards(token?: string): Promise<ProductCard[]> {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
 
     try {
-      const response = await api.get('/products/cards', { headers });
-      return response.data.products ?? [];
+      const response = await api.get('/products', { headers });
+      const products = response.data.products ?? [];
+      
+      // Map API response to ProductCard interface
+      return products.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        soldCount: product.soldCount,
+        originalPrice: product.priceSrp,
+        memberPrice: product.priceMember,
+        pv: product.prodpv,
+        brandName: product.brand,
+        variantCount: product.variants?.length ?? 0,
+        badges: {
+          musthave: product.musthave,
+          bestseller: product.bestseller,
+          salespromo: product.salespromo,
+        },
+      }));
     } catch (error) {
       console.error('Error fetching product cards:', error);
       throw error;
@@ -139,7 +204,7 @@ export const productService = {
     }
     
     const response = await api.get(`/products/${id}`, { headers });
-    return response.data.data || response.data;
+    return response.data.product || response.data.data || response.data;
   },
 
   async getProductsByCategory(catid: number, token?: string): Promise<Product[]> {
@@ -158,8 +223,9 @@ export const productService = {
       headers.Authorization = `Bearer ${token}`;
     }
     
-    const response = await api.get(`/products/brand/${brandType}`, { headers });
-    return response.data.data || response.data || [];
+    const response = await api.get(`/products?brand_type=${brandType}`, { headers });
+    const products = response.data.products || response.data.data || response.data || [];
+    return products; // Return all products for shuffling
   },
 
   async getProductsByRoom(roomType: number, token?: string): Promise<Product[]> {
@@ -170,6 +236,21 @@ export const productService = {
     
     const response = await api.get(`/products/room/${roomType}`, { headers });
     return response.data.data || response.data || [];
+  },
+
+  async getProductReviews(productId: number, token?: string): Promise<ProductReviewsResponse | null> {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    try {
+      const response = await api.get(`/products/${productId}/reviews`, { headers });
+      return response.data || null;
+    } catch (error) {
+      console.error('Error fetching product reviews:', error);
+      return null;
+    }
   },
 };
 

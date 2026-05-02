@@ -53,6 +53,24 @@ export interface BrandItem {
   name: string;
   image?: string | null;
   status?: number;
+  total_products?: number;
+  images?: string[];
+  images_count?: number;
+  brand_image?: string;
+}
+
+export interface BrandProfile {
+  id: number;
+  name: string;
+  profile_picture?: string;
+  status: number;
+  is_online: boolean;
+  chat_performance: number;
+  overall_rating: number;
+  total_reviews: number;
+  total_products: number;
+  joined_date: string;
+  supplier_name: string;
 }
 
 export interface MobileRegisterPayload {
@@ -366,6 +384,40 @@ export const authService = {
     } catch (error: any) {
       throw {
         message: error.response?.data?.message || 'Failed to load brands',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
+    }
+  },
+
+  async getBrandsWithProducts(token: string, maxImages: number = 6): Promise<BrandItem[]> {
+    try {
+      const response = await api.get(`/product-brands/with-products?max_images=${maxImages}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = response.data;
+      if (Array.isArray(data?.brands)) return data.brands;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.data)) return data.data;
+      return [];
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to load brands with products',
+        details: error.response?.data,
+        status: error.response?.status,
+      } as AuthError;
+    }
+  },
+
+  async getBrandProfile(brandId: number, token: string): Promise<BrandProfile | null> {
+    try {
+      const response = await api.get(`/product-brands/${brandId}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data?.brand || null;
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to load brand profile',
         details: error.response?.data,
         status: error.response?.status,
       } as AuthError;
