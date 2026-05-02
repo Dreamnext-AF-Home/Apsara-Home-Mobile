@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 const TOKEN_TIMESTAMP_KEY = 'token_timestamp';
+const ONBOARDED_KEY = 'has_onboarded';
 
 // Helper function to check if SecureStore is available
 const isSecureStoreAvailable = () => {
@@ -116,6 +117,27 @@ export const storageService = {
       console.error('Error clearing auth data:', error);
       throw error;
     }
+  },
+
+  async hasOnboarded(): Promise<boolean> {
+    try {
+      const val = await SecureStore.getItemAsync(ONBOARDED_KEY);
+      return val === 'true';
+    } catch {
+      return false;
+    }
+  },
+
+  async setOnboarded(): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(ONBOARDED_KEY, 'true');
+    } catch {}
+  },
+
+  async resetOnboarding(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(ONBOARDED_KEY);
+    } catch {}
   },
 
   // Refresh token timestamp (to extend session)
