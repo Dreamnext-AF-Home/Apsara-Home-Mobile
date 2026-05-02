@@ -32,9 +32,11 @@ type AuthStep = 'login' | '2fa' | 'mfa';
 export default function LoginScreen({
   onGoToSignup,
   onAuthenticated,
+  onResetOnboarding,
 }: {
   onGoToSignup?: () => void;
   onAuthenticated?: (user?: { id: string; email: string; name: string; avatar_url?: string }, token?: string) => void;
+  onResetOnboarding?: () => Promise<void>;
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -261,6 +263,17 @@ export default function LoginScreen({
                   <Text style={styles.socialBtnText}>Passkey</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Reset Onboarding Button - Development Only */}
+              {onResetOnboarding && (
+                <TouchableOpacity 
+                  style={styles.resetBtn} 
+                  onPress={onResetOnboarding}
+                  disabled={loading}
+                >
+                  <Text style={styles.resetBtnText}>Reset Onboarding</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -338,6 +351,8 @@ const styles = StyleSheet.create({
   socialBtn: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 10, backgroundColor: Colors.white },
   googleIcon: { width: 18, height: 18, marginBottom: 0 },
   socialBtnText: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  resetBtn: { marginTop: 16, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 },
+  resetBtnText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.white, borderRadius: 20, padding: 28, width: '100%', maxWidth: 340, alignItems: 'center' },
   modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 8 },
