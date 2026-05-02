@@ -1,13 +1,13 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Linking, View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
 interface AppHeaderProps {
-  user?: { 
-    name: string; 
+  user?: {
+    name: string;
     avatar_url?: string;
     monthly_activation?: {
       current_month_pv: number;
@@ -19,6 +19,105 @@ interface AppHeaderProps {
   onFilterPress?: () => void;
   onSearchPress?: () => void;
   searchPlaceholder?: string;
+}
+
+const MARQUEE_ITEMS = [
+  'Summer Sale - Up to 50% off selected items',
+  'New arrivals every week',
+  'Nationwide delivery to all major cities',
+  'Installment available via GCash & Maya',
+  'Free Shipping on orders over PHP 5,000',
+];
+
+const SOCIAL_LINKS = [
+  { icon: 'logo-facebook' as const, url: 'https://www.facebook.com/AFHomePH/' },
+  { icon: 'logo-instagram' as const, url: 'https://www.instagram.com/afhome.ph/' },
+  { icon: 'logo-tiktok' as const, url: 'https://www.tiktok.com/@afhomeph' },
+];
+
+function MarqueeItems() {
+  return (
+    <>
+      {MARQUEE_ITEMS.map((text, i) => (
+        <View key={i} style={marqueeStyles.item}>
+          <Text style={marqueeStyles.text}>{text}</Text>
+          <Image
+            source={require('../../../assets/af_home_logo.png')}
+            style={marqueeStyles.logo}
+            resizeMode="contain"
+          />
+        </View>
+      ))}
+    </>
+  );
+}
+
+function MarqueeBanner() {
+  const tx1 = useRef(new Animated.Value(0)).current;
+  const tx2 = useRef(new Animated.Value(0)).current;
+  const pos1 = useRef(0);
+  const pos2 = useRef(0);
+  const contentWidthRef = useRef(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startScrolling = (cw: number) => {
+    pos1.current = 0;
+    pos2.current = cw;
+    tx1.setValue(0);
+    tx2.setValue(cw);
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      pos1.current -= 0.7;
+      pos2.current -= 0.7;
+
+      // when a view goes fully off the left edge, teleport it to the right
+      if (pos1.current <= -cw) pos1.current = cw;
+      if (pos2.current <= -cw) pos2.current = cw;
+
+      tx1.setValue(pos1.current);
+      tx2.setValue(pos2.current);
+    }, 16);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const handleLayout = (e: any) => {
+    const w = e.nativeEvent.layout.width;
+    if (w && w !== contentWidthRef.current) {
+      contentWidthRef.current = w;
+      startScrolling(w);
+    }
+  };
+
+  return (
+    <View style={marqueeStyles.container}>
+      <View style={marqueeStyles.scrollArea}>
+        <Animated.View
+          style={[marqueeStyles.row, { transform: [{ translateX: tx1 }] }]}
+          onLayout={handleLayout}
+        >
+          <MarqueeItems />
+        </Animated.View>
+        <Animated.View style={[marqueeStyles.row, { transform: [{ translateX: tx2 }] }]}>
+          <MarqueeItems />
+        </Animated.View>
+      </View>
+
+      <View style={marqueeStyles.socialRow}>
+        {SOCIAL_LINKS.map(({ icon, url }) => (
+          <TouchableOpacity key={url} onPress={() => Linking.openURL(url)} activeOpacity={0.7}>
+            <Ionicons name={icon} size={14} color={Colors.white} />
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
 }
 
 export default function AppHeader({
@@ -33,67 +132,120 @@ export default function AppHeader({
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : null;
   const firstName = user?.name ? user.name.split(' ')[0] : 'Guest';
   const currentPV = user?.monthly_activation?.current_month_pv ?? 0;
-  const thresholdPV = user?.monthly_activation?.threshold_pv ?? 100;
 
   return (
     <LinearGradient
       colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
-      style={[styles.container, { paddingTop: insets.top + 12 }]}
+      style={[styles.container, { paddingTop: insets.top }]}
     >
-      <View style={styles.topRow}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            {photoUrl ? (
-              <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
-            ) : initial ? (
-              <Text style={styles.avatarInitial}>{initial}</Text>
-            ) : (
-              <Ionicons name="person" size={18} color={Colors.textSecondary} />
-            )}
+      <MarqueeBanner />
+
+      <View style={styles.innerContent}>
+        <View style={styles.topRow}>
+          <View style={styles.profileSection}>
+            <View style={styles.avatar}>
+              {photoUrl ? (
+                <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
+              ) : initial ? (
+                <Text style={styles.avatarInitial}>{initial}</Text>
+              ) : (
+                <Ionicons name="person" size={18} color={Colors.textSecondary} />
+              )}
+            </View>
+            <View>
+              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.nameText}>{firstName}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.nameText}>{firstName}</Text>
+
+          <View style={styles.rightActions}>
+            <View style={styles.pvBadge}>
+              <Ionicons name="trending-up" size={12} color={Colors.white} />
+              <Text style={styles.pvText}>{currentPV} PV</Text>
+            </View>
+            <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress} activeOpacity={0.7}>
+              <Ionicons name="notifications-outline" size={20} color={Colors.text} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.rightActions}>
-          <View style={styles.pvBadge}>
-            <Ionicons name="trending-up" size={12} color={Colors.white} />
-            <Text style={styles.pvText}>{currentPV} PV</Text>
-          </View>
-          <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress} activeOpacity={0.7}>
-            <Ionicons name="notifications-outline" size={20} color={Colors.text} />
+        <View style={styles.searchRow}>
+          <TouchableOpacity
+            style={styles.searchWrapper}
+            onPress={onSearchPress}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} style={styles.searchIcon} />
+            <Text style={styles.searchPlaceholder}>{searchPlaceholder}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.7}>
+            <Ionicons name="options-outline" size={20} color={Colors.text} />
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.searchRow}>
-        <TouchableOpacity
-          style={styles.searchWrapper}
-          onPress={onSearchPress}
-          activeOpacity={0.75}
-        >
-          <Ionicons name="search-outline" size={16} color={Colors.textSecondary} style={styles.searchIcon} />
-          <Text style={styles.searchPlaceholder}>{searchPlaceholder}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.7}>
-          <Ionicons name="options-outline" size={20} color={Colors.text} />
-        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
 }
 
+const marqueeStyles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.sky,
+    height: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scrollArea: {
+    flex: 1,
+    overflow: 'hidden',
+    height: 30,
+  },
+  row: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 6,
+  },
+  logo: {
+    width: 44,
+    height: 14,
+    tintColor: Colors.white,
+  },
+  text: {
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    height: 30,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255,255,255,0.35)',
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  innerContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     gap: 10,
   },
   topRow: {
