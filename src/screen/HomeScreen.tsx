@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Animated,
-  Dimensions, NativeSyntheticEvent, NativeScrollEvent, FlatList, Pressable,
+  Dimensions, NativeSyntheticEvent, NativeScrollEvent, FlatList, Pressable, RefreshControl, Platform, TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -26,7 +26,14 @@ import {
 
 interface HomeScreenProps {
   token?: string | null;
-  user?: { name?: string; avatar_url?: string } | null;
+  user?: { 
+    name?: string; 
+    avatar_url?: string;
+    monthly_activation?: {
+      remaining_pv: number;
+    };
+  } | null;
+  isDarkMode?: boolean;
 }
 
 interface RoomType {
@@ -76,53 +83,38 @@ function getBrandInitial(brand: BrandItem) {
   return brand.name?.trim()?.charAt(0)?.toUpperCase() || '?';
 }
 
-function CategoryCircle({ category }: { category: CategoryItem }) {
-  const images = useMemo(() => getCategoryImages(category), [category]);
-  const [activeImage, setActiveImage] = useState(0);
-  const opacity = useRef(new Animated.Value(0)).current;
+function CategoryCircle({ category, index }: { category: CategoryItem, index: number }) {
+  const image = useMemo(() => getCategoryImages(category)[0], [category]);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const badgeType = index === 0 ? 'Hot' : index === 2 ? 'New' : null;
 
   useEffect(() => {
-    if (images.length <= 1) return;
-
-    const interval = setInterval(() => {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setActiveImage(prev => (prev + 1) % images.length);
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 320,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    }, 3800);
-
-    return () => clearInterval(interval);
-  }, [images.length, opacity]);
-
-  useEffect(() => {
-    opacity.setValue(0);
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 320,
-      useNativeDriver: true,
-    }).start();
-  }, [activeImage, opacity]);
+    if (!badgeType) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [badgeType, pulseAnim]);
 
   return (
-    <View style={styles.circleItem}>
+    <View style={styles.categoryCircleItem}>
       <View style={[styles.circleImageWrap, styles.categoryCircle]}>
-        <Animated.Image
-          key={`${category.id}-${activeImage}`}
-          source={{ uri: images[activeImage] }}
-          style={[styles.circleImage, { opacity }]}
+        <Image
+          source={{ uri: image }}
+          style={styles.circleImage}
         />
+        {badgeType && (
+          <Animated.View style={[
+            styles.categoryBadge,
+            badgeType === 'Hot' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#3b82f6' },
+            { transform: [{ scale: pulseAnim }] }
+          ]}>
+            <Text style={styles.categoryBadgeText}>{badgeType}</Text>
+          </Animated.View>
+        )}
       </View>
       <Text style={styles.circleLabel} numberOfLines={2}>{category.name}</Text>
     </View>
@@ -212,15 +204,79 @@ function RoomItemComponent({ item }: { item: RoomType }) {
   );
 }
 
-export default function HomeScreen({ token, user }: HomeScreenProps) {
+export default function HomeScreen({ token, user, isDarkMode = false }: HomeScreenProps) {
+  const colors = {
+    bg: isDarkMode ? '#0f172a' : '#f8fbff',
+    card: isDarkMode ? '#1e293b' : Colors.white,
+    text: isDarkMode ? '#f8fafc' : Colors.text,
+    textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
+    border: isDarkMode ? '#334155' : '#e2e8f0',
+    sectionEven: isDarkMode ? '#1e293b' : '#f0f9ff',
+    statsBg: isDarkMode ? '#1e293b' : '#f0f9ff',
+  };
+
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<ProductCard[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
   const dataFetchedRef = useRef(false);
+
+  const fetchHomeData = async (isRefreshing = false) => {
+    if (!token) return;
+    
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const [categoryData, brandData, productData, roomData] = await Promise.all([
+        authService.getCategories(token),
+        authService.getBrands(token),
+        productService.getProductCards(token),
+        axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(res => res.data?.data || []).catch(() => []),
+      ]);
+
+      const brandsWithProducts = await Promise.all(brandData.map(async (brand: any) => {
+        try {
+          const products = await productService.getProductsByBrand(brand.id, token);
+          return {
+            ...brand,
+            productImages: products.slice(0, 6).map(p => p.image)
+          };
+        } catch (e) {
+          return { ...brand, productImages: [] };
+        }
+      }));
+
+      setCategories(sortByOrder(categoryData));
+      setBrands(brandsWithProducts);
+      setFeaturedProducts(Array.isArray(productData) ? productData.slice(0, 4) : []);
+      setRoomTypes(roomData);
+      dataFetchedRef.current = true;
+    } catch (error: any) {
+      console.error('Home data fetch error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Sync failed',
+        text2: error.message || 'Unable to update home data.',
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    fetchHomeData(true);
+  };
 
   useEffect(() => {
     if (!token) {
@@ -228,65 +284,13 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
       return;
     }
 
-    // If data is already loaded, don't fetch again
-    if (dataFetchedRef.current && categories.length > 0 && brands.length > 0 && featuredProducts.length > 0) {
+    // If data is already loaded, don't fetch again automatically
+    if (dataFetchedRef.current) {
       setLoading(false);
       return;
     }
 
-    let active = true;
-    setLoading(true);
-
-    Promise.all([
-      authService.getCategories(token),
-      authService.getBrands(token),
-      productService.getProductCards(token),
-    ])
-      .then(([categoryData, brandData, productData]) => {
-        if (!active) return;
-        setCategories(sortByOrder(categoryData));
-        setBrands(brandData);
-        if (Array.isArray(productData) && productData.length > 0) {
-          setFeaturedProducts(productData.slice(0, 4));
-        } else {
-          setFeaturedProducts([]);
-        }
-        dataFetchedRef.current = true;
-      })
-      .catch(error => {
-        if (!active) return;
-        console.error('Home data fetch error:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Home data failed',
-          text2: error.message || 'Unable to load home data.',
-        });
-        setFeaturedProducts([]); // Set empty array on error
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [token, categories.length, brands.length]);
-
-  useEffect(() => {
-    if (!token) return;
-    let active = true;
-    axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => {
-        if (!active) return;
-        if (res.data?.success && Array.isArray(res.data?.data)) {
-          setRoomTypes(res.data.data);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {});
-    return () => { active = false; };
+    fetchHomeData();
   }, [token]);
 
   const greeting = useMemo(() => {
@@ -365,11 +369,54 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.bg }]} 
+      contentContainerStyle={styles.content} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={onRefresh}
+          colors={[Colors.sky]} 
+          tintColor={isDarkMode ? '#fff' : Colors.sky}
+        />
+      }
+    >
       {loading ? (
         <HomeScreenSkeleton />
       ) : (
         <>
+          <View style={[styles.statsBar, { backgroundColor: colors.statsBg, borderBottomColor: colors.border }]}>
+            <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
+              <View style={styles.statsMain}>
+                <Ionicons name="receipt-outline" size={18} color="#f97316" />
+                <Text style={[styles.statsValue, { color: colors.text }]}>14</Text>
+              </View>
+              <Text style={[styles.statsLabel, { color: colors.textSec }]}>Total Orders</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
+              <View style={styles.statsMain}>
+                <Ionicons name="cart-outline" size={18} color="#0ea5e9" />
+                <Text style={[styles.statsValue, { color: colors.text }]}>3</Text>
+              </View>
+              <Text style={[styles.statsLabel, { color: colors.textSec }]}>Total Cart</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
+              <View style={styles.statsMain}>
+                <Ionicons name="people-outline" size={18} color="#22c55e" />
+                <Text style={[styles.statsValue, { color: colors.text }]}>5</Text>
+              </View>
+              <Text style={[styles.statsLabel, { color: colors.textSec }]}>Total Referrals</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
+              <View style={styles.statsMain}>
+                <Ionicons name="trending-up-outline" size={18} color="#ef4444" />
+                <Text style={[styles.statsValue, { color: colors.text }]}>{user?.monthly_activation?.remaining_pv ?? 0}</Text>
+              </View>
+              <Text style={[styles.statsLabel, { color: colors.textSec }]}>Perf. Value</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.bannerShell}>
             <ScrollView
               ref={bannerRef}
@@ -424,12 +471,12 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
             </View>
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: colors.bg }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Shop by Rooms</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Shop by Rooms</Text>
               <View style={styles.sectionAction}>
-                <Text style={styles.sectionMeta}>{(roomTypes.length || FALLBACK_ROOMS.length)} total</Text>
-                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                <Text style={[styles.sectionMeta, { color: colors.textSec }]}>{(roomTypes.length || FALLBACK_ROOMS.length)} total</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
               </View>
             </View>
             <FlatList
@@ -442,52 +489,62 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
             />
           </View>
 
-          <View style={styles.sectionEven}>
+          <View style={[styles.sectionEven, { backgroundColor: colors.sectionEven }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Shop by Categories</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Shop by Categories</Text>
               <View style={styles.sectionAction}>
-                <Text style={styles.sectionMeta}>{categories.length} total</Text>
-                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                <Text style={[styles.sectionMeta, { color: colors.textSec }]}>{categories.length} total</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
               </View>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circleRow}>
-              {categories.map(category => (
-                <CategoryCircle key={`category-${category.id}`} category={category} />
+              {categories.map((category, index) => (
+                <CategoryCircle key={`category-${category.id}`} category={category} index={index} />
               ))}
             </ScrollView>
           </View>
 
-          <View style={styles.sectionOdd}>
+          <View style={[styles.sectionOdd, { backgroundColor: colors.bg }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Shop by Brand</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Shop by Brand</Text>
               <View style={styles.sectionAction}>
-                <Text style={styles.sectionMeta}>{brands.length} total</Text>
-                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                <Text style={[styles.sectionMeta, { color: colors.textSec }]}>{brands.length} total</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
               </View>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.brandRowHorizontal}>
               {brands.map(item => (
-                <View key={`brand-${item.id}`} style={styles.brandCard}>
-                  {item.image ? (
-                    <Image source={{ uri: getBrandImage(item) }} style={styles.brandCardImage} />
-                  ) : (
-                    <View style={[styles.brandCardImage, styles.brandFallback]}>
-                      <Text style={styles.brandFallbackInitial}>{getBrandInitial(item)}</Text>
-                    </View>
-                  )}
-                  <View style={styles.brandCardOverlay} />
-                  <Text style={styles.brandCardName} numberOfLines={1}>{item.name}</Text>
+                <View key={`brand-${item.id}`} style={[styles.brandCard, { backgroundColor: colors.card }]}>
+                  <View style={styles.brandImagesGrid}>
+                    {[0, 1, 2, 3, 4, 5].map((idx) => {
+                      const img = item.productImages?.[idx];
+                      return (
+                        <View key={`${item.id}-img-${idx}`} style={[styles.brandMiniImageContainer, { borderColor: colors.border }]}>
+                          {img ? (
+                            <Image source={{ uri: `https://www.afhome.ph/storage/product-images/${img}` }} style={styles.brandMiniImage} />
+                          ) : (
+                            <View style={[styles.brandMiniImage, styles.brandMiniFallback]} />
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <View style={[styles.brandNamePlate, { backgroundColor: colors.statsBg }]}>
+                    <Text style={[styles.brandCardName, { color: colors.text }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </ScrollView>
           </View>
 
-          <View style={styles.sectionFeatured}>
+          <View style={[styles.sectionFeatured, { backgroundColor: colors.sectionEven }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Featured Products</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured Products</Text>
               <View style={styles.sectionAction}>
-                <Text style={styles.sectionMeta}>New arrivals</Text>
-                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                <Text style={[styles.sectionMeta, { color: colors.textSec }]}>New arrivals</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
               </View>
             </View>
             <View style={styles.featuredProductsContainer}>
@@ -637,13 +694,50 @@ const styles = StyleSheet.create({
     width: 20,
     backgroundColor: Colors.sky,
   },
-  section: { gap: 10, paddingHorizontal: 4 },
+  section: { gap: 0, paddingHorizontal: 4 },
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    marginHorizontal: -8,
+    marginBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#e0f2fe',
+  },
+  statsItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 4,
+    borderWidth: 0.25,
+    borderColor: '#e5e7eb',
+    backgroundColor: Colors.white,
+  },
+  statsMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  statsValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  statsLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
   sectionEven: {
     backgroundColor: '#f0f9ff',
     marginHorizontal: -8,
     paddingHorizontal: 8,
-    paddingVertical: 16,
-    gap: 10,
+    paddingVertical: 18,
+    gap: 0,
   },
   sectionFeatured: {
     backgroundColor: '#f0f9ff',
@@ -654,7 +748,12 @@ const styles = StyleSheet.create({
     marginBottom: -28,
     gap: 10,
   },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: Colors.text },
   sectionMeta: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
   sectionAction: {
@@ -677,6 +776,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginRight: 12,
+  },
+  categoryCircleItem: {
+    width: 88,
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 12,
+  },
+  categoryBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    zIndex: 10,
+  },
+  categoryBadgeText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  categoryGrid: {
+    paddingHorizontal: 12,
   },
   roomItem: {
     flex: 1,
@@ -761,11 +885,10 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   brandCard: {
-    width: 170,
-    height: 110,
+    width: 190,
+    height: 180,
     borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#0f172a',
   },
   brandCardImage: {
     width: '100%',
@@ -787,16 +910,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,23,42,0.34)',
   },
   brandCardName: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.white,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  brandImagesGrid: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  brandMiniImageContainer: {
+    width: '33.33%',
+    height: '50%',
+    overflow: 'hidden',
+    borderWidth: 0.25,
+  },
+  brandMiniImage: {
+    width: '100%',
+    height: '100%',
+  },
+  brandMiniFallback: {
+    backgroundColor: '#f1f5f9',
+  },
+  brandNamePlate: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(0,0,0,0.05)',
   },
   featuredProductsContainer: {
     gap: 8,
