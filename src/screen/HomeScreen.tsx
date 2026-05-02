@@ -2,14 +2,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Animated,
-  Dimensions, NativeSyntheticEvent, NativeScrollEvent, FlatList,
+  Dimensions, NativeSyntheticEvent, NativeScrollEvent, FlatList, Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
+import axios from 'axios';
 import { Colors } from '../constants/colors';
 import { authService, BrandItem, CategoryItem } from '../services/authService';
 import { productService } from '../services/productService';
 import type { ProductCard } from '../services/productService';
+import { API_CONFIG } from '../config/api';
 import ItemCard from '../components/Items/ItemCard';
 import Toast from 'react-native-toast-message';
 import { 
@@ -25,6 +28,24 @@ interface HomeScreenProps {
   token?: string | null;
   user?: { name?: string; avatar_url?: string } | null;
 }
+
+interface RoomType {
+  room_id: number;
+  room_name: string;
+  images: string[];
+  count: number;
+}
+
+const FALLBACK_ROOMS: RoomType[] = [
+  { room_id: 1, room_name: 'Bedroom',           images: [], count: 0 },
+  { room_id: 2, room_name: 'Kitchen',            images: [], count: 0 },
+  { room_id: 3, room_name: 'Living Room',        images: [], count: 0 },
+  { room_id: 4, room_name: 'Outdoor',            images: [], count: 0 },
+  { room_id: 5, room_name: 'Study & Office',     images: [], count: 0 },
+  { room_id: 6, room_name: 'Dining Room',        images: [], count: 0 },
+  { room_id: 7, room_name: 'Laundry Room',       images: [], count: 0 },
+  { room_id: 8, room_name: 'Bath Room',          images: [], count: 0 },
+];
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const BANNER_HEIGHT = 190;
@@ -124,24 +145,82 @@ function VideoBanner({ banner }: { banner: any }) {
   );
 }
 
+function SampleAdCard({ title, subtitle }: { title: string, subtitle: string }) {
+  return (
+    <View style={styles.sampleAdCard}>
+      <LinearGradient colors={['#38bdf8', '#0284c7']} style={styles.sampleAdGradient}>
+        <Ionicons name="sparkles" size={28} color={Colors.white} />
+        <Text style={styles.sampleAdTitle}>{title}</Text>
+        <Text style={styles.sampleAdSubtitle}>{subtitle}</Text>
+        <View style={styles.sampleAdBadge}>
+          <Text style={styles.sampleAdBadgeText}>Ad</Text>
+        </View>
+      </LinearGradient>
+    </View>
+  );
+}
+
+function RoomItemComponent({ item }: { item: RoomType }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const badge = item.room_id === 1 ? 'New' : item.room_id === 3 ? 'Hot' : null;
+
+  return (
+    <Animated.View style={[styles.roomItem, { transform: [{ scale }] }]}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={{ alignItems: 'center', width: '100%', gap: 6 }}
+      >
+        <View style={styles.roomCircleContainer}>
+          <View style={styles.roomCircleWrap}>
+            {item.images && item.images.length > 0 ? (
+              <Image
+                source={{ uri: item.images[0] }}
+                style={styles.roomImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.roomCircleFallback}>
+                <Ionicons name="home-outline" size={24} color={Colors.sky} />
+              </View>
+            )}
+          </View>
+          {badge && (
+            <View style={[styles.roomBadge, badge === 'Hot' ? { backgroundColor: '#ef4444' } : {}]}>
+              <Text style={styles.roomBadgeText}>{badge}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.circleLabel} numberOfLines={2}>{item.room_name}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function HomeScreen({ token, user }: HomeScreenProps) {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<ProductCard[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeBanner, setActiveBanner] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
   const dataFetchedRef = useRef(false);
-  const roomItems = [
-    { id: 'bedroom', name: 'Bedroom', icon: 'bed-outline' as const },
-    { id: 'kitchen', name: 'Kitchen', icon: 'restaurant-outline' as const },
-    { id: 'living-room', name: 'Living Room', icon: 'home-outline' as const },
-    { id: 'outdoor', name: 'Outdoor', icon: 'leaf-outline' as const },
-    { id: 'study-office', name: 'Study & Office Room', icon: 'briefcase-outline' as const },
-    { id: 'dining-room', name: 'Dining Room', icon: 'cafe-outline' as const },
-    { id: 'laundry-room', name: 'Laundry Room', icon: 'water-outline' as const },
-    { id: 'bathroom', name: 'Bathroom', icon: 'water-outline' as const },
-  ];
 
   useEffect(() => {
     if (!token) {
@@ -167,15 +246,12 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
         if (!active) return;
         setCategories(sortByOrder(categoryData));
         setBrands(brandData);
-        // Ensure productData is an array before slicing
         if (Array.isArray(productData) && productData.length > 0) {
-          setFeaturedProducts(productData.slice(0, 4)); // Get first 4 products
+          setFeaturedProducts(productData.slice(0, 4));
         } else {
-          console.warn('Products data is not an array or is empty:', productData);
           setFeaturedProducts([]);
         }
-        
-        dataFetchedRef.current = true; // Mark data as fetched
+        dataFetchedRef.current = true;
       })
       .catch(error => {
         if (!active) return;
@@ -196,6 +272,23 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
     };
   }, [token, categories.length, brands.length]);
 
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        if (!active) return;
+        if (res.data?.success && Array.isArray(res.data?.data)) {
+          setRoomTypes(res.data.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {});
+    return () => { active = false; };
+  }, [token]);
+
   const greeting = useMemo(() => {
     const firstName = user?.name?.split(' ')[0] ?? 'there';
     return `Discover home essentials for ${firstName}`;
@@ -203,8 +296,8 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
 
   // Distribute products into two columns for masonry layout
   const masonryColumns = useMemo(() => {
-    const leftColumn: ProductCard[] = [];
-    const rightColumn: ProductCard[] = [];
+    const leftColumn: any[] = [];
+    const rightColumn: any[] = [];
     
     featuredProducts.forEach((product, index) => {
       if (index % 2 === 0) {
@@ -214,6 +307,14 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
       }
     });
     
+    // Add sample ads
+    if (leftColumn.length > 0) {
+      leftColumn.splice(1, 0, { id: 'sample-ad-1', isAd: true, title: 'Summer Sale', subtitle: 'Up to 50% off' });
+    }
+    if (rightColumn.length > 0) {
+      rightColumn.splice(2, 0, { id: 'sample-ad-2', isAd: true, title: 'New Arrivals', subtitle: 'Explore now' });
+    }
+
     return { leftColumn, rightColumn };
   }, [featuredProducts]);
 
@@ -327,30 +428,21 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Shop by Rooms</Text>
               <View style={styles.sectionAction}>
-                <Text style={styles.sectionMeta}>{roomItems.length} total</Text>
+                <Text style={styles.sectionMeta}>{(roomTypes.length || FALLBACK_ROOMS.length)} total</Text>
                 <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
               </View>
             </View>
             <FlatList
-              data={roomItems}
-              renderItem={({ item }) => (
-                <View key={item.id} style={styles.roomItem}>
-                  <View style={[styles.circleImageWrap, styles.roomCircle]}>
-                    <Ionicons name={item.icon} size={24} color={Colors.sky} />
-                  </View>
-                  <Text style={styles.circleLabel} numberOfLines={2}>{item.name}</Text>
-                </View>
-              )}
-              keyExtractor={item => `room-${item.id}`}
+              data={roomTypes.length > 0 ? roomTypes : FALLBACK_ROOMS}
+              renderItem={({ item }) => <RoomItemComponent item={item} />}
+              keyExtractor={item => `room-${item.room_id}`}
               numColumns={4}
               contentContainerStyle={styles.roomGrid}
               scrollEnabled={false}
             />
           </View>
 
-          <View style={styles.sectionDivider} />
-
-          <View style={styles.section}>
+          <View style={styles.sectionEven}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Shop by Categories</Text>
               <View style={styles.sectionAction}>
@@ -365,9 +457,7 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
             </ScrollView>
           </View>
 
-          <View style={styles.sectionDivider} />
-
-          <View style={styles.section}>
+          <View style={styles.sectionOdd}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Shop by Brand</Text>
               <View style={styles.sectionAction}>
@@ -392,9 +482,7 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
             </ScrollView>
           </View>
 
-          <View style={styles.sectionDivider} />
-
-          <View style={styles.section}>
+          <View style={styles.sectionFeatured}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Featured Products</Text>
               <View style={styles.sectionAction}>
@@ -425,16 +513,16 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
               ) : featuredProducts.length > 0 ? (
                 <View style={styles.masonryGrid}>
                   <View style={styles.masonryColumn}>
-                    {masonryColumns.leftColumn.map((product) => (
-                      <View key={product.id} style={styles.featuredProductItem}>
-                        <ItemCard product={product} />
+                    {masonryColumns.leftColumn.map((item) => (
+                      <View key={item.id} style={styles.featuredProductItem}>
+                        {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} />}
                       </View>
                     ))}
                   </View>
                   <View style={styles.masonryColumn}>
-                    {masonryColumns.rightColumn.map((product) => (
-                      <View key={product.id} style={styles.featuredProductItem}>
-                        <ItemCard product={product} />
+                    {masonryColumns.rightColumn.map((item) => (
+                      <View key={item.id} style={styles.featuredProductItem}>
+                        {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} />}
                       </View>
                     ))}
                   </View>
@@ -447,6 +535,7 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
         </>
       )}
     </ScrollView>
+
   );
 }
 
@@ -548,11 +637,22 @@ const styles = StyleSheet.create({
     width: 20,
     backgroundColor: Colors.sky,
   },
-  section: { gap: 10 },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#e5e7eb',
-    marginVertical: 8,
+  section: { gap: 10, paddingHorizontal: 4 },
+  sectionEven: {
+    backgroundColor: '#f0f9ff',
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    paddingVertical: 16,
+    gap: 10,
+  },
+  sectionFeatured: {
+    backgroundColor: '#f0f9ff',
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    paddingTop: 16,
+    paddingBottom: 44,
+    marginBottom: -28,
+    gap: 10,
   },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: Colors.text },
@@ -570,7 +670,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   roomGrid: {
-    gap: 12,
+    gap: 0,
   },
   circleItem: {
     width: 88,
@@ -582,8 +682,31 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 2,
-    paddingVertical: 4,
+    paddingVertical: 10,
+    borderWidth: 0.5,
+    borderColor: '#e5e7eb',
+  },
+  roomCircleContainer: {
+    position: 'relative',
+    width: 64,
+    height: 64,
+  },
+  roomBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -6,
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    zIndex: 10,
+  },
+  roomBadgeText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: 'bold',
   },
   circleImageWrap: {
     width: 72,
@@ -592,15 +715,24 @@ const styles = StyleSheet.create({
     padding: 3,
     backgroundColor: Colors.white,
   },
-  roomCircle: {
+  roomCircleWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#e0f2fe',
+  },
+  roomImage: {
+    width: '100%',
+    height: '100%',
+  },
+  roomCircleFallback: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'transparent',
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 0,
   },
   circleImage: {
     width: '100%',
@@ -680,6 +812,45 @@ const styles = StyleSheet.create({
   featuredProductItem: {
     width: '100%',
   },
+  sampleAdCard: {
+    width: '100%',
+    height: 160,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  sampleAdGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 6,
+  },
+  sampleAdTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.white,
+    textAlign: 'center',
+  },
+  sampleAdSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+  },
+  sampleAdBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  sampleAdBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
+    textTransform: 'uppercase',
+  },
   featuredProductSkeleton: {
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
@@ -692,4 +863,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
+
 });
