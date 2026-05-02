@@ -9,7 +9,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { Colors } from '../constants/colors';
 import { authService, BrandItem, CategoryItem } from '../services/authService';
 import { productService } from '../services/productService';
-import type { Product } from '../services/productService';
+import type { ProductCard } from '../services/productService';
 import ItemCard from '../components/Items/ItemCard';
 import Toast from 'react-native-toast-message';
 import { 
@@ -127,7 +127,7 @@ function VideoBanner({ banner }: { banner: any }) {
 export default function HomeScreen({ token, user }: HomeScreenProps) {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [brands, setBrands] = useState<BrandItem[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<ProductCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeBanner, setActiveBanner] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
@@ -161,14 +161,12 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
     Promise.all([
       authService.getCategories(token),
       authService.getBrands(token),
-      productService.getProducts(token),
+      productService.getProductCards(token),
     ])
       .then(([categoryData, brandData, productData]) => {
         if (!active) return;
         setCategories(sortByOrder(categoryData));
         setBrands(brandData);
-        console.log('Products fetched:', productData);
-        
         // Ensure productData is an array before slicing
         if (Array.isArray(productData) && productData.length > 0) {
           setFeaturedProducts(productData.slice(0, 4)); // Get first 4 products
@@ -205,8 +203,8 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
 
   // Distribute products into two columns for masonry layout
   const masonryColumns = useMemo(() => {
-    const leftColumn: Product[] = [];
-    const rightColumn: Product[] = [];
+    const leftColumn: ProductCard[] = [];
+    const rightColumn: ProductCard[] = [];
     
     featuredProducts.forEach((product, index) => {
       if (index % 2 === 0) {
@@ -261,7 +259,7 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
 
   function handleBannerScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const x = event.nativeEvent.contentOffset.x;
-    const index = Math.round(x / (SCREEN_WIDTH - 32));
+    const index = Math.round(x / (SCREEN_WIDTH - 16));
     setActiveBanner(index);
   }
 
@@ -279,12 +277,12 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={handleBannerScroll}
               decelerationRate="fast"
-              snapToInterval={SCREEN_WIDTH - 32}
+              snapToInterval={SCREEN_WIDTH - 16}
               snapToAlignment="start"
               bounces={true}
             >
               {banners.map((banner, index) => (
-                <View key={`banner-${index}`} style={[styles.banner, { width: SCREEN_WIDTH - 32 }]}>
+                <View key={`banner-${index}`} style={[styles.banner, { width: SCREEN_WIDTH - 16 }]}>
                   {banner.type === 'video' ? (
                     <>
                       <VideoBanner banner={banner} />
@@ -454,7 +452,7 @@ export default function HomeScreen({ token, user }: HomeScreenProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fbff' },
-  content: { padding: 16, paddingBottom: 28, gap: 16 },
+  content: { paddingHorizontal: 8, paddingTop: 16, paddingBottom: 28, gap: 16 },
   loadingWrap: { paddingVertical: 42, alignItems: 'center', gap: 10 },
   loadingText: { fontSize: 13, color: Colors.textSecondary },
   bannerShell: {
@@ -673,7 +671,7 @@ const styles = StyleSheet.create({
   },
   masonryGrid: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   masonryColumn: {
     flex: 1,
