@@ -8,7 +8,6 @@ import type { ProductCard } from '../../services/productService';
 interface ItemCardProps {
   product: ProductCard;
   onPress?: (product: ProductCard) => void;
-  showMemberPrice?: boolean;
 }
 
 const BADGE_CONFIG = [
@@ -20,12 +19,11 @@ const BADGE_CONFIG = [
 export default function ItemCard({
   product,
   onPress,
-  showMemberPrice = false,
 }: ItemCardProps) {
-  const hasDiscount = product.discountedPrice < product.originalPrice;
-  const displayPrice = product.discountedPrice;
+  const displayPrice = product.memberPrice || product.originalPrice;
+  const hasDiscount = displayPrice < product.originalPrice;
   const discountPct = hasDiscount
-    ? Math.round(((product.originalPrice - product.discountedPrice) / product.originalPrice) * 100)
+    ? Math.round(((product.originalPrice || 0) - displayPrice) / (product.originalPrice || 0) * 100)
     : 0;
 
   const activeBadges = BADGE_CONFIG.filter(b => product.badges[b.key]);
@@ -91,6 +89,19 @@ export default function ItemCard({
             <Text style={styles.badgeLabel}>PV {product.pv}</Text>
           </LinearGradient>
 
+          {/* Save amount badge */}
+          {hasDiscount && (
+            <LinearGradient
+              colors={['#ef4444', '#dc2626']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.badge}
+            >
+              <Ionicons name="pricetag" size={9} color={Colors.white} />
+              <Text style={styles.badgeLabel}>Save ₱{((product.originalPrice || 0) - displayPrice).toLocaleString()}</Text>
+            </LinearGradient>
+          )}
+
           {/* Product badges */}
           {activeBadges.map(b => (
             <LinearGradient
@@ -123,7 +134,7 @@ export default function ItemCard({
         <View style={styles.priceRow}>
           <Text style={styles.currentPrice}>₱{displayPrice.toLocaleString()}</Text>
           {hasDiscount && (
-            <Text style={styles.originalPrice}>₱{product.originalPrice.toLocaleString()}</Text>
+            <Text style={styles.originalPrice}>₱{(product.originalPrice || 0).toLocaleString()}</Text>
           )}
         </View>
 
@@ -246,5 +257,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     textDecorationLine: 'line-through',
+  },
+  saveBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: Colors.sky,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderBottomRightRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  saveBadgeText: {
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
