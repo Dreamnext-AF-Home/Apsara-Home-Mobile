@@ -1,14 +1,17 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Animated, Linking, View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
+import { productService } from '../../services/productService';
 
 interface AppHeaderProps {
   user?: {
     name: string;
+    username?: string;
     avatar_url?: string;
+    badge_name?: string;
     monthly_activation?: {
       current_month_pv: number;
       threshold_pv: number;
@@ -130,8 +133,46 @@ export default function AppHeader({
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : null;
-  const firstName = user?.name ? user.name.split(' ')[0] : 'Guest';
-  const currentPV = user?.monthly_activation?.current_month_pv ?? 0;
+  const fullName = user?.name || 'Guest';
+  const badgeName = user?.badge_name;
+  const remainingPV = user?.monthly_activation?.remaining_pv ?? 0;
+
+  const [dynamicPlaceholder, setDynamicPlaceholder] = useState(searchPlaceholder);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const currentIndex = useRef(0);
+
+  useEffect(() => {
+    async function loadSuggestions() {
+      try {
+        const products = await productService.getProductCards();
+        if (products && products.length > 0) {
+          // Shuffle and pick 10 random items
+          const shuffled = [...products].sort(() => 0.5 - Math.random());
+          const names = shuffled
+            .map(p => `Try "${p.name.split(' ').slice(0, 2).join(' ')}"`)
+            .slice(0, 10);
+          
+          setSuggestions(names);
+          if (names.length > 0) {
+            setDynamicPlaceholder(names[0]);
+          }
+        }
+      } catch (error) {
+        // Fallback to static suggestions if API fails
+        setSuggestions(['Try "Sofa"', 'Try "Table"', 'Try "Bed"', 'Try "Chair"']);
+      }
+    }
+    loadSuggestions();
+  }, []);
+
+  useEffect(() => {
+    if (suggestions.length === 0) return;
+    const interval = setInterval(() => {
+      currentIndex.current = (currentIndex.current + 1) % suggestions.length;
+      setDynamicPlaceholder(suggestions[currentIndex.current]);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [suggestions]);
 
   return (
     <LinearGradient
@@ -154,16 +195,32 @@ export default function AppHeader({
                 <Ionicons name="person" size={18} color={Colors.textSecondary} />
               )}
             </View>
-            <View>
+            <View style={styles.nameContainer}>
               <Text style={styles.welcomeText}>Welcome back,</Text>
-              <Text style={styles.nameText}>{firstName}</Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.nameText} numberOfLines={1}>{fullName}</Text>
+              </View>
+              {user?.username && (
+                <View style={styles.usernameRow}>
+                  <Text style={styles.usernameText}>@{user.username}</Text>
+                  {badgeName && (
+                    <>
+                      <View style={styles.usernameDot} />
+                      <View style={styles.userBadge}>
+                        <Ionicons name="shield-checkmark" size={10} color={Colors.white} />
+                        <Text style={styles.userBadgeText}>{badgeName}</Text>
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
             </View>
           </View>
 
           <View style={styles.rightActions}>
             <View style={styles.pvBadge}>
               <Ionicons name="trending-up" size={12} color={Colors.white} />
-              <Text style={styles.pvText}>{currentPV} PV</Text>
+              <Text style={styles.pvText}>{remainingPV} PV</Text>
             </View>
             <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress} activeOpacity={0.7}>
               <Ionicons name="notifications-outline" size={20} color={Colors.text} />
@@ -178,7 +235,7 @@ export default function AppHeader({
             activeOpacity={0.75}
           >
             <Ionicons name="search-outline" size={16} color={Colors.textSecondary} style={styles.searchIcon} />
-            <Text style={styles.searchPlaceholder}>{searchPlaceholder}</Text>
+            <Text style={styles.searchPlaceholder} numberOfLines={1}>{dynamicPlaceholder}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.7}>
@@ -243,7 +300,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   innerContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingTop: 12,
     paddingBottom: 12,
     gap: 10,
@@ -303,10 +360,56 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '400',
   },
+  nameContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   nameText: {
     fontSize: 15,
     fontWeight: '800',
     color: Colors.text,
+    flexShrink: 1,
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  usernameText: {
+    fontSize: 12,
+    color: Colors.sky,
+    fontWeight: '600',
+  },
+  usernameDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#cbd5e1',
+  },
+  usernamePvText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  userBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  userBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
   },
   iconBtn: {
     width: 40,
