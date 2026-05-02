@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import type { ProductCard } from '../../services/productService';
 
@@ -11,9 +12,9 @@ interface ItemCardProps {
 }
 
 const BADGE_CONFIG = [
-  { key: 'musthave',   label: 'Must Have',  color: '#f97316',    icon: 'heart'        },
-  { key: 'bestseller', label: 'Bestseller', color: Colors.brass, icon: 'flame'        },
-  { key: 'salespromo', label: 'Sale',       color: Colors.forest, icon: 'pricetag'   },
+  { key: 'musthave',   label: 'Must Have',  bg: ['#f97316', '#ea580c'] as const, icon: 'heart'     as const },
+  { key: 'bestseller', label: 'Bestseller', bg: ['#d4a017', '#b8860b'] as const, icon: 'flame'     as const },
+  { key: 'salespromo', label: 'On Sale',    bg: [Colors.forest, '#1e4236'] as const, icon: 'flash' as const },
 ] as const;
 
 export default function ItemCard({
@@ -51,11 +52,23 @@ export default function ItemCard({
       {/* Info */}
       <View style={styles.infoContainer}>
 
+        {hasDiscount && (
+          <LinearGradient
+            colors={['transparent', Colors.sky + '20']}
+            style={styles.detailsGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+        )}
+
         {/* Brand + Sold Count */}
         <View style={styles.brandRow}>
           <Text style={styles.brandText} numberOfLines={1}>{product.brandName}</Text>
           {product.soldCount > 0 && (
-            <Text style={styles.soldCountText}>{product.soldCount} sold</Text>
+            <View style={styles.soldRow}>
+              <Ionicons name="bag-check-outline" size={10} color={Colors.textSecondary} />
+              <Text style={styles.soldCountText}>{product.soldCount} sold</Text>
+            </View>
           )}
         </View>
 
@@ -64,40 +77,54 @@ export default function ItemCard({
           {product.name}
         </Text>
 
-        {/* Badges Row: PV + product badges + variants */}
+        {/* Badges Row */}
         <View style={styles.badgesRow}>
-          <View style={[styles.badge, { borderColor: Colors.sky }]}>
-            <View style={[styles.badgeIconWrap, { backgroundColor: Colors.sky }]}>
-              <Ionicons name="star" size={9} color={Colors.white} />
-            </View>
-            <Text style={[styles.badgeText, { color: Colors.sky }]}>PV {product.pv}</Text>
-          </View>
+
+          {/* PV badge */}
+          <LinearGradient
+            colors={[Colors.sky, Colors.skyDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.badge}
+          >
+            <Ionicons name="star" size={9} color={Colors.white} />
+            <Text style={styles.badgeLabel}>PV {product.pv}</Text>
+          </LinearGradient>
+
+          {/* Product badges */}
           {activeBadges.map(b => (
-            <View key={b.key} style={[styles.badge, { borderColor: b.color }]}>
-              <View style={[styles.badgeIconWrap, { backgroundColor: b.color }]}>
-                <Ionicons name={b.icon} size={9} color={Colors.white} />
-              </View>
-              <Text style={[styles.badgeText, { color: b.color }]}>{b.label}</Text>
-            </View>
+            <LinearGradient
+              key={b.key}
+              colors={b.bg}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.badge}
+            >
+              <Ionicons name={b.icon} size={9} color={Colors.white} />
+              <Text style={styles.badgeLabel}>{b.label}</Text>
+            </LinearGradient>
           ))}
+
+          {/* Variants badge */}
           {product.variantCount > 0 && (
-            <View style={[styles.badge, { borderColor: '#7c3aed' }]}>
-              <View style={[styles.badgeIconWrap, { backgroundColor: '#7c3aed' }]}>
-                <Ionicons name="layers" size={9} color={Colors.white} />
-              </View>
-              <Text style={[styles.badgeText, { color: '#7c3aed' }]}>{product.variantCount} variants</Text>
-            </View>
+            <LinearGradient
+              colors={['#8b5cf6', '#7c3aed']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.badge}
+            >
+              <Ionicons name="layers" size={9} color={Colors.white} />
+              <Text style={styles.badgeLabel}>{product.variantCount} variants</Text>
+            </LinearGradient>
           )}
         </View>
 
         {/* Price */}
-        <View style={styles.priceContainer}>
-          <View style={styles.priceRow}>
-            <Text style={styles.currentPrice}>₱{displayPrice.toLocaleString()}</Text>
-            {hasDiscount && (
-              <Text style={styles.originalPrice}>₱{product.originalPrice.toLocaleString()}</Text>
-            )}
-          </View>
+        <View style={styles.priceRow}>
+          <Text style={styles.currentPrice}>₱{displayPrice.toLocaleString()}</Text>
+          {hasDiscount && (
+            <Text style={styles.originalPrice}>₱{product.originalPrice.toLocaleString()}</Text>
+          )}
         </View>
 
       </View>
@@ -107,7 +134,7 @@ export default function ItemCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -149,6 +176,14 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 6,
   },
+  detailsGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8,
+  },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -161,6 +196,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  soldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
   soldCountText: {
     fontSize: 11,
     color: Colors.textSecondary,
@@ -172,16 +212,30 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     flexShrink: 1,
   },
-  priceContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 6,
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 20,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    paddingHorizontal: 6,
+  },
+  badgeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.white,
+    letterSpacing: 0.2,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 2,
   },
   currentPrice: {
     fontSize: 16,
@@ -192,29 +246,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     textDecorationLine: 'line-through',
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    borderRadius: 6,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  badgeIconWrap: {
-    paddingHorizontal: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
   },
 });
