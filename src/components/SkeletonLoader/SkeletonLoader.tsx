@@ -61,7 +61,7 @@ export function CircleSkeleton() {
 export function RoomGridSkeleton() {
   return (
     <View style={styles.roomGridSkeleton}>
-      {[1, 2, 3, 4].map(item => (
+      {[1, 2, 3, 4, 5, 6, 7, 8].map(item => (
         <View key={item} style={styles.roomItemSkeleton}>
           <Skeleton width={60} height={60} borderRadius={30} />
           <Skeleton width={50} height={10} style={{ marginTop: 6 }} />
@@ -89,6 +89,21 @@ export function BrandCardSkeleton() {
   );
 }
 
+export function FeaturedProductsSkeleton() {
+  return (
+    <View style={styles.masonryGridSkeleton}>
+      <View style={styles.masonryColumnSkeleton}>
+        <Skeleton width="100%" height={220} borderRadius={8} />
+        <Skeleton width="100%" height={260} borderRadius={8} style={{ marginTop: 8 }} />
+      </View>
+      <View style={styles.masonryColumnSkeleton}>
+        <Skeleton width="100%" height={260} borderRadius={8} />
+        <Skeleton width="100%" height={220} borderRadius={8} style={{ marginTop: 8 }} />
+      </View>
+    </View>
+  );
+}
+
 export function HomeScreenSkeleton() {
   return (
     <View style={styles.container}>
@@ -111,6 +126,11 @@ export function HomeScreenSkeleton() {
             <BrandCardSkeleton key={item} />
           ))}
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeaderSkeleton />
+        <FeaturedProductsSkeleton />
       </View>
     </View>
   );
@@ -151,15 +171,22 @@ const styles = StyleSheet.create({
   },
   roomGridSkeleton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     paddingHorizontal: 4,
   },
   roomItemSkeleton: {
-    flex: 1,
+    width: '25%',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 2,
-    paddingVertical: 4,
+    paddingVertical: 10,
+  },
+  masonryGridSkeleton: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  masonryColumnSkeleton: {
+    flex: 1,
+    gap: 8,
   },
   categoryRowSkeleton: {
     flexDirection: 'row',
