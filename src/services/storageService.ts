@@ -59,12 +59,10 @@ export const storageService = {
         return null;
       }
 
-      // Check if token is older than 60 minutes (60 * 60 * 1000 = 3600000 ms)
       const tokenAge = Date.now() - parseInt(timestamp);
-      const maxAge = 60 * 60 * 1000; // 60 minutes
+      const maxAge = 7 * 24 * 60 * 60 * 1000; // 1 week
 
       if (tokenAge > maxAge) {
-        // Token expired, clear all auth data
         await this.clearAuthData();
         return null;
       }
@@ -100,16 +98,15 @@ export const storageService = {
         return false;
       }
 
-      // Check if token is still valid (2 weeks = 14 days = 14 * 24 * 60 * 60 * 1000 = 1,209,600,000 ms)
       const tokenTimestamp = await SecureStore.getItemAsync(TOKEN_TIMESTAMP_KEY);
       if (!tokenTimestamp) {
         return false;
       }
 
       const timestamp = parseInt(tokenTimestamp, 10);
-      const twoWeeksInMs = 14 * 24 * 60 * 60 * 1000; // 1,209,600,000 ms
+      const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
       const currentTime = Date.now();
-      const isExpired = (currentTime - timestamp) > twoWeeksInMs;
+      const isExpired = (currentTime - timestamp) > oneWeekInMs;
 
       if (isExpired) {
         // Clear expired authentication data
@@ -170,10 +167,10 @@ export const storageService = {
       }
 
       const timestamp = parseInt(tokenTimestamp, 10);
-      const twoWeeksInMs = 14 * 24 * 60 * 60 * 1000; // 1,209,600,000 ms
+      const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
       const currentTime = Date.now();
       const timeElapsed = currentTime - timestamp;
-      const timeRemaining = Math.max(0, twoWeeksInMs - timeElapsed);
+      const timeRemaining = Math.max(0, oneWeekInMs - timeElapsed);
 
       return timeRemaining;
     } catch (error) {

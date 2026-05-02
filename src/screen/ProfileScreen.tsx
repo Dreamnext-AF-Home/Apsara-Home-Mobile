@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, Image, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Platform, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,25 +11,46 @@ interface User {
   id: string;
   email: string;
   name: string;
+  username?: string;
   avatar_url?: string;
+  badge_name?: string;
+  monthly_activation?: {
+    remaining_pv: number;
+  };
 }
 
 interface ProfileScreenProps {
   user?: User | null;
   onLogout?: () => void;
+  onNavigateSettings?: () => void;
 }
 
-const MENU_ITEMS = [
-  { icon: 'person-outline' as const,       label: 'Edit Profile',        chevron: true },
-  { icon: 'shield-checkmark-outline' as const, label: 'Verification',     chevron: true },
-  { icon: 'card-outline' as const,          label: 'Payment Methods',    chevron: true },
-  { icon: 'location-outline' as const,      label: 'Addresses',          chevron: true },
-  { icon: 'help-circle-outline' as const,   label: 'Help & Support',     chevron: true },
-  { icon: 'document-text-outline' as const, label: 'Terms & Privacy',    chevron: true },
-  { icon: 'log-out-outline' as const,       label: 'Log Out',            chevron: false, danger: true },
+const REFERRAL_STATS = [
+  { label: 'Total', value: '5', icon: 'people-outline' as const },
+  { label: 'Pending', value: '₱1,200', icon: 'time-outline' as const },
+  { label: 'Earned', value: '₱4,500', icon: 'cash-outline' as const },
 ];
 
-export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
+const PURCHASE_ITEMS = [
+  { icon: 'wallet-outline' as const, label: 'Paid' },
+  { icon: 'cube-outline' as const, label: 'To Ship' },
+  { icon: 'car-outline' as const, label: 'To Receive' },
+  { icon: 'star-outline' as const, label: 'To Rate' },
+];
+
+const SOCIAL_ITEMS = [
+  { icon: 'logo-facebook' as const, label: 'Facebook', url: 'https://facebook.com/afhome.ph', color: '#1877F2' },
+  { icon: 'logo-instagram' as const, label: 'Instagram', url: 'https://instagram.com/afhome.ph', color: '#E4405F' },
+  { icon: 'logo-tiktok' as const, label: 'TikTok', url: 'https://tiktok.com/@afhome.ph', color: '#000000' },
+  { icon: 'globe-outline' as const, label: 'Website', url: 'https://www.afhome.ph', color: Colors.sky },
+];
+
+const MENU_ITEMS = [
+  { icon: 'settings-outline' as const, label: 'Settings', chevron: true, key: 'settings' },
+  { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
+];
+
+export default function ProfileScreen({ user, onLogout, onNavigateSettings }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
@@ -38,7 +59,12 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   return (
     <View style={styles.root}>
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient
+        colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 12 }]}
+      >
         <View style={styles.headerLeft}>
           <View style={styles.headerAvatar}>
             {photoUrl ? (
@@ -47,17 +73,37 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
               <Text style={styles.headerAvatarInitial}>{initial}</Text>
             )}
           </View>
-          <Text style={styles.headerName}>{firstName}</Text>
+          <View style={styles.headerNameContainer}>
+            <View style={styles.headerNameRow}>
+              <Text style={styles.headerName} numberOfLines={1}>{user?.name ?? 'Guest'}</Text>
+            </View>
+            {user?.username && (
+              <View style={styles.usernameRow}>
+                <Text style={styles.usernameText}>@{user.username}</Text>
+                {user?.badge_name && (
+                  <>
+                    <View style={styles.usernameDot} />
+                    <View style={styles.userBadge}>
+                      <Ionicons name="shield-checkmark" size={10} color={Colors.white} />
+                      <Text style={styles.userBadgeText}>{user.badge_name}</Text>
+                    </View>
+                  </>
+                )}
+                <View style={styles.usernameDot} />
+                <Text style={styles.usernamePvText}>{user.monthly_activation?.remaining_pv ?? 0} PV</Text>
+              </View>
+            )}
+          </View>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
             <Ionicons name="notifications-outline" size={20} color={Colors.text} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onNavigateSettings}>
             <Ionicons name="settings-outline" size={20} color={Colors.text} />
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* ── Scrollable body ── */}
       <ScrollView
@@ -65,27 +111,48 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero card */}
-        <LinearGradient
-          colors={[Colors.sky, Colors.skyDark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.heroBubble}>
-            {photoUrl ? (
-              <Image source={{ uri: photoUrl }} style={styles.heroBubbleImg} />
-            ) : (
-              <Text style={styles.heroBubbleInitial}>{initial}</Text>
-            )}
+        {/* My Purchases */}
+        <View style={styles.section}>
+          <View style={styles.purchasesHeader}>
+            <Text style={styles.purchasesTitle}>My Purchases</Text>
+            <TouchableOpacity style={styles.purchasesViewAll}>
+              <Text style={styles.purchasesViewAllText}>View Purchase History</Text>
+              <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.heroName}>{user?.name ?? 'Guest'}</Text>
-          <Text style={styles.heroEmail}>{user?.email ?? ''}</Text>
-          <View style={styles.heroBadge}>
-            <Ionicons name="checkmark-circle" size={12} color={Colors.white} />
-            <Text style={styles.heroBadgeText}>Member</Text>
+          <View style={styles.purchasesGrid}>
+            {PURCHASE_ITEMS.map((item) => (
+              <TouchableOpacity key={item.label} style={styles.purchaseItem} activeOpacity={0.7}>
+                <View style={styles.purchaseIconContainer}>
+                  <Ionicons name={item.icon} size={24} color={Colors.sky} />
+                </View>
+                <Text style={styles.purchaseLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        </LinearGradient>
+        </View>
+
+        {/* My Referrals */}
+        <View style={styles.section}>
+          <View style={styles.purchasesHeader}>
+            <Text style={styles.purchasesTitle}>My Referrals</Text>
+            <TouchableOpacity style={styles.purchasesViewAll}>
+              <Text style={styles.purchasesViewAllText}>View Network</Text>
+              <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.purchasesGrid}>
+            {REFERRAL_STATS.map((item) => (
+              <TouchableOpacity key={item.label} style={styles.purchaseItem} activeOpacity={0.7}>
+                <View style={styles.purchaseIconContainer}>
+                  <Ionicons name={item.icon} size={22} color={Colors.sky} />
+                </View>
+                <Text style={styles.referralValue}>{item.value}</Text>
+                <Text style={styles.purchaseLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         {/* Menu */}
         <View style={styles.section}>
@@ -98,9 +165,8 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
               ]}
               activeOpacity={0.7}
               onPress={() => {
-                if (item.label === 'Log Out' && onLogout) {
-                  onLogout();
-                }
+                if (item.key === 'logout') onLogout?.();
+                if (item.key === 'settings') onNavigateSettings?.();
               }}
             >
               <View style={[styles.menuIcon, item.danger && styles.menuIconDanger]}>
@@ -119,6 +185,28 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Connect with Us */}
+        <View style={styles.section}>
+          <View style={styles.purchasesHeader}>
+            <Text style={styles.purchasesTitle}>Connect with Us</Text>
+          </View>
+          <View style={styles.purchasesGrid}>
+            {SOCIAL_ITEMS.map((item) => (
+              <TouchableOpacity 
+                key={item.label} 
+                style={styles.purchaseItem} 
+                activeOpacity={0.7}
+                onPress={() => item.url && Linking.openURL(item.url)}
+              >
+                <View style={styles.purchaseIconContainer}>
+                  <Ionicons name={item.icon} size={24} color={item.color} />
+                </View>
+                <Text style={styles.purchaseLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -127,7 +215,7 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#f8fbff',
+    backgroundColor: '#f0f9ff',
   },
 
   // ── Header ──
@@ -135,16 +223,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 8,
+    paddingBottom: 16,
     backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    paddingRight: 8,
   },
   headerAvatar: {
     width: 36,
@@ -166,10 +254,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.sky,
   },
+  headerNameContainer: {
+    flex: 1,
+  },
+  headerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   headerName: {
     fontSize: 17,
     fontWeight: '800',
     color: Colors.text,
+    flexShrink: 1,
+  },
+  userBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  userBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  usernameText: {
+    fontSize: 12,
+    color: Colors.sky,
+    fontWeight: '600',
+  },
+  usernameDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#cbd5e1',
+  },
+  usernamePvText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
   headerActions: {
     flexDirection: 'row',
@@ -191,7 +324,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 8,
     gap: 16,
     paddingBottom: 32,
   },
@@ -251,11 +384,64 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  // ── My Purchases ──
+  purchasesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  purchasesTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  purchasesViewAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  purchasesViewAllText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  purchasesGrid: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+  },
+  purchaseItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  purchaseIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  purchaseLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  referralValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.text,
+    marginTop: -2,
+  },
+
   // ── Menu ──
   section: {
     backgroundColor: Colors.white,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
   },
