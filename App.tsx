@@ -8,7 +8,7 @@ import OtpScreen from './src/screen/OtpScreen';
 import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingScreen from './src/screen/OnboardingScreen';
 import { storageService, StoredUser } from './src/services/storageService';
-import { HomeScreenSkeleton } from './src/components/SkeletonLoader/SkeletonLoader';
+import LoadingScreen from './src/screen/LoadingScreen';
 
 type AuthScreen = 'login' | 'signup' | 'otp';
 
@@ -131,7 +131,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       {isLoading ? (
-        <HomeScreenSkeleton />
+        <LoadingScreen />
       ) : !hasOnboarded ? (
         <OnboardingScreen onDone={handleOnboardingDone} />
       ) : authenticated ? (
