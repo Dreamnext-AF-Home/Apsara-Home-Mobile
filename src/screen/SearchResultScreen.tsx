@@ -58,7 +58,7 @@ export default function SearchResultScreen({
           image: item.image,
           soldCount: 0,
           originalPrice: item.original_price,
-          discountedPrice: item.discounted_price,
+          memberPrice: item.discounted_price,
           pv: item.pv,
           brandName: '',
           variantCount: 0,
@@ -219,6 +219,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     fontWeight: '500',
+  },
+  scroll: {
+    flex: 1,
   },
   listContent: {
     paddingHorizontal: 8,

@@ -644,32 +644,27 @@ export default function ProductDetailScreen({
         </ScrollView>
         
         {/* Buy Now Button - Fixed Bottom */}
-        <View style={[
-          styles.buyNowContainer,
-          { paddingTop: 16, paddingBottom: insets.bottom }
-        ]}>
+        <View style={styles.buyNowContainer}>
+          <View style={{ paddingTop: 16, paddingBottom: insets.bottom }}>
           {/* Price Display */}
           <View style={styles.priceDisplay}>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Total Price:</Text>
-              <Text style={styles.totalPrice}>₱{(() => {
-                const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
-                return (variant ? variant.priceMember : product.priceMember ?? 0).toLocaleString();
-              })()}</Text>
+            <View style={styles.priceLabelContainer}>
+              <Ionicons name="pricetag" size={16} color={Colors.sky} style={styles.priceIcon} />
+              <Text style={styles.compactPriceText}>
+                Price ₱{(() => {
+                  const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
+                  const price = variant ? variant.priceMember : product.priceMember ?? 0;
+                  return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                })()}
+                {hasDiscount && (() => {
+                  const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
+                  const variantPrice = variant ? variant.priceMember : product.priceMember ?? 0;
+                  const variantSrp = variant ? variant.priceSrp : product.priceSrp ?? 0;
+                  const savings = variantSrp - variantPrice;
+                  return `, you save ₱${savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}!`;
+                })()}
+              </Text>
             </View>
-            {hasDiscount && (
-              <View style={styles.savingsRow}>
-                <Ionicons name="pricetag" size={12} color="#ef4444" />
-                <Text style={styles.savingsText}>
-                  You save ₱{(() => {
-                    const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
-                    const variantPrice = variant ? variant.priceMember : product.priceMember ?? 0;
-                    const variantSrp = variant ? variant.priceSrp : product.priceSrp ?? 0;
-                    return (variantSrp - variantPrice).toLocaleString();
-                  })()}
-                </Text>
-              </View>
-            )}
           </View>
           
           {/* Button Row */}
@@ -695,6 +690,7 @@ export default function ProductDetailScreen({
               }}
               style={styles.buyNowButton}
             />
+          </View>
           </View>
         </View>
         </>
@@ -1233,33 +1229,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
-  addToCartButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.sky,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-  },
   addToCartText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  buyNowButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.forest,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-  },
-  buyNowText: {
     fontSize: 14,
     fontWeight: '600',
     color: Colors.white,
@@ -1445,37 +1415,24 @@ const styles = StyleSheet.create({
     paddingBottom: 0, // No padding - handled by insets
   },
   priceDisplay: {
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  priceLabel: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  totalPrice: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  savingsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-end',
-  },
-  savingsText: {
-    fontSize: 12,
-    color: '#ef4444',
+  compactPriceText: {
+    fontSize: 16,
     fontWeight: '600',
+    color: Colors.text,
+    lineHeight: 22,
+  },
+  priceLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priceIcon: {
+    marginRight: 4,
   },
   buttonRow: {
     flexDirection: 'row',

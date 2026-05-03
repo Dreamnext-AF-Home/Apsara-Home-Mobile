@@ -17,9 +17,9 @@ import SearchResultScreen from '../screen/SearchResultScreen';
 import SettingsScreen from '../screen/SettingsScreen';
 import ProductDetailScreen from '../screen/ProductDetailScreen';
 
-type TabKey = 'home' | 'wishlist' | 'shop' | 'cart' | 'profile' | 'settings';
+type TabKey = 'home' | 'wishlist' | 'shop' | 'notification' | 'profile' | 'settings';
 
-const TABS: TabKey[] = ['home', 'wishlist', 'shop', 'cart', 'profile'];
+const TABS: TabKey[] = ['home', 'wishlist', 'shop', 'notification', 'profile'];
 const SLIDE_DISTANCE = 30;
 const OUT_DURATION = 120;
 const IN_DURATION = 160;
@@ -143,7 +143,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     home: 'Home',
     wishlist: 'Wishlist',
     shop: 'Shop',
-    cart: 'Cart',
+    notification: 'Notifications',
     profile: 'Me',
     settings: 'Settings',
   };
@@ -152,7 +152,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     home: 'home',
     wishlist: 'heart',
     shop: 'storefront',
-    cart: 'cart',
+    notification: 'notifications',
     profile: 'person',
     settings: 'settings',
   };
@@ -161,13 +161,13 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     home: 'home-outline',
     wishlist: 'heart-outline',
     shop: 'storefront-outline',
-    cart: 'cart-outline',
+    notification: 'notifications-outline',
     profile: 'person-outline',
     settings: 'settings-outline',
   };
 
   const badgeCount: Partial<Record<TabKey, number>> = {
-    cart: cartCount,
+    notification: cartCount, // Using cartCount for notification count
     wishlist: wishlistCount,
   };
 
@@ -187,6 +187,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               token={token}
               query={searchQuery}
               onBack={() => setSearchQuery(null)}
+              onProductPress={(product) => setSelectedProductId(product.id)}
             />
            ) : activeTab === 'settings' ? (
             <SettingsScreen
@@ -204,6 +205,12 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             <>
               <AppHeader
                 user={user}
+                cartCount={cartCount}
+                onCartPress={() => navigateTo('notification')}
+                onCameraPress={() => {
+                  // TODO: Implement camera functionality
+                  console.log('Camera pressed');
+                }}
                 onSearchPress={() => {
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);
@@ -215,6 +222,12 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             <>
               <AppHeader
                 user={user}
+                cartCount={cartCount}
+                onCartPress={() => navigateTo('notification')}
+                onCameraPress={() => {
+                  // TODO: Implement camera functionality
+                  console.log('Camera pressed');
+                }}
                 onSearchPress={() => {
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);

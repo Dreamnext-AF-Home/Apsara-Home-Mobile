@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import LoginScreen from './src/screen/LoginScreen';
 import SignupScreen from './src/screen/SignupScreen';
 import OtpScreen from './src/screen/OtpScreen';
@@ -37,6 +40,7 @@ export default function App() {
   // Check for stored authentication on app startup
   useEffect(() => {
     checkStoredAuth();
+    registerForPushNotificationsAsync();
   }, []);
 
   async function checkStoredAuth() {
@@ -98,6 +102,35 @@ export default function App() {
     } catch (error) {
       console.error('Error during logout:', error);
     }
+  }
+
+  async function registerForPushNotificationsAsync() {
+    if (!Device.isDevice) {
+      Alert.alert('Use a real device');
+      return;
+    }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      Alert.alert('Permission denied');
+      return;
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId || 'default-project-id',
+    });
+
+    console.log('Push Token:', token.data);
+    Alert.alert('Push Token', token.data);
+
+    return token.data;
   }
 
   function renderAuth() {

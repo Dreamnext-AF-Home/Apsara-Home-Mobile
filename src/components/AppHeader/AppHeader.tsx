@@ -19,9 +19,12 @@ interface AppHeaderProps {
     };
   } | null;
   onNotificationPress?: () => void;
+  onCartPress?: () => void;
   onFilterPress?: () => void;
   onSearchPress?: () => void;
+  onCameraPress?: () => void;
   searchPlaceholder?: string;
+  cartCount?: number;
 }
 
 const MARQUEE_ITEMS = [
@@ -33,6 +36,7 @@ const MARQUEE_ITEMS = [
 ];
 
 const SOCIAL_LINKS = [
+  { icon: 'globe' as const, url: 'https://www.afhome.ph' },
   { icon: 'logo-facebook' as const, url: 'https://www.facebook.com/AFHomePH/' },
   { icon: 'logo-instagram' as const, url: 'https://www.instagram.com/afhome.ph/' },
   { icon: 'logo-tiktok' as const, url: 'https://www.tiktok.com/@afhomeph' },
@@ -126,9 +130,12 @@ function MarqueeBanner() {
 export default function AppHeader({
   user,
   onNotificationPress,
+  onCartPress,
   onFilterPress,
   onSearchPress,
+  onCameraPress,
   searchPlaceholder = 'Search...',
+  cartCount = 0,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
@@ -222,9 +229,16 @@ export default function AppHeader({
               <Ionicons name="trending-up" size={12} color={Colors.white} />
               <Text style={styles.pvText}>{remainingPV} PV</Text>
             </View>
-            <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress} activeOpacity={0.7}>
-              <Ionicons name="notifications-outline" size={20} color={Colors.text} />
-            </TouchableOpacity>
+            <View style={styles.iconBtn}>
+              <TouchableOpacity onPress={onCartPress} activeOpacity={0.7}>
+                <Ionicons name="cart-outline" size={20} color={Colors.text} />
+                {cartCount > 0 && (
+                  <View style={styles.cartBadge}>
+                    <Text style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -234,8 +248,9 @@ export default function AppHeader({
             onPress={onSearchPress}
             activeOpacity={0.75}
           >
-            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} style={styles.searchIcon} />
+            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} style={styles.searchIconLeft} />
             <Text style={styles.searchPlaceholder} numberOfLines={1}>{dynamicPlaceholder}</Text>
+            <Ionicons name="camera-outline" size={16} color={Colors.textSecondary} style={styles.cameraIconInside} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.7}>
@@ -440,9 +455,38 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 6,
   },
+  searchIconLeft: {
+    marginRight: 8,
+  },
+  cameraIconInside: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -8 }],
+  },
   searchPlaceholder: {
     flex: 1,
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: Colors.white,
+  },
+  cartBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.white,
+    lineHeight: 11,
   },
 });
