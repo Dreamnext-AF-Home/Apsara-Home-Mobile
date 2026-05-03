@@ -467,7 +467,7 @@ export default function ProductDetailScreen({
                   {/* Rating Summary Header */}
                   <View style={styles.ratingSummaryHeader}>
                     <View style={styles.ratingScoreContainer}>
-                      <Text style={styles.ratingScoreLarge}>{(productReviews.summary.average || 0).toFixed(1)}</Text>
+                      <Text style={styles.ratingScoreLarge}>{((productReviews.summary.average || 0) || 0).toFixed(1)}</Text>
                       <View style={styles.ratingStarsLarge}>
                         {[1, 2, 3, 4, 5].map(star => (
                           <Ionicons
@@ -604,7 +604,7 @@ export default function ProductDetailScreen({
                   <View style={styles.brandStats}>
                     <View style={styles.brandStat}>
                       <Ionicons name="star" size={12} color="#fbbf24" />
-                      <Text style={styles.brandStatText}>{brandProfile.overall_rating.toFixed(1)}</Text>
+                      <Text style={styles.brandStatText}>{(brandProfile.overall_rating || 0).toFixed(1)}</Text>
                     </View>
                     <View style={styles.brandStatDivider} />
                     <View style={styles.brandStat}>
