@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Apsara-Mobile-Application",
-    "slug": "Apsara-Mobile-Application",
+    "name": "AF Home",
+    "slug": "AF Home",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon1.png",
@@ -25,7 +25,7 @@
       "package": "com.afhome.mobile"
     },
     "web": {
-      "favicon": "./assets/favicon1.png"
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-video",
