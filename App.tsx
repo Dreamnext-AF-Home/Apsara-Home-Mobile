@@ -123,8 +123,12 @@ export default function App() {
       return;
     }
 
+    const projectId =
+      Constants.easConfig?.projectId ||
+      Constants.expoConfig?.extra?.eas?.projectId;
+
     const token = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig?.extra?.eas?.projectId || 'default-project-id',
+      projectId,
     });
 
     console.log('Push Token:', token.data);
