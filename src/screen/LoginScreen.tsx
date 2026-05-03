@@ -254,7 +254,7 @@ export default function LoginScreen({
               <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerLabel}>Or continue with</Text><View style={styles.dividerLine} /></View>
               <View style={styles.socialRow}>
                 <TouchableOpacity style={styles.socialBtn} activeOpacity={0.75} onPress={handleGoogleLogin} disabled={loading}>
-                  <Image source={require('../../assets/google-icon.png')} style={styles.googleIcon} resizeMode="contain" />
+                  <Ionicons name="logo-google" size={24} color={Colors.text} style={styles.googleIcon} />
                   <Text style={styles.socialBtnText}>Google</Text>
                 </TouchableOpacity>
 
