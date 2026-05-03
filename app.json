@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon1.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "scheme": "afhome",
     "splash": {
       "image": "./assets/splash-icon1.png",
@@ -22,7 +21,6 @@
         "foregroundImage": "./assets/adaptive-icon1.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.afhome.mobile"
     },
@@ -30,7 +28,8 @@
       "favicon": "./assets/favicon1.png"
     },
     "plugins": [
-      "expo-video"
+      "expo-video",
+      "expo-font"
     ],
     "extra": {
       "eas": {
