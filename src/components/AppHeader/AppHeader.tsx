@@ -216,7 +216,7 @@ export default function AppHeader({
                     <>
                       <View style={styles.usernameDot} />
                       <View style={styles.userBadge}>
-                        <Ionicons name="shield-checkmark" size={10} color={Colors.white} />
+                        <Ionicons name="shield-checkmark-outline" size={10} color={Colors.white} />
                         <Text style={styles.userBadgeText}>{badgeName}</Text>
                       </View>
                     </>
