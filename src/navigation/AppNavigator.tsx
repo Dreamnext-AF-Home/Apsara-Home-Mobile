@@ -179,6 +179,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             <ProductDetailScreen
               productId={selectedProductId}
               token={token}
+              user={user}
+              cartCount={cartCount}
               onBack={() => setSelectedProductId(null)}
               onProductPress={(id) => setSelectedProductId(id)}
             />
