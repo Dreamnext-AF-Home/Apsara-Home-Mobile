@@ -81,6 +81,7 @@ export default function ProductDetailScreen({
   const [specificationsExpanded, setSpecificationsExpanded] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const galleryScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -153,14 +154,30 @@ export default function ProductDetailScreen({
     return () => { active = false; };
   }, [productId, token]);
 
+  // Reset image index and scroll when variant changes
+  useEffect(() => {
+    setActiveImage(0);
+    // Scroll gallery back to first image without animation
+    galleryScrollRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+  }, [selectedVariant]);
 
   const images = useMemo(() => {
     if (!product) return [];
+
+    // If a variant is selected and has images, use variant images
+    if (selectedVariant) {
+      const selectedVariantData = product.variants?.find(v => v.id === selectedVariant);
+      if (selectedVariantData?.images && selectedVariantData.images.length > 0) {
+        return selectedVariantData.images.filter(Boolean);
+      }
+    }
+
+    // Otherwise use product images
     const imgs = (product.images ?? []).filter(Boolean);
     if (imgs.length > 0) return imgs;
     if (product.image) return [product.image];
     return [];
-  }, [product]);
+  }, [product, selectedVariant]);
 
   const hasDiscount = product ? (product.priceMember ?? 0) < (product.priceSrp ?? 0) : false;
   const discountPct = (hasDiscount && product)
@@ -187,9 +204,11 @@ export default function ProductDetailScreen({
           {/* Image Gallery */}
           <View style={styles.galleryWrap}>
             <ScrollView
+              ref={galleryScrollRef}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
               onMomentumScrollEnd={e => {
                 const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
                 setActiveImage(index);
@@ -372,9 +391,12 @@ export default function ProductDetailScreen({
             </View>
           )}
 
-          {/* Description */}
-          {!!product.description && (
-            <View style={styles.descriptionSection}>
+          {/* Description & Specifications Wrapper */}
+          {(!!product.description || !!product.specifications || !!product.material || !!product.warranty || product.pswidth || product.pslenght || product.psheight) && (
+            <View style={styles.descriptionsWrapper}>
+              {/* Description */}
+              {!!product.description && (
+                <View style={styles.descriptionSection}>
               <TouchableOpacity
                 style={styles.descriptionHeader}
                 onPress={() => setDescriptionExpanded(!descriptionExpanded)}
@@ -407,27 +429,27 @@ export default function ProductDetailScreen({
                   </View>
                 </View>
               )}
-            </View>
-          )}
+                </View>
+              )}
 
-          {/* Specifications */}
-          {(!!product.specifications || !!product.material || !!product.warranty || product.pswidth || product.pslenght || product.psheight) && (
-            <View style={styles.specificationsSection}>
-              <TouchableOpacity
-                style={styles.specificationsHeader}
-                onPress={() => setSpecificationsExpanded(!specificationsExpanded)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.specificationsTitle}>Specifications</Text>
-                <Ionicons
-                  name={specificationsExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color={Colors.text}
-                />
-              </TouchableOpacity>
-              {specificationsExpanded && (
-                <View style={styles.specificationsContent}>
-                  <View style={styles.specificationsContentInner}>
+              {/* Specifications */}
+              {(!!product.specifications || !!product.material || !!product.warranty || product.pswidth || product.pslenght || product.psheight) && (
+                <View style={styles.specificationsSection}>
+                <TouchableOpacity
+                  style={styles.specificationsHeader}
+                  onPress={() => setSpecificationsExpanded(!specificationsExpanded)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.specificationsTitle}>Specifications</Text>
+                  <Ionicons
+                    name={specificationsExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={Colors.text}
+                  />
+                </TouchableOpacity>
+                {specificationsExpanded && (
+                  <View style={styles.specificationsContent}>
+                    <View style={styles.specificationsContentInner}>
                     {product.pswidth || product.pslenght || product.psheight ? (
                       <View style={styles.specRow}>
                         <Text style={styles.specLabel}>Dimensions:</Text>
@@ -454,6 +476,8 @@ export default function ProductDetailScreen({
                       </View>
                     ) : null}
                   </View>
+                </View>
+              )}
                 </View>
               )}
             </View>
@@ -644,33 +668,23 @@ export default function ProductDetailScreen({
         </ScrollView>
         
         {/* Buy Now Button - Fixed Bottom */}
-        <View style={styles.buyNowContainer}>
-          <View style={{ paddingTop: 16, paddingBottom: insets.bottom }}>
-          {/* Price Display */}
-          <View style={styles.priceDisplay}>
-            <View style={styles.priceLabelContainer}>
-              <Ionicons name="pricetag" size={16} color={Colors.sky} style={styles.priceIcon} />
-              <Text style={styles.compactPriceText}>
-                Price ₱{(() => {
-                  const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
-                  const price = variant ? variant.priceMember : product.priceMember ?? 0;
-                  return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                })()}
-                {hasDiscount && (() => {
-                  const variant = selectedVariant ? product.variants?.find(v => v.id === selectedVariant) : null;
-                  const variantPrice = variant ? variant.priceMember : product.priceMember ?? 0;
-                  const variantSrp = variant ? variant.priceSrp : product.priceSrp ?? 0;
-                  const savings = variantSrp - variantPrice;
-                  return `, you save ₱${savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}!`;
-                })()}
-              </Text>
-            </View>
+        <LinearGradient
+          colors={['#f0f9ff', '#f0fdf4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.buyNowContainer}
+        >
+          <View style={{ paddingTop: 8, paddingBottom: insets.bottom || 4 }}>
+          {/* Decorative Icon */}
+          <View style={styles.decorativeIconContainer}>
+            <Ionicons name="sparkles" size={16} color={Colors.sky} />
+            <Text style={styles.decorativeText}>Complete your order</Text>
           </View>
-          
+
           {/* Button Row */}
           <View style={styles.buttonRow}>
             {/* Add to Cart Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addToCartButton}
               onPress={() => {
                 // TODO: Implement add to cart functionality
@@ -678,21 +692,44 @@ export default function ProductDetailScreen({
               }}
               activeOpacity={0.7}
             >
-              <Ionicons name="cart-outline" size={24} color={Colors.sky} />
+              <View style={styles.addToCartContent}>
+                <Ionicons name="cart-outline" size={20} color={Colors.sky} />
+                <View style={styles.addToCartLabel}>
+                  <Text style={styles.addToCartText}>Add</Text>
+                  <Text style={styles.addToCartSmallText}>to cart</Text>
+                </View>
+              </View>
             </TouchableOpacity>
-            
-            {/* Buy Now Button */}
-            <PrimaryButton
-              title="Buy Now"
-              onPress={() => {
-                // TODO: Implement buy now functionality
-                console.log('Buy Now pressed');
-              }}
-              style={styles.buyNowButton}
-            />
+
+            {/* Buy Now Button with Save Badge */}
+            <View style={styles.buyNowButtonContainer}>
+              <TouchableOpacity
+                style={styles.buyNowButton}
+                onPress={() => {
+                  // TODO: Implement buy now functionality
+                  console.log('Buy Now pressed');
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.buyNowContent}>
+                  <Ionicons name="flash" size={18} color={Colors.white} />
+                  <View style={styles.buyNowTextContainer}>
+                    <Text style={styles.buyNowTitle}>Buy Now</Text>
+                    <Text style={styles.buyNowSubtitle}>Limited stock • Fast shipping</Text>
+                  </View>
+                  <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                </View>
+              </TouchableOpacity>
+              {hasDiscount && (
+                <View style={styles.saveBadge}>
+                  <Ionicons name="gift" size={12} color={Colors.white} />
+                  <Text style={styles.saveBadgeText}>Special Deal</Text>
+                </View>
+              )}
+            </View>
           </View>
           </View>
-        </View>
+        </LinearGradient>
         </>
       ) : (
         <View style={styles.loadingWrap}>
@@ -1134,17 +1171,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: Colors.text,
-    paddingHorizontal: 8,
-    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   variantsSection: {
-    paddingHorizontal: 8,
     paddingVertical: 8,
   },
   variantsList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   variantChip: {
     flexDirection: 'row',
@@ -1196,13 +1235,16 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   variantDetailsCard: {
+    marginHorizontal: 12,
     marginTop: 12,
+    marginBottom: 8,
     backgroundColor: '#f9fafb',
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#e5e7eb',
     padding: 12,
     gap: 8,
+    borderRadius: 8,
   },
   variantDetailRow: {
     flexDirection: 'row',
@@ -1234,8 +1276,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.white,
   },
+  descriptionsWrapper: {
+    marginHorizontal: 0,
+    marginVertical: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
   descriptionSection: {
-    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   descriptionHeader: {
     flexDirection: 'row',
@@ -1244,9 +1296,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#f9fafb',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
   },
   descriptionTitle: {
     fontSize: 14,
@@ -1254,10 +1303,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   descriptionContent: {
-    marginTop: 8,
-    backgroundColor: '#f9fafb',
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: Colors.white,
     overflow: 'hidden',
   },
   descriptionContentInner: {
@@ -1277,7 +1323,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   specificationsSection: {
-    paddingVertical: 8,
   },
   specificationsHeader: {
     flexDirection: 'row',
@@ -1286,9 +1331,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#f9fafb',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
   },
   specificationsTitle: {
     fontSize: 14,
@@ -1296,10 +1338,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   specificationsContent: {
-    marginTop: 8,
-    backgroundColor: '#f9fafb',
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: Colors.white,
     overflow: 'hidden',
   },
   specificationsContentInner: {
@@ -1407,12 +1446,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.white, // Solid white background
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 0, // No padding - handled by insets
+    paddingBottom: 0,
+  },
+  decorativeIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+    paddingLeft: 2,
+  },
+  decorativeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.sky,
+    letterSpacing: 0.3,
   },
   priceDisplay: {
     marginBottom: 12,
@@ -1440,18 +1488,87 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addToCartButton: {
-    width: 56,
+    width: 70,
     height: 52,
     borderRadius: 10,
     backgroundColor: '#f0f9ff',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.sky,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  addToCartContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  addToCartLabel: {
+    alignItems: 'center',
+  },
+  addToCartText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.sky,
+    lineHeight: 12,
+  },
+  addToCartSmallText: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: Colors.sky,
+    lineHeight: 11,
+  },
+  buyNowButtonContainer: {
+    flex: 1,
+    position: 'relative',
   },
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
     flex: 1,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buyNowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  buyNowTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  buyNowTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
+    letterSpacing: 0.3,
+  },
+  buyNowSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
+  },
+  saveBadge: {
+    position: 'absolute',
+    top: -12,
+    right: 12,
+    backgroundColor: Colors.forest,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  saveBadgeText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
