@@ -25,6 +25,7 @@ interface AppHeaderProps {
   onCameraPress?: () => void;
   searchPlaceholder?: string;
   cartCount?: number;
+  cartButtonColor?: string;
 }
 
 const MARQUEE_ITEMS = [
@@ -136,6 +137,7 @@ export default function AppHeader({
   onCameraPress,
   searchPlaceholder = 'Search...',
   cartCount = 0,
+  cartButtonColor,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
@@ -229,9 +231,9 @@ export default function AppHeader({
               <Ionicons name="trending-up" size={12} color={Colors.white} />
               <Text style={styles.pvText}>{remainingPV} PV</Text>
             </View>
-            <View style={styles.iconBtn}>
+            <View style={[styles.iconBtn, cartButtonColor && { backgroundColor: cartButtonColor }]}>
               <TouchableOpacity onPress={onCartPress} activeOpacity={0.7}>
-                <Ionicons name="cart-outline" size={20} color={Colors.text} />
+                <Ionicons name="cart-outline" size={20} color={cartButtonColor ? Colors.white : Colors.text} />
                 {cartCount > 0 && (
                   <View style={styles.cartBadge}>
                     <Text style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
@@ -311,6 +313,7 @@ const marqueeStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
