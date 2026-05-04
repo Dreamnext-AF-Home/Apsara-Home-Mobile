@@ -26,6 +26,7 @@ interface ProductDetailScreenProps {
   token?: string | null;
   onBack: () => void;
   onProductPress?: (id: number) => void;
+  onSearch?: () => void;
   user?: {
     name?: string;
     avatar_url?: string;
@@ -84,6 +85,7 @@ export default function ProductDetailScreen({
   token,
   onBack,
   onProductPress,
+  onSearch,
   user,
   cartCount = 0,
 }: ProductDetailScreenProps) {
@@ -302,7 +304,7 @@ export default function ProductDetailScreen({
               user={user || undefined}
               cartCount={cartCount}
               onCartPress={() => console.log('Cart pressed')}
-              onSearchPress={() => console.log('Search pressed')}
+              onSearchPress={onSearch}
               onFilterPress={() => console.log('Filter pressed')}
             />
           </Animated.View>
@@ -474,7 +476,7 @@ export default function ProductDetailScreen({
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={styles.badge}
             >
-              <Ionicons name="star" size={10} color={Colors.white} />
+              <Ionicons name="trending-up" size={10} color={Colors.white} />
               <Text style={styles.badgeLabel}>PV {product.prodpv}</Text>
             </LinearGradient>
             {hasDiscount && (
@@ -502,18 +504,111 @@ export default function ProductDetailScreen({
             ))}
           </View>
 
-          {/* Product Name and SKU */}
+          {/* Product Name and Details */}
           <View style={styles.nameSection}>
             <View style={styles.nameCard}>
-              <Text style={styles.productName}>{product.name}</Text>
-              <View style={styles.nameDetails}>
-                <View style={styles.nameDetailRow}>
-                  <Ionicons name="barcode-outline" size={14} color={Colors.textSecondary} />
-                  <Text style={styles.skuText}>SKU: {product.sku}</Text>
+              {/* Product Name and Rating Container */}
+              <View style={styles.nameAndRatingContainer}>
+                {/* Product Name */}
+                <Text style={styles.productName}>{product.name}</Text>
+
+                {/* Rating and Sold Row */}
+                <View style={styles.ratingAndSoldRow}>
+                  <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={13} color="#fbbf24" />
+                    <Text style={styles.ratingBadgeText}>4.8</Text>
+                    <Text style={styles.reviewCountText}>(2.5K reviews)</Text>
+                  </View>
+                  {product.soldCount > 0 && (
+                    <>
+                      <View style={styles.dividerDot} />
+                      <View style={styles.soldBadge}>
+                        <Ionicons name="bag-check-outline" size={13} color={Colors.textSecondary} />
+                        <Text style={styles.soldCountText}>{product.soldCount} sold</Text>
+                      </View>
+                    </>
+                  )}
                 </View>
-                <View style={styles.nameDetailRow}>
-                  <Ionicons name="cube-outline" size={14} color={Colors.forest} />
-                  <Text style={styles.stockText}>Stock: {product.qty} available</Text>
+              </View>
+
+              {/* Divider */}
+              <View style={styles.sectionDivider} />
+
+              {/* Details Grid */}
+              <View style={styles.detailsGrid}>
+                {/* SKU */}
+                <View style={styles.detailItem}>
+                  <Ionicons name="barcode-outline" size={15} color={Colors.sky} />
+                  <View style={styles.detailContent}>
+                    <Text style={styles.detailLabel}>SKU</Text>
+                    <Text style={styles.detailValue}>{product.sku}</Text>
+                  </View>
+                </View>
+
+                {/* Stock Status */}
+                <View style={styles.detailItem}>
+                  <Ionicons name="cube-outline" size={15} color={product.qty > 10 ? Colors.forest : '#ef4444'} />
+                  <View style={styles.detailContent}>
+                    <Text style={styles.detailLabel}>Stock</Text>
+                    <Text style={[styles.detailValue, product.qty > 10 ? { color: Colors.forest } : { color: '#ef4444' }]}>
+                      {product.qty > 10 ? `${product.qty} available` : product.qty > 0 ? `Only ${product.qty} left` : 'Out of stock'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Delivery */}
+                <View style={styles.detailItem}>
+                  <Ionicons name="car-outline" size={15} color={Colors.sky} />
+                  <View style={styles.detailContent}>
+                    <Text style={styles.detailLabel}>Delivery</Text>
+                    <Text style={styles.detailValue}>2-3 days</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Trust & Guarantee Section */}
+              <View style={styles.trustSection}>
+                <Text style={styles.trustSectionTitle}>🛡️ Buyer Protection</Text>
+                <View style={styles.trustGridRow}>
+                  <View style={styles.trustItem}>
+                    <View style={styles.trustIconBox}>
+                      <Ionicons name="checkmark-shield" size={16} color={Colors.sky} />
+                    </View>
+                    <Text style={styles.trustItemLabel}>Authentic</Text>
+                    <Text style={styles.trustItemSubtext}>100% Original</Text>
+                  </View>
+                  <View style={styles.trustItem}>
+                    <View style={styles.trustIconBox}>
+                      <Ionicons name="heart-half" size={16} color="#ef4444" />
+                    </View>
+                    <Text style={styles.trustItemLabel}>Quality</Text>
+                    <Text style={styles.trustItemSubtext}>Verified</Text>
+                  </View>
+                  <View style={styles.trustItem}>
+                    <View style={styles.trustIconBox}>
+                      <Ionicons name="arrow-undo" size={16} color={Colors.forest} />
+                    </View>
+                    <Text style={styles.trustItemLabel}>Easy Return</Text>
+                    <Text style={styles.trustItemSubtext}>7 Days</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Additional Guarantees */}
+              <View style={styles.guaranteesSection}>
+                <View style={styles.guaranteeItem}>
+                  <Ionicons name="lock-closed" size={14} color="#f97316" />
+                  <View style={styles.guaranteeContent}>
+                    <Text style={styles.guaranteeTitle}>Secure Checkout</Text>
+                    <Text style={styles.guaranteeSubtext}>Safe payment processing</Text>
+                  </View>
+                </View>
+                <View style={styles.guaranteeItem}>
+                  <Ionicons name="rocket" size={14} color={Colors.sky} />
+                  <View style={styles.guaranteeContent}>
+                    <Text style={styles.guaranteeTitle}>Fast Delivery</Text>
+                    <Text style={styles.guaranteeSubtext}>Quick nationwide shipping</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -680,7 +775,7 @@ export default function ProductDetailScreen({
                               variant.width && `W: ${variant.width}`,
                               variant.height && `H: ${variant.height}`,
                               variant.dimension && `D: ${variant.dimension}`
-                            ].filter(Boolean).join(' × ')}
+                            ].filter(Boolean).join(' x ')}
                           </Text>
                         </View>
                       )}
@@ -1570,29 +1665,172 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   nameCard: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#e5e7eb',
-    padding: 12,
-    gap: 8,
+    padding: 16,
+    gap: 12,
   },
-  nameDetails: {
-    gap: 6,
+  nameAndRatingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  nameDetailRow: {
+  productName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.text,
+    lineHeight: 24,
+    flex: 1,
+  },
+  ratingAndSoldRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
   },
-  skuText: {
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  ratingBadgeText: {
     fontSize: 12,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  reviewCountText: {
+    fontSize: 10,
+    color: '#b45309',
+    fontWeight: '500',
+  },
+  dividerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#d1d5db',
+  },
+  soldBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  soldCountText: {
+    fontSize: 11,
     color: Colors.textSecondary,
+    fontWeight: '500',
   },
-  stockText: {
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+  },
+  detailsGrid: {
+    gap: 12,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 6,
+  },
+  detailContent: {
+    flex: 1,
+    gap: 2,
+  },
+  detailLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  detailValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  trustSection: {
+    gap: 10,
+    marginTop: 4,
+  },
+  trustSectionTitle: {
     fontSize: 12,
-    color: Colors.forest,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  trustGridRow: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  trustItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  trustIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#f0f9ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trustItemLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  trustItemSubtext: {
+    fontSize: 9,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  guaranteesSection: {
+    gap: 8,
+    marginTop: 4,
+  },
+  guaranteeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f97316',
+  },
+  guaranteeContent: {
+    flex: 1,
+    gap: 2,
+  },
+  guaranteeTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  guaranteeSubtext: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   ratingSection: {
     paddingVertical: 8,
