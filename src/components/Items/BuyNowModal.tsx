@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -162,16 +163,6 @@ export default function BuyNowModal({
                     )}
                   </View>
                 </View>
-
-                {(selectedVariant
-                  ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                  : product.priceSrp) > (selectedVariant
-                    ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
-                    : product.priceMember) && (
-                  <View style={styles.discountTag}>
-                    <Text style={styles.discountTagText}>Enjoy 5% discount</Text>
-                  </View>
-                )}
               </View>
             </View>
           </View>
@@ -291,14 +282,14 @@ export default function BuyNowModal({
               </Text>
             </View>
 
-            {/* Discount */}
+            {/* Member Discount */}
             {(selectedVariant
               ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
               : product.priceSrp) > (selectedVariant
                 ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
                 : product.priceMember) && (
               <View style={styles.shopeePriceSummaryRow}>
-                <Text style={styles.discountLabel}>Discount</Text>
+                <Text style={styles.discountLabel}>Member Discount</Text>
                 <Text style={styles.discountValue}>
                   -₱{(
                     quantity * (
