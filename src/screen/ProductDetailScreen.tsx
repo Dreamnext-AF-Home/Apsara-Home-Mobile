@@ -82,11 +82,18 @@ export default function ProductDetailScreen({
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [imageViewerIndex, setImageViewerIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const galleryScrollRef = useRef<ScrollView>(null);
+  const imageViewerScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (showImageViewer) {
+        setShowImageViewer(false);
+        return true;
+      }
       if (showBuyModal) {
         setShowBuyModal(false);
         return true;
@@ -95,7 +102,7 @@ export default function ProductDetailScreen({
       return true;
     });
     return () => backHandler.remove();
-  }, [onBack, showBuyModal]);
+  }, [onBack, showBuyModal, showImageViewer]);
 
   useEffect(() => {
     setLoading(true);
@@ -164,30 +171,50 @@ export default function ProductDetailScreen({
     return () => { active = false; };
   }, [productId, token]);
 
-  // Reset image index and scroll when variant changes
-  useEffect(() => {
-    setActiveImage(0);
-    // Scroll gallery back to first image without animation
-    galleryScrollRef.current?.scrollTo({ x: 0, y: 0, animated: false });
-  }, [selectedVariant]);
 
-  const images = useMemo(() => {
+  // Create image list with variant mapping (unique images only)
+  const imagesWithVariants = useMemo(() => {
     if (!product) return [];
 
-    // If a variant is selected and has images, use variant images
-    if (selectedVariant) {
-      const selectedVariantData = product.variants?.find(v => v.id === selectedVariant);
-      if (selectedVariantData?.images && selectedVariantData.images.length > 0) {
-        return selectedVariantData.images.filter(Boolean);
-      }
+    const list: Array<{ image: string; variantId: number | null }> = [];
+    const addedImages = new Set<string>();
+
+    // Add variant images first (with variant ID) - only if not already added
+    if (product.variants && product.variants.length > 0) {
+      product.variants.forEach(v => {
+        if (v.images && v.images.length > 0) {
+          const imgUrl = v.images[0];
+          // Only add if this image hasn't been added yet
+          if (!addedImages.has(imgUrl)) {
+            list.push({ image: imgUrl, variantId: v.id });
+            addedImages.add(imgUrl);
+          }
+        }
+      });
     }
 
-    // Otherwise use product images
-    const imgs = (product.images ?? []).filter(Boolean);
-    if (imgs.length > 0) return imgs;
-    if (product.image) return [product.image];
-    return [];
-  }, [product, selectedVariant]);
+    // Add product images (no variant ID - don't auto-select)
+    if (product.images && product.images.length > 0) {
+      product.images.forEach(img => {
+        if (img && !addedImages.has(img)) {
+          list.push({ image: img, variantId: null });
+          addedImages.add(img);
+        }
+      });
+    }
+
+    // Add main product image if not already added
+    if (product.image && !addedImages.has(product.image)) {
+      list.push({ image: product.image, variantId: null });
+      addedImages.add(product.image);
+    }
+
+    return list;
+  }, [product]);
+
+  const images = useMemo(() => {
+    return imagesWithVariants.map(item => item.image);
+  }, [imagesWithVariants]);
 
   const hasDiscount = product ? (product.priceMember ?? 0) < (product.priceSrp ?? 0) : false;
   const discountPct = (hasDiscount && product)
@@ -222,22 +249,65 @@ export default function ProductDetailScreen({
               onMomentumScrollEnd={e => {
                 const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
                 setActiveImage(index);
+                // Auto-select variant based on image index
+                if (imagesWithVariants.length > index) {
+                  const item = imagesWithVariants[index];
+                  if (item.variantId !== null) {
+                    setSelectedVariant(item.variantId);
+                  }
+                }
               }}
             >
               {images.length > 0 ? images.map((img, i) => (
-                <View key={i} style={styles.galleryImageContainer}>
+                <TouchableOpacity
+                  key={i}
+                  activeOpacity={0.95}
+                  onPress={() => {
+                    // Set active image and scroll gallery to this image
+                    setActiveImage(i);
+                    setImageViewerIndex(i);
+                    setShowImageViewer(true);
+                    galleryScrollRef.current?.scrollTo({
+                      x: i * SCREEN_WIDTH,
+                      animated: true,
+                    });
+                    // Auto-select variant based on image index
+                    if (imagesWithVariants.length > i && imagesWithVariants[i].variantId !== null) {
+                      setSelectedVariant(imagesWithVariants[i].variantId);
+                    }
+                  }}
+                  style={styles.galleryImageContainer}
+                >
                   <Image source={{ uri: img }} style={styles.galleryImage} resizeMode="contain" />
-                </View>
+                </TouchableOpacity>
               )) : (
                 <View style={[styles.galleryImageContainer, styles.galleryFallback]}>
                   <Ionicons name="image-outline" size={48} color="#d1d5db" />
                 </View>
               )}
             </ScrollView>
-            {images.length > 1 && (
+            {/* Navigation Dots */}
+            {images.length > 0 && (
               <View style={styles.galleryDotsContainer}>
                 {images.map((_, i) => (
-                  <View key={i} style={[styles.galleryDot, i === activeImage && styles.galleryDotActive]} />
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => {
+                      setActiveImage(i);
+                      setImageViewerIndex(i);
+                      setShowImageViewer(true);
+                      galleryScrollRef.current?.scrollTo({
+                        x: i * SCREEN_WIDTH,
+                        animated: true,
+                      });
+                      // Auto-select variant based on image index
+                      if (imagesWithVariants.length > i && imagesWithVariants[i].variantId !== null) {
+                        setSelectedVariant(imagesWithVariants[i].variantId);
+                      }
+                    }}
+                    style={[styles.galleryDot, i === activeImage && styles.galleryDotActive]}
+                    activeOpacity={0.7}
+                  />
                 ))}
               </View>
             )}
@@ -859,6 +929,259 @@ export default function ProductDetailScreen({
         </View>
       )}
 
+      {/* Full Screen Image Slideshow Viewer */}
+      {showImageViewer && images.length > 0 && product && (
+        <View style={styles.slideshowOverlay}>
+          {/* Header with Brand Info and Close */}
+          <LinearGradient
+            colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[styles.slideshowHeader, { paddingTop: insets.top + 8 }]}
+          >
+            <TouchableOpacity
+              onPress={() => setShowImageViewer(false)}
+              activeOpacity={0.7}
+              style={styles.slideshowCloseBtn}
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+            </TouchableOpacity>
+
+            {/* Brand/Seller Info */}
+            <View style={styles.slideshowBrandInfo}>
+              <Image
+                source={{ uri: brandProfile?.profile_picture || 'https://via.placeholder.com/32' }}
+                style={styles.slideshowBrandImage}
+                resizeMode="contain"
+              />
+              <View style={styles.slideshowBrandText}>
+                <Text style={styles.slideshowBrandName} numberOfLines={1}>
+                  {product.brand || 'Store'}
+                </Text>
+                {brandProfile && (
+                  <View style={styles.slideshowRatingRow}>
+                    <Ionicons name="star" size={12} color="#fbbf24" />
+                    <Text style={styles.slideshowRating}>
+                      {(brandProfile.overall_rating || 0).toFixed(1)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Share Button */}
+            <TouchableOpacity
+              style={styles.slideshowShareBtn}
+              activeOpacity={0.7}
+              onPress={() => {
+                console.log('Share product');
+              }}
+            >
+              <Ionicons name="share-social-outline" size={22} color={Colors.text} />
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Main Image Carousel */}
+          <View style={styles.slideshowImageWrapper}>
+            <ScrollView
+              ref={imageViewerScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              onMomentumScrollEnd={e => {
+                const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                setImageViewerIndex(index);
+                // Auto-select variant based on image index
+                if (imagesWithVariants.length > index) {
+                  const item = imagesWithVariants[index];
+                  if (item.variantId !== null) {
+                    setSelectedVariant(item.variantId);
+                  }
+                }
+              }}
+              style={styles.slideshowImageScroll}
+            >
+              {images.map((img, i) => (
+                <View key={i} style={styles.slideshowImageContainer}>
+                  {/* Image */}
+                  <Image
+                    source={{ uri: img }}
+                    style={styles.slideshowImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* Page Indicator */}
+            <View style={styles.slideshowPageIndicator}>
+              <Text style={styles.slideshowPageText}>
+                {imageViewerIndex + 1}/{images.length}
+              </Text>
+            </View>
+          </View>
+
+          {/* Bottom Product Card */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0)', Colors.white]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[styles.slideshowProductCard, { paddingBottom: insets.bottom + 12 }]}
+          >
+            {/* Product Image Thumbnail and Info */}
+            <View style={styles.slideshowCardContent}>
+              {/* Thumbnail */}
+              <Image
+                source={{ uri: images[imageViewerIndex] }}
+                style={styles.slideshowCardImage}
+                resizeMode="cover"
+              />
+
+              {/* Product Details */}
+              <View style={styles.slideshowCardDetails}>
+                <Text style={styles.slideshowCardName} numberOfLines={2}>
+                  {product.name}
+                </Text>
+
+                {/* Variant Label */}
+                {selectedVariant && product.variants && (
+                  <Text style={styles.slideshowVariantLabelText} numberOfLines={1}>
+                    {product.variants.find(v => v.id === selectedVariant)?.color ||
+                     product.variants.find(v => v.id === selectedVariant)?.name ||
+                     'Variant'}
+                  </Text>
+                )}
+
+                {/* Pricing */}
+                <View style={styles.slideshowCardPricing}>
+                  <Text style={styles.slideshowCardPrice}>
+                    ₱{(selectedVariant
+                      ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? product.priceMember)
+                      : product.priceMember).toLocaleString()}
+                  </Text>
+                  {(selectedVariant
+                    ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
+                    : product.priceSrp) > (selectedVariant
+                      ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
+                      : product.priceMember) && (
+                    <Text style={styles.slideshowCardOriginalPrice}>
+                      ₱{(selectedVariant
+                        ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
+                        : product.priceSrp).toLocaleString()}
+                    </Text>
+                  )}
+                </View>
+
+                {/* PV and Sold Count */}
+                <View style={styles.slideshowCardMetaRow}>
+                  {product.prodpv > 0 && (
+                    <View style={styles.slideshowCardMeta}>
+                      <Ionicons name="star" size={12} color={Colors.sky} />
+                      <Text style={styles.slideshowCardMetaText}>
+                        PV {product.prodpv}
+                      </Text>
+                    </View>
+                  )}
+                  {product.soldCount > 0 && (
+                    <View style={styles.slideshowCardMeta}>
+                      <Ionicons name="bag-check-outline" size={12} color={Colors.textSecondary} />
+                      <Text style={styles.slideshowCardMetaText}>
+                        {product.soldCount} sold
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Variants Section */}
+            {product.variants && product.variants.length > 0 && (
+              <View style={styles.slideshowVariantsSection}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.slideshowVariantsScroll}
+                >
+                  {product.variants.map((variant, idx) => (
+                    <TouchableOpacity
+                      key={variant.id}
+                      style={[
+                        styles.slideshowVariantOption,
+                        selectedVariant === variant.id && styles.slideshowVariantOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedVariant(variant.id);
+                        // Scroll to the variant's image in the gallery
+                        const variantIndex = imagesWithVariants.findIndex(item => item.variantId === variant.id);
+                        if (variantIndex >= 0) {
+                          setImageViewerIndex(variantIndex);
+                          imageViewerScrollRef.current?.scrollTo({
+                            x: variantIndex * SCREEN_WIDTH,
+                            animated: true,
+                          });
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {variant.images && variant.images.length > 0 ? (
+                        <Image
+                          source={{ uri: variant.images[0] }}
+                          style={styles.slideshowVariantImage}
+                          resizeMode="cover"
+                        />
+                      ) : variant.colorHex ? (
+                        <View
+                          style={[
+                            styles.slideshowVariantColor,
+                            { backgroundColor: variant.colorHex },
+                          ]}
+                        />
+                      ) : (
+                        <Ionicons name="image-outline" size={20} color="#d1d5db" />
+                      )}
+                      {selectedVariant === variant.id && (
+                        <View style={styles.slideshowVariantCheck}>
+                          <Ionicons name="checkmark" size={14} color={Colors.white} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.slideshowButtonRow}>
+              <TouchableOpacity
+                style={styles.slideshowAddToCartBtn}
+                activeOpacity={0.7}
+                onPress={() => {
+                  console.log('Add to cart');
+                  setShowImageViewer(false);
+                }}
+              >
+                <Ionicons name="cart-outline" size={20} color={Colors.sky} />
+                <Text style={styles.slideshowAddToCartText}>Add to Cart</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.slideshowBuyNowBtn}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setShowBuyModal(true);
+                  setShowImageViewer(false);
+                  setQuantity(1);
+                }}
+              >
+                <Ionicons name="flash" size={18} color={Colors.white} />
+                <Text style={styles.slideshowBuyNowText}>Buy Now</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      )}
+
       {/* Buy Now Modal - Shopee Style */}
       {showBuyModal && product && (
         <View style={styles.modalOverlay}>
@@ -1167,25 +1490,26 @@ const styles = StyleSheet.create({
   },
   galleryDotsContainer: {
     position: 'absolute',
-    bottom: 12,
+    bottom: 16,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
+    alignItems: 'center',
   },
   galleryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.3)',
   },
   galleryDotActive: {
-    backgroundColor: Colors.sky,
-    width: 24,
     borderColor: Colors.sky,
+    backgroundColor: Colors.sky,
+    width: 10,
   },
   galleryBackBtn: {
     position: 'absolute',
@@ -2332,6 +2656,254 @@ const styles = StyleSheet.create({
   },
   shopeeCheckoutBtnText: {
     fontSize: 15,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  // Slideshow Image Viewer Styles
+  slideshowOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#f8fafc',
+    zIndex: 2000,
+    flexDirection: 'column',
+  },
+  slideshowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  slideshowCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slideshowBrandInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 12,
+  },
+  slideshowBrandImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f5f9',
+  },
+  slideshowBrandText: {
+    flex: 1,
+  },
+  slideshowBrandName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  slideshowRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  slideshowRating: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  slideshowShareBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slideshowImageWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  slideshowImageScroll: {
+    flex: 1,
+  },
+  slideshowImageContainer: {
+    width: SCREEN_WIDTH,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: Colors.white,
+  },
+  slideshowImage: {
+    width: '90%',
+    height: '85%',
+    zIndex: 10,
+  },
+  slideshowPageIndicator: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  slideshowPageText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  slideshowProductCard: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  slideshowCardContent: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  slideshowCardImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+  },
+  slideshowCardDetails: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  slideshowCardName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+    lineHeight: 18,
+  },
+  slideshowCardPricing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  slideshowCardPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.sky,
+  },
+  slideshowCardOriginalPrice: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textDecorationLine: 'line-through',
+  },
+  slideshowCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  slideshowCardMetaText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  slideshowCardMetaRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 6,
+  },
+  slideshowVariantsSection: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  slideshowVariantsScroll: {
+    marginHorizontal: -12,
+    paddingHorizontal: 12,
+  },
+  slideshowVariantOption: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    backgroundColor: '#f8fafc',
+    overflow: 'hidden',
+  },
+  slideshowVariantOptionSelected: {
+    borderColor: Colors.sky,
+    backgroundColor: Colors.sky,
+  },
+  slideshowVariantImage: {
+    width: '100%',
+    height: '100%',
+  },
+  slideshowVariantColor: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+  },
+  slideshowVariantCheck: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.sky,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slideshowVariantLabelText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  slideshowButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingBottom: 8,
+  },
+  slideshowAddToCartBtn: {
+    flex: 0.4,
+    borderWidth: 1.5,
+    borderColor: Colors.sky,
+    borderRadius: 10,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  slideshowAddToCartText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.sky,
+  },
+  slideshowBuyNowBtn: {
+    flex: 0.6,
+    backgroundColor: Colors.sky,
+    borderRadius: 10,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  slideshowBuyNowText: {
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.white,
   },
