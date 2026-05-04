@@ -344,7 +344,7 @@ export default function ImageViewerModal({
               activeOpacity={0.7}
             >
               <View style={styles.addToCartContent}>
-                <Ionicons name="cart-outline" size={20} color="#f97316" />
+                <Ionicons name="cart-outline" size={20} color={Colors.white} />
                 <View style={styles.addToCartLabel}>
                   <Text style={styles.addToCartText}>Add</Text>
                   <Text style={styles.addToCartSmallText}>to cart</Text>
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 52,
     borderRadius: 10,
-    backgroundColor: '#fff7ed',
+    backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
     alignItems: 'center',
@@ -657,13 +657,13 @@ const styles = StyleSheet.create({
   addToCartText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#f97316',
+    color: Colors.white,
     lineHeight: 12,
   },
   addToCartSmallText: {
     fontSize: 9,
     fontWeight: '500',
-    color: '#f97316',
+    color: Colors.white,
     lineHeight: 11,
   },
   buyNowButtonContainer: {
