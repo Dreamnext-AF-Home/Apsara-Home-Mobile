@@ -11,6 +11,8 @@ import { Colors } from '../constants/colors';
 import { productService, type Product, type ProductCard, type ProductReviewsResponse, type ProductReview } from '../services/productService';
 import { authService } from '../services/authService';
 import ItemCard from '../components/Items/ItemCard';
+import ImageViewerModal from '../components/Items/ImageViewerModal';
+import BuyNowModal from '../components/Items/BuyNowModal';
 import PrimaryButton from '../components/Button/PrimaryButton';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
@@ -246,6 +248,7 @@ export default function ProductDetailScreen({
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               scrollEventThrottle={16}
+              style={{ backgroundColor: '#ffffff' }}
               onMomentumScrollEnd={e => {
                 const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
                 setActiveImage(index);
@@ -884,7 +887,7 @@ export default function ProductDetailScreen({
               activeOpacity={0.7}
             >
               <View style={styles.addToCartContent}>
-                <Ionicons name="cart-outline" size={20} color={Colors.sky} />
+                <Ionicons name="cart-outline" size={20} color="#f97316" />
                 <View style={styles.addToCartLabel}>
                   <Text style={styles.addToCartText}>Add</Text>
                   <Text style={styles.addToCartSmallText}>to cart</Text>
@@ -930,8 +933,35 @@ export default function ProductDetailScreen({
       )}
 
       {/* Full Screen Image Slideshow Viewer */}
-      {showImageViewer && images.length > 0 && product && (
-        <View style={styles.slideshowOverlay}>
+      <ImageViewerModal
+        visible={showImageViewer}
+        product={product}
+        brandProfile={brandProfile}
+        images={images}
+        imagesWithVariants={imagesWithVariants}
+        selectedVariant={selectedVariant}
+        imageViewerIndex={imageViewerIndex}
+        onClose={() => setShowImageViewer(false)}
+        onAddToCart={() => {
+          console.log('Add to cart');
+          setShowImageViewer(false);
+        }}
+        onBuyNow={() => {
+          setShowBuyModal(true);
+          setShowImageViewer(false);
+          setQuantity(1);
+        }}
+        onSelectVariant={setSelectedVariant}
+        onImageIndexChange={setImageViewerIndex}
+        onProductPress={() => {
+          setShowImageViewer(false);
+        }}
+        hasDiscount={hasDiscount}
+      />
+
+      {/* Old slideshow code is now in ImageViewerModal component - removed for clarity */}
+      {false && (
+        <View>
           {/* Header with Brand Info and Close */}
           <LinearGradient
             colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
@@ -1161,7 +1191,7 @@ export default function ProductDetailScreen({
                   setShowImageViewer(false);
                 }}
               >
-                <Ionicons name="cart-outline" size={20} color={Colors.sky} />
+                <Ionicons name="cart-outline" size={20} color="#f97316" />
                 <Text style={styles.slideshowAddToCartText}>Add to Cart</Text>
               </TouchableOpacity>
 
@@ -1182,261 +1212,24 @@ export default function ProductDetailScreen({
         </View>
       )}
 
-      {/* Buy Now Modal - Shopee Style */}
-      {showBuyModal && product && (
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setShowBuyModal(false)}
-          />
-          <View style={[styles.shopeeModal, { paddingBottom: insets.bottom || 16 }]}>
-            {/* Header */}
-            <View style={styles.shopeeModalHeader}>
-              <TouchableOpacity
-                onPress={() => setShowBuyModal(false)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chevron-down" size={28} color={Colors.text} />
-              </TouchableOpacity>
-              <Text style={styles.shopeeModalHeaderText}>Purchase</Text>
-              <View style={{ width: 28 }} />
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.shopeeModalContent}>
-              {/* Product Card - Shopee Style */}
-              <View style={styles.shopeeProductCard}>
-                {/* Image */}
-                <View style={styles.shopeeProductImage}>
-                  <Image
-                    source={{ uri: images[0] || product.image }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="contain"
-                  />
-                </View>
-
-                {/* Product Info */}
-                <View style={styles.shopeeProductInfo}>
-                  <Text style={styles.shopeeProductName} numberOfLines={2}>
-                    {product.name}
-                  </Text>
-
-                  {/* Rating */}
-                  <View style={styles.shopeeRatingRow}>
-                    <View style={styles.shopeeStars}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Ionicons
-                          key={star}
-                          name={star <= 4 ? 'star' : 'star-outline'}
-                          size={14}
-                          color="#fbbf24"
-                        />
-                      ))}
-                    </View>
-                    <Text style={styles.shopeeRatingText}>({product.soldCount} sold)</Text>
-                  </View>
-
-                  {/* Price Section */}
-                  <View style={styles.shopeePriceSection}>
-                    <View>
-                      <Text style={styles.shopeePriceLabel}>Price</Text>
-                      <View style={styles.shopeePriceRow}>
-                        <Text style={styles.shopeePrice}>
-                          ₱{(selectedVariant
-                            ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? product.priceMember)
-                            : product.priceMember).toLocaleString()}
-                        </Text>
-                        {(selectedVariant
-                          ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                          : product.priceSrp) > (selectedVariant
-                            ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
-                            : product.priceMember) && (
-                          <Text style={styles.shopeeOriginalPrice}>
-                            ₱{(selectedVariant
-                              ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                              : product.priceSrp).toLocaleString()}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-
-                    {(selectedVariant
-                      ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                      : product.priceSrp) > (selectedVariant
-                        ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
-                        : product.priceMember) && (
-                      <View style={styles.shopeeDiscountBadge}>
-                        <Text style={styles.shopeeDiscountPercent}>
-                          {Math.round(
-                            ((
-                              (selectedVariant
-                                ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                                : product.priceSrp) -
-                              (selectedVariant
-                                ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
-                                : product.priceMember)
-                            ) / (selectedVariant
-                              ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                              : product.priceSrp)) * 100
-                          )}%
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </View>
-
-              {/* Divider */}
-              <View style={styles.shopeeDivider} />
-
-              {/* Variant Selection - Shopee Style */}
-              {(product.variants?.length ?? 0) > 0 && (
-                <View style={styles.shopeeSection}>
-                  <View style={styles.shopeeSectionHeader}>
-                    <Text style={styles.shopeeSectionTitle}>Variant</Text>
-                    <Text style={styles.shopeeSectionRequired}>Required</Text>
-                  </View>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.shopeeVariantScroll}
-                  >
-                    <View style={styles.shopeeVariantRow}>
-                      {product.variants.map((variant, index) => (
-                        <TouchableOpacity
-                          key={variant.id}
-                          style={[
-                            styles.shopeeVariantOption,
-                            selectedVariant === variant.id && styles.shopeeVariantOptionSelected
-                          ]}
-                          onPress={() => setSelectedVariant(variant.id)}
-                          activeOpacity={0.7}
-                        >
-                          {variant.images && variant.images.length > 0 ? (
-                            <Image
-                              source={{ uri: variant.images[0] }}
-                              style={styles.shopeeVariantOptionImage}
-                              resizeMode="cover"
-                            />
-                          ) : variant.colorHex ? (
-                            <View style={[
-                              styles.shopeeVariantOptionColor,
-                              { backgroundColor: variant.colorHex }
-                            ]} />
-                          ) : null}
-                          <Text
-                            style={styles.shopeeVariantOptionText}
-                            numberOfLines={2}
-                          >
-                            {variant.color || variant.name || `Var ${index + 1}`}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* Quantity - Shopee Style */}
-              <View style={styles.shopeeSection}>
-                <View style={styles.shopeeSectionHeader}>
-                  <Text style={styles.shopeeSectionTitle}>Quantity</Text>
-                  <Text style={styles.shopeeStockLeft}>
-                    {selectedVariant
-                      ? (product.variants?.find(v => v.id === selectedVariant)?.qty ?? product.qty)
-                      : product.qty} available
-                  </Text>
-                </View>
-                <View style={styles.shopeeQuantityControl}>
-                  <TouchableOpacity
-                    style={styles.shopeeQuantityBtn}
-                    onPress={() => quantity > 1 && setQuantity(quantity - 1)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="remove" size={18} color={Colors.text} />
-                  </TouchableOpacity>
-                  <TextInput
-                    style={styles.shopeeQuantityInput}
-                    value={quantity.toString()}
-                    onChangeText={(text) => {
-                      const num = parseInt(text) || 1;
-                      const maxQty = selectedVariant
-                        ? (product.variants?.find(v => v.id === selectedVariant)?.qty ?? product.qty)
-                        : product.qty;
-                      if (num > 0 && num <= maxQty) {
-                        setQuantity(num);
-                      }
-                    }}
-                    keyboardType="number-pad"
-                    editable={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.shopeeQuantityBtn}
-                    onPress={() => {
-                      const maxQty = selectedVariant
-                        ? (product.variants?.find(v => v.id === selectedVariant)?.qty ?? product.qty)
-                        : product.qty;
-                      if (quantity < maxQty) {
-                        setQuantity(quantity + 1);
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="add" size={18} color={Colors.text} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Price Summary - Shopee Style */}
-              <View style={styles.shopeePriceSummary}>
-                <View style={styles.shopeePriceSummaryRow}>
-                  <Text style={styles.shopeePriceSummaryLabel}>Subtotal</Text>
-                  <Text style={styles.shopeePriceSummaryValue}>
-                    ₱{(
-                      quantity * (selectedVariant
-                        ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? product.priceMember)
-                        : product.priceMember)
-                    ).toLocaleString()}
-                  </Text>
-                </View>
-                <View style={styles.shopeePriceSummaryRow}>
-                  <Text style={styles.shopeePriceSummaryLabel}>Shipping</Text>
-                  <Text style={styles.shopeeShippingText}>See at checkout</Text>
-                </View>
-              </View>
-            </ScrollView>
-
-            {/* Bottom Total & Button - Shopee Style */}
-            <View style={styles.shopeeCheckoutFooter}>
-              <View style={styles.shopeeCheckoutInfo}>
-                <Text style={styles.shopeeCheckoutLabel}>Total</Text>
-                <Text style={styles.shopeeCheckoutTotal}>
-                  ₱{(
-                    quantity * (selectedVariant
-                      ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? product.priceMember)
-                      : product.priceMember)
-                  ).toLocaleString()}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.shopeeCheckoutBtn}
-                onPress={() => {
-                  console.log('Checkout:', {
-                    variantId: selectedVariant,
-                    quantity,
-                    product: product.id
-                  });
-                  setShowBuyModal(false);
-                }}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-                <Text style={styles.shopeeCheckoutBtnText}>Proceed to Checkout</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      <BuyNowModal
+        visible={showBuyModal}
+        product={product}
+        images={images}
+        selectedVariant={selectedVariant}
+        quantity={quantity}
+        onClose={() => setShowBuyModal(false)}
+        onSelectVariant={setSelectedVariant}
+        onQuantityChange={setQuantity}
+        onCheckout={() => {
+          console.log('Checkout:', {
+            variantId: selectedVariant,
+            quantity,
+            product: product?.id
+          });
+          setShowBuyModal(false);
+        }}
+      />
     </View>
   );
 }
@@ -1463,8 +1256,10 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     minHeight: 300,
     maxHeight: SCREEN_WIDTH * 0.85,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
     position: 'relative',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   galleryImageContainer: {
     width: SCREEN_WIDTH,
@@ -1472,7 +1267,7 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_WIDTH * 0.85,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
   },
   galleryImage: {
     width: SCREEN_WIDTH,
@@ -1486,7 +1281,7 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_WIDTH * 0.85,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
   },
   galleryDotsContainer: {
     position: 'absolute',
@@ -2296,9 +2091,9 @@ const styles = StyleSheet.create({
     width: 70,
     height: 52,
     borderRadius: 10,
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#fff7ed',
     borderWidth: 1.5,
-    borderColor: Colors.sky,
+    borderColor: '#f97316',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2314,13 +2109,13 @@ const styles = StyleSheet.create({
   addToCartText: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.sky,
+    color: '#f97316',
     lineHeight: 12,
   },
   addToCartSmallText: {
     fontSize: 9,
     fontWeight: '500',
-    color: Colors.sky,
+    color: '#f97316',
     lineHeight: 11,
   },
   buyNowButtonContainer: {
@@ -2363,7 +2158,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -12,
     right: 12,
-    backgroundColor: Colors.forest,
+    backgroundColor: '#f97316',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
@@ -2375,289 +2170,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 12,
     fontWeight: '700',
-  },
-  // Shopee Style Modal
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
-  },
-  modalBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  shopeeModal: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '95%',
-    zIndex: 1000,
-    flexDirection: 'column',
-  },
-  shopeeModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  shopeeModalHeaderText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  shopeeModalContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  shopeeProductCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.white,
-    marginBottom: 12,
-    gap: 12,
-  },
-  shopeeProductImage: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shopeeProductInfo: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  shopeeProductName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text,
-    lineHeight: 18,
-  },
-  shopeeRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginVertical: 4,
-  },
-  shopeeStars: {
-    flexDirection: 'row',
-    gap: 1,
-  },
-  shopeeRatingText: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  shopeePriceSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  shopeePriceLabel: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    marginBottom: 2,
-  },
-  shopeePriceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  shopeePrice: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.sky,
-  },
-  shopeeOriginalPrice: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textDecorationLine: 'line-through',
-  },
-  shopeeDiscountBadge: {
-    backgroundColor: Colors.skyDark,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  shopeeDiscountPercent: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  shopeeDivider: {
-    height: 8,
-    backgroundColor: '#f1f5f9',
-    marginHorizontal: -16,
-    marginVertical: 8,
-  },
-  shopeeSection: {
-    marginBottom: 12,
-  },
-  shopeeSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  shopeeSectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  shopeeSectionRequired: {
-    fontSize: 11,
-    color: Colors.skyDark,
-    fontWeight: '600',
-  },
-  shopeeStockLeft: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  shopeeVariantScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-  },
-  shopeeVariantRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  shopeeVariantOption: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    backgroundColor: Colors.white,
-    minWidth: 80,
-  },
-  shopeeVariantOptionSelected: {
-    borderColor: Colors.sky,
-    borderWidth: 2,
-    backgroundColor: '#f0f9ff',
-  },
-  shopeeVariantOptionImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  shopeeVariantOptionColor: {
-    width: 50,
-    height: 50,
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  shopeeVariantOptionText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.text,
-    textAlign: 'center',
-  },
-  shopeeQuantityControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  shopeeQuantityBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shopeeQuantityInput: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    paddingVertical: 0,
-  },
-  shopeePriceSummary: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    gap: 8,
-  },
-  shopeePriceSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  shopeePriceSummaryLabel: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  shopeePriceSummaryValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  shopeeShippingText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  shopeeCheckoutFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    backgroundColor: Colors.white,
-  },
-  shopeeCheckoutInfo: {
-    alignItems: 'flex-end',
-  },
-  shopeeCheckoutLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  shopeeCheckoutTotal: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.sky,
-    marginTop: 2,
-  },
-  shopeeCheckoutBtn: {
-    backgroundColor: Colors.sky,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 10,
-    marginLeft: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minWidth: 160,
-    justifyContent: 'center',
-  },
-  shopeeCheckoutBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.white,
   },
   // Slideshow Image Viewer Styles
   slideshowOverlay: {
@@ -2906,5 +2418,116 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: Colors.white,
+  },
+  // Buy Now Button Styles
+  buyNowContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 0,
+  },
+  decorativeIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+    paddingLeft: 2,
+  },
+  decorativeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.sky,
+    letterSpacing: 0.3,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addToCartButton: {
+    width: 70,
+    height: 52,
+    borderRadius: 10,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1.5,
+    borderColor: '#f97316',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addToCartContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  addToCartLabel: {
+    alignItems: 'center',
+  },
+  addToCartText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#f97316',
+    lineHeight: 12,
+  },
+  addToCartSmallText: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: '#f97316',
+    lineHeight: 11,
+  },
+  buyNowButtonContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  buyNowButton: {
+    backgroundColor: Colors.sky,
+    height: 52,
+    flex: 1,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buyNowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  buyNowTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  buyNowTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
+    letterSpacing: 0.3,
+  },
+  buyNowSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
+  },
+  saveBadge: {
+    position: 'absolute',
+    top: -12,
+    right: 12,
+    backgroundColor: '#f97316',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  saveBadgeText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
