@@ -344,7 +344,7 @@ export default function ImageViewerModal({
               activeOpacity={0.7}
             >
               <View style={styles.addToCartContent}>
-                <Ionicons name="cart-outline" size={20} color={Colors.sky} />
+                <Ionicons name="cart-outline" size={20} color="#f97316" />
                 <View style={styles.addToCartLabel}>
                   <Text style={styles.addToCartText}>Add</Text>
                   <Text style={styles.addToCartSmallText}>to cart</Text>
@@ -396,8 +396,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   slideshowIconBtn: {
     width: 40,
@@ -414,7 +416,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginHorizontal: 12,
+    paddingLeft: 12,
   },
   slideshowBrandImageContainer: {
     width: 42,
@@ -437,15 +439,12 @@ const styles = StyleSheet.create({
   slideshowBrandNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    justifyContent: 'space-between',
+    gap: 4,
   },
   slideshowBrandName: {
     fontSize: 13,
     fontWeight: '600',
     color: Colors.text,
-    flex: 1,
-    flexShrink: 1,
   },
   slideshowRatingRow: {
     flexDirection: 'row',
@@ -640,9 +639,9 @@ const styles = StyleSheet.create({
     width: 70,
     height: 52,
     borderRadius: 10,
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#fff7ed',
     borderWidth: 1.5,
-    borderColor: Colors.sky,
+    borderColor: '#f97316',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -658,13 +657,13 @@ const styles = StyleSheet.create({
   addToCartText: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.sky,
+    color: '#f97316',
     lineHeight: 12,
   },
   addToCartSmallText: {
     fontSize: 9,
     fontWeight: '500',
-    color: Colors.sky,
+    color: '#f97316',
     lineHeight: 11,
   },
   buyNowButtonContainer: {
@@ -707,7 +706,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -12,
     right: 12,
-    backgroundColor: Colors.forest,
+    backgroundColor: '#f97316',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
