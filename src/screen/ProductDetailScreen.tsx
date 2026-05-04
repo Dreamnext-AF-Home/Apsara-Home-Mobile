@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity,
-  Dimensions, ActivityIndicator, BackHandler, TextInput,
+  Dimensions, ActivityIndicator, BackHandler, TextInput, NativeSyntheticEvent, NativeScrollEvent, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import ItemCard from '../components/Items/ItemCard';
 import ImageViewerModal from '../components/Items/ImageViewerModal';
 import BuyNowModal from '../components/Items/BuyNowModal';
 import PrimaryButton from '../components/Button/PrimaryButton';
+import AppHeader from '../components/AppHeader/AppHeader';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 
@@ -25,6 +26,18 @@ interface ProductDetailScreenProps {
   token?: string | null;
   onBack: () => void;
   onProductPress?: (id: number) => void;
+  user?: {
+    name?: string;
+    avatar_url?: string;
+    badge_name?: string;
+    username?: string;
+    monthly_activation?: {
+      current_month_pv: number;
+      threshold_pv: number;
+      remaining_pv: number;
+    };
+  } | null;
+  cartCount?: number;
 }
 
 const BADGE_CONFIG = [
@@ -71,6 +84,8 @@ export default function ProductDetailScreen({
   token,
   onBack,
   onProductPress,
+  user,
+  cartCount = 0,
 }: ProductDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const [product, setProduct] = useState<Product | null>(null);
@@ -89,6 +104,9 @@ export default function ProductDetailScreen({
   const scrollRef = useRef<ScrollView>(null);
   const galleryScrollRef = useRef<ScrollView>(null);
   const imageViewerScrollRef = useRef<ScrollView>(null);
+  const [showHeaderOnScroll, setShowHeaderOnScroll] = useState(false);
+  const headerTranslateY = useRef(new Animated.Value(-100)).current;
+  const headerOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -227,6 +245,41 @@ export default function ProductDetailScreen({
     ? BADGE_CONFIG.filter(b => (product as any)[b.key])
     : [];
 
+  const handleScrollEvent = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    setShowHeaderOnScroll(scrollY > 100);
+  };
+
+  useEffect(() => {
+    if (showHeaderOnScroll) {
+      Animated.parallel([
+        Animated.timing(headerTranslateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(headerOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(headerTranslateY, {
+          toValue: -100,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(headerOpacity, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showHeaderOnScroll, headerTranslateY, headerOpacity]);
+
   return (
     <View style={styles.root}>
       {loading ? (
@@ -235,10 +288,30 @@ export default function ProductDetailScreen({
         </View>
       ) : product ? (
         <>
+          <Animated.View
+            style={[
+              styles.animatedHeader,
+              {
+                transform: [{ translateY: headerTranslateY }],
+                opacity: headerOpacity,
+              },
+            ]}
+            pointerEvents={showHeaderOnScroll ? 'auto' : 'none'}
+          >
+            <AppHeader
+              user={user || undefined}
+              cartCount={cartCount}
+              onCartPress={() => console.log('Cart pressed')}
+              onSearchPress={() => console.log('Search pressed')}
+              onFilterPress={() => console.log('Filter pressed')}
+            />
+          </Animated.View>
           <ScrollView
             ref={scrollRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
+            onScroll={handleScrollEvent}
+            scrollEventThrottle={16}
           >
           {/* Image Gallery */}
           <View style={styles.galleryWrap}>
@@ -929,11 +1002,8 @@ export default function ProductDetailScreen({
               activeOpacity={0.7}
             >
               <View style={styles.addToCartContent}>
-                <Ionicons name="cart-outline" size={20} color="#f97316" />
-                <View style={styles.addToCartLabel}>
-                  <Text style={styles.addToCartText}>Add</Text>
-                  <Text style={styles.addToCartSmallText}>to cart</Text>
-                </View>
+                <Ionicons name="cart-outline" size={20} color={Colors.white} />
+                <Text style={styles.addToCartText}>Add to cart</Text>
               </View>
             </TouchableOpacity>
 
@@ -983,6 +1053,7 @@ export default function ProductDetailScreen({
         imagesWithVariants={imagesWithVariants}
         selectedVariant={selectedVariant}
         imageViewerIndex={imageViewerIndex}
+        cartCount={cartCount}
         onClose={() => setShowImageViewer(false)}
         onAddToCart={() => {
           console.log('Add to cart');
@@ -1280,6 +1351,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.white,
+  },
+  animatedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
   loadingWrap: {
     flex: 1,
@@ -2146,13 +2224,14 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 0,
   },
   addToCartButton: {
     width: 70,
     height: 52,
-    borderRadius: 10,
-    backgroundColor: '#fff7ed',
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
     alignItems: 'center',
@@ -2162,22 +2241,14 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-  },
-  addToCartLabel: {
-    alignItems: 'center',
+    gap: 3,
   },
   addToCartText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#f97316',
-    lineHeight: 12,
-  },
-  addToCartSmallText: {
-    fontSize: 9,
-    fontWeight: '500',
-    color: '#f97316',
-    lineHeight: 11,
+    color: Colors.white,
+    lineHeight: 13,
+    textAlign: 'center',
   },
   buyNowButtonContainer: {
     flex: 1,
@@ -2186,8 +2257,8 @@ const styles = StyleSheet.create({
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
-    flex: 1,
-    borderRadius: 10,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2505,13 +2576,14 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 0,
   },
   addToCartButton: {
     width: 70,
     height: 52,
-    borderRadius: 10,
-    backgroundColor: '#fff7ed',
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
     alignItems: 'center',
@@ -2521,22 +2593,14 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-  },
-  addToCartLabel: {
-    alignItems: 'center',
+    gap: 3,
   },
   addToCartText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#f97316',
-    lineHeight: 12,
-  },
-  addToCartSmallText: {
-    fontSize: 9,
-    fontWeight: '500',
-    color: '#f97316',
-    lineHeight: 11,
+    color: Colors.white,
+    lineHeight: 13,
+    textAlign: 'center',
   },
   buyNowButtonContainer: {
     flex: 1,
@@ -2545,8 +2609,8 @@ const styles = StyleSheet.create({
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
-    flex: 1,
-    borderRadius: 10,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },

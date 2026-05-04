@@ -56,6 +56,7 @@ interface ImageViewerModalProps {
   onImageIndexChange: (index: number) => void;
   onProductPress?: (productId: number) => void;
   hasDiscount: boolean;
+  cartCount?: number;
 }
 
 export default function ImageViewerModal({
@@ -73,6 +74,7 @@ export default function ImageViewerModal({
   onImageIndexChange,
   onProductPress,
   hasDiscount,
+  cartCount = 0,
 }: ImageViewerModalProps) {
   const insets = useSafeAreaInsets();
   const imageViewerScrollRef = useRef<ScrollView>(null);
@@ -345,10 +347,7 @@ export default function ImageViewerModal({
             >
               <View style={styles.addToCartContent}>
                 <Ionicons name="cart-outline" size={20} color={Colors.white} />
-                <View style={styles.addToCartLabel}>
-                  <Text style={styles.addToCartText}>Add</Text>
-                  <Text style={styles.addToCartSmallText}>to cart</Text>
-                </View>
+                <Text style={styles.addToCartText}>Add to cart</Text>
               </View>
             </TouchableOpacity>
 
@@ -633,12 +632,13 @@ const styles = StyleSheet.create({
   slideshowButtonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 0,
   },
   addToCartButton: {
     width: 70,
     height: 52,
-    borderRadius: 10,
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
     backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
@@ -649,22 +649,14 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-  },
-  addToCartLabel: {
-    alignItems: 'center',
+    gap: 3,
   },
   addToCartText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: Colors.white,
-    lineHeight: 12,
-  },
-  addToCartSmallText: {
-    fontSize: 9,
-    fontWeight: '500',
-    color: Colors.white,
-    lineHeight: 11,
+    lineHeight: 13,
+    textAlign: 'center',
   },
   buyNowButtonContainer: {
     flex: 1,
@@ -673,8 +665,8 @@ const styles = StyleSheet.create({
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
-    flex: 1,
-    borderRadius: 10,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
