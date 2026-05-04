@@ -85,7 +85,7 @@ export default function ItemCard({
             end={{ x: 1, y: 1 }}
             style={styles.badge}
           >
-            <Ionicons name="star" size={9} color={Colors.white} />
+            <Ionicons name="trending-up" size={9} color={Colors.white} />
             <Text style={styles.badgeLabel}>PV {product.pv}</Text>
           </LinearGradient>
 
