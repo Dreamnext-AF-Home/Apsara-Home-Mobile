@@ -60,12 +60,12 @@ export default function SearchResultScreen({
           originalPrice: item.original_price,
           memberPrice: item.discounted_price,
           pv: item.pv,
-          brandName: '',
-          variantCount: 0,
+          brandName: item.brand_name || '',
+          variantCount: item.badges?.variant_count ?? 0,
           badges: {
-            musthave: false,
-            bestseller: false,
-            salespromo: item.has_discount,
+            musthave: item.badges?.musthave ?? false,
+            bestseller: item.badges?.bestseller ?? false,
+            salespromo: item.has_discount ?? false,
           },
         }));
         setProducts(mapped);
