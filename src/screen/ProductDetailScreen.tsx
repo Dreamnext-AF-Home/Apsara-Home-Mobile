@@ -315,7 +315,7 @@ export default function ProductDetailScreen({
               </View>
             )}
             {/* Back Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 try {
                   if (onBack && typeof onBack === 'function') {
@@ -326,14 +326,56 @@ export default function ProductDetailScreen({
                 } catch (error) {
                   console.error('Error in back navigation:', error);
                 }
-              }} 
-              style={[styles.galleryBackBtn, { paddingTop: insets.top + 10 }]} 
+              }}
+              style={[styles.galleryBackBtn, { paddingTop: insets.top + 10 }]}
               activeOpacity={0.7}
             >
               <View style={styles.galleryBackBtnInner}>
                 <Ionicons name="arrow-back" size={22} color={Colors.white} />
               </View>
             </TouchableOpacity>
+
+            {/* Top Right Icons */}
+            <View style={[styles.galleryTopRightIcons, { paddingTop: insets.top + 10 }]}>
+              {/* Heart/Wishlist Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('Add to wishlist');
+                }}
+                style={styles.galleryIconBtn}
+                activeOpacity={0.7}
+              >
+                <View style={styles.galleryIconBtnInner}>
+                  <Ionicons name="heart-outline" size={22} color={Colors.white} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Share Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('Share product');
+                }}
+                style={styles.galleryIconBtn}
+                activeOpacity={0.7}
+              >
+                <View style={styles.galleryIconBtnInner}>
+                  <Ionicons name="share-social-outline" size={22} color={Colors.white} />
+                </View>
+              </TouchableOpacity>
+
+              {/* More Options (3-dot menu) */}
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('More options');
+                }}
+                style={styles.galleryIconBtn}
+                activeOpacity={0.7}
+              >
+                <View style={styles.galleryIconBtnInner}>
+                  <Ionicons name="ellipsis-vertical" size={22} color={Colors.white} />
+                </View>
+              </TouchableOpacity>
+            </View>
                       </View>
 
           {/* Price and Sold */}
@@ -1313,6 +1355,25 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   galleryBackBtnInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryTopRightIcons: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  galleryIconBtn: {
+    padding: 0,
+  },
+  galleryIconBtnInner: {
     width: 36,
     height: 36,
     borderRadius: 18,
