@@ -58,6 +58,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [previousSearchQuery, setPreviousSearchQuery] = useState<string | null>(null);
+  const [searchSourceProductId, setSearchSourceProductId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -75,21 +77,37 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     if (!searchVisible) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setSearchVisible(false);
-      setActiveTab(previousTab);
-      activeTabRef.current = previousTab;
+      // If search was opened from ProductDetailScreen, restore it
+      if (searchSourceProductId !== null) {
+        setSelectedProductId(searchSourceProductId);
+        setSearchSourceProductId(null);
+      } else {
+        // Otherwise restore the previous tab
+        setActiveTab(previousTab);
+        activeTabRef.current = previousTab;
+      }
       return true;
     });
     return () => sub.remove();
-  }, [searchVisible, previousTab]);
+  }, [searchVisible, previousTab, searchSourceProductId]);
 
   useEffect(() => {
     if (selectedProductId === null) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setSelectedProductId(null);
+      // If product was opened from search, restore search query
+      if (previousSearchQuery) {
+        setSearchQuery(previousSearchQuery);
+        setPreviousSearchQuery(null);
+      } else {
+        // Otherwise restore the previous tab
+        setActiveTab(previousTab);
+        activeTabRef.current = previousTab;
+      }
       return true;
     });
     return () => sub.remove();
-  }, [selectedProductId]);
+  }, [selectedProductId, previousTab, previousSearchQuery]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -182,14 +200,26 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               user={user}
               cartCount={cartCount}
               onBack={() => setSelectedProductId(null)}
-              onProductPress={(id) => setSelectedProductId(id)}
+              onProductPress={(id) => {
+                setPreviousSearchQuery(null);
+                setSelectedProductId(id);
+              }}
+              onSearch={() => {
+                setSearchSourceProductId(selectedProductId);
+                setSelectedProductId(null);
+                setPreviousTab(activeTabRef.current);
+                setSearchVisible(true);
+              }}
             />
           ) : searchQuery ? (
             <SearchResultScreen
               token={token}
               query={searchQuery}
               onBack={() => setSearchQuery(null)}
-              onProductPress={(product) => setSelectedProductId(product.id)}
+              onProductPress={(product) => {
+                setPreviousSearchQuery(searchQuery);
+                setSelectedProductId(product.id);
+              }}
             />
            ) : activeTab === 'settings' ? (
             <SettingsScreen
@@ -214,11 +244,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   console.log('Camera pressed');
                 }}
                 onSearchPress={() => {
+                  setSearchSourceProductId(null);
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);
                 }}
               />
-              <HomeScreen token={token} user={user} isDarkMode={isDarkMode} onProductPress={(id: number) => setSelectedProductId(id)} />
+              <HomeScreen token={token} user={user} isDarkMode={isDarkMode} onProductPress={(id: number) => {
+                setPreviousSearchQuery(null);
+                setSelectedProductId(id);
+              }} />
             </>
           ) : (
             <>
@@ -231,6 +265,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   console.log('Camera pressed');
                 }}
                 onSearchPress={() => {
+                  setSearchSourceProductId(null);
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);
                 }}
