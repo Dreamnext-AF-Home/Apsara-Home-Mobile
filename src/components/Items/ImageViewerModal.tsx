@@ -250,7 +250,7 @@ export default function ImageViewerModal({
             <View style={styles.slideshowCardMetaRow}>
               {product.prodpv > 0 && (
                 <View style={styles.slideshowCardMeta}>
-                  <Ionicons name="star" size={12} color={Colors.sky} />
+                  <Ionicons name="trending-up" size={12} color={Colors.sky} />
                   <Text style={styles.slideshowCardMetaText}>
                     PV {product.prodpv}
                   </Text>
