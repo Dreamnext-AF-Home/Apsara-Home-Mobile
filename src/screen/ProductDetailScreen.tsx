@@ -13,6 +13,7 @@ import { authService } from '../services/authService';
 import ItemCard from '../components/Items/ItemCard';
 import ImageViewerModal from '../components/Items/ImageViewerModal';
 import BuyNowModal from '../components/Items/BuyNowModal';
+import AddToCartModal from '../components/Items/AddToCartModal';
 import PrimaryButton from '../components/Button/PrimaryButton';
 import AppHeader from '../components/AppHeader/AppHeader';
 import axios from 'axios';
@@ -109,6 +110,10 @@ export default function ProductDetailScreen({
   const [showHeaderOnScroll, setShowHeaderOnScroll] = useState(false);
   const headerTranslateY = useRef(new Animated.Value(-100)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -282,6 +287,67 @@ export default function ProductDetailScreen({
     }
   }, [showHeaderOnScroll, headerTranslateY, headerOpacity]);
 
+  const addToCart = async (cartData: {
+    product_id: number;
+    variant_id?: number;
+    quantity: number;
+  }) => {
+    if (!token) {
+      console.log('Missing token');
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}/cart/add`,
+        cartData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data?.success) {
+        console.log('Item added to cart successfully');
+        setShowAddToCartModal(false);
+        // Optional: Show success toast
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!token || !product) {
+      console.log('Missing token or product');
+      return;
+    }
+
+    setWishlistLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}/wishlist`,
+        {
+          product_id: product.id,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data?.success) {
+        setIsWishlisted(!isWishlisted);
+        console.log('Wishlist updated successfully');
+      }
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
   return (
     <View style={styles.root}>
       {loading ? (
@@ -414,14 +480,17 @@ export default function ProductDetailScreen({
             <View style={[styles.galleryTopRightIcons, { paddingTop: insets.top + 10 }]}>
               {/* Heart/Wishlist Icon */}
               <TouchableOpacity
-                onPress={() => {
-                  console.log('Add to wishlist');
-                }}
-                style={styles.galleryIconBtn}
+                onPress={toggleWishlist}
+                style={[styles.galleryIconBtn, wishlistLoading && { opacity: 0.6 }]}
                 activeOpacity={0.7}
+                disabled={wishlistLoading}
               >
                 <View style={styles.galleryIconBtnInner}>
-                  <Ionicons name="heart-outline" size={22} color={Colors.white} />
+                  <Ionicons
+                    name={isWishlisted ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={isWishlisted ? '#ef4444' : Colors.white}
+                  />
                 </View>
               </TouchableOpacity>
 
@@ -1089,16 +1158,18 @@ export default function ProductDetailScreen({
           <View style={styles.buttonRow}>
             {/* Add to Cart Button */}
             <TouchableOpacity
-              style={styles.addToCartButton}
-              onPress={() => {
-                // TODO: Implement add to cart functionality
-                console.log('Add to Cart pressed');
-              }}
+              style={[styles.addToCartButton, addingToCart && { opacity: 0.6 }]}
+              onPress={() => setShowAddToCartModal(true)}
               activeOpacity={0.7}
+              disabled={addingToCart}
             >
               <View style={styles.addToCartContent}>
-                <Ionicons name="cart-outline" size={20} color={Colors.white} />
-                <Text style={styles.addToCartText}>Add to cart</Text>
+                {addingToCart ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <Ionicons name="cart-outline" size={20} color={Colors.white} />
+                )}
+                <Text style={styles.addToCartText}>{addingToCart ? 'Processing...' : 'Add to cart'}</Text>
               </View>
             </TouchableOpacity>
 
@@ -1437,6 +1508,25 @@ export default function ProductDetailScreen({
           });
           setShowBuyModal(false);
         }}
+        onAddToCart={addToCart}
+        loading={addingToCart}
+      />
+
+      <AddToCartModal
+        visible={showAddToCartModal}
+        product={product}
+        images={images}
+        selectedVariant={selectedVariant}
+        quantity={quantity}
+        onClose={() => setShowAddToCartModal(false)}
+        onSelectVariant={setSelectedVariant}
+        onQuantityChange={setQuantity}
+        onAddToCart={addToCart}
+        onCheckout={() => {
+          console.log('Proceeding to checkout');
+          setShowAddToCartModal(false);
+        }}
+        loading={addingToCart}
       />
     </View>
   );
