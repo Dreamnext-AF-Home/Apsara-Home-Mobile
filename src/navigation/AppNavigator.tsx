@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Colors } from '../constants/colors';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
@@ -24,6 +25,36 @@ const TABS: TabKey[] = ['home', 'wishlist', 'shop', 'notification', 'profile'];
 const SLIDE_DISTANCE = 30;
 const OUT_DURATION = 0;
 const IN_DURATION = 0;
+
+// Cache utilities using expo-file-system
+const CACHE_DIR = FileSystem.cacheDirectory + 'apsara_cache/';
+const cacheUtils = {
+  async init() {
+    try {
+      const info = await FileSystem.getInfoAsync(CACHE_DIR);
+      if (!info.exists) {
+        await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true });
+      }
+    } catch (error) {
+      console.log('Cache init error:', error);
+    }
+  },
+  async get(key: string) {
+    try {
+      const file = await FileSystem.readAsStringAsync(CACHE_DIR + key);
+      return JSON.parse(file);
+    } catch {
+      return null;
+    }
+  },
+  async set(key: string, data: any) {
+    try {
+      await FileSystem.writeAsStringAsync(CACHE_DIR + key, JSON.stringify(data));
+    } catch (error) {
+      console.log('Cache write error:', error);
+    }
+  },
+};
 
 interface User {
   id: string;
@@ -105,6 +136,11 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const { authService } = require('../services/authService');
   const { productService } = require('../services/productService');
 
+  // Initialize cache on mount
+  useEffect(() => {
+    cacheUtils.init();
+  }, []);
+
   useEffect(() => {
     if (!token) return;
 
@@ -130,10 +166,29 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const fetchHomeData = async () => {
     if (!token) return;
 
+    // Phase 1: Load from cache immediately
     try {
-      const totalStart = performance.now();
-      console.log('🔄 STARTING HOME DATA FETCH...');
+      const [cachedCategories, cachedBrands, cachedRooms] = await Promise.all([
+        cacheUtils.get('home_categories'),
+        cacheUtils.get('home_brands'),
+        cacheUtils.get('home_rooms'),
+      ]);
+
+      if (cachedCategories || cachedBrands || cachedRooms) {
+        console.log('💾 LOADED CACHED DATA');
+        setHomeCategories(cachedCategories || []);
+        setHomeBrands(cachedBrands || []);
+        setHomeRoomTypes(cachedRooms || []);
+      }
+    } catch (error) {
+      console.log('Cache load error:', error);
+    }
+
+    // Phase 2: Fetch fresh data in background
+    try {
       setHomeLoadingFeatured(true);
+      const totalStart = performance.now();
+      console.log('🔄 FETCHING FRESH DATA...');
 
       const apiStart = performance.now();
       const [categoryData, brandData, roomData] = await Promise.all([
@@ -149,14 +204,19 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       const sortedCategories = categoryData.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
       console.log(`🔄 SORTING: ${Math.round(performance.now() - sortStart)}ms`);
 
-      const setStateStart = performance.now();
+      // Update state with fresh data
       setHomeCategories(sortedCategories);
       setHomeBrands(brandData);
-      setHomeFeaturedProducts([]);
       setHomeRoomTypes(roomData);
-      console.log(`💾 STATE UPDATE: ${Math.round(performance.now() - setStateStart)}ms`);
 
-      console.log(`⏱️ TOTAL HOME LOAD: ${Math.round(performance.now() - totalStart)}ms`);
+      // Cache the fresh data
+      await Promise.all([
+        cacheUtils.set('home_categories', sortedCategories),
+        cacheUtils.set('home_brands', brandData),
+        cacheUtils.set('home_rooms', roomData),
+      ]);
+
+      console.log(`⏱️ FRESH DATA READY: ${Math.round(performance.now() - totalStart)}ms`);
     } catch (error: any) {
       console.error('Home data fetch error:', error);
     } finally {
@@ -167,16 +227,34 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const fetchWishlistData = async (isRefreshing = false) => {
     if (!token) return;
 
+    const setLoading = isRefreshing ? setWishlistRefreshing : setWishlistLoading;
+
+    // Load from cache first if not refreshing
+    if (!isRefreshing) {
+      try {
+        const cachedWishlist = await cacheUtils.get('wishlist_items');
+        if (cachedWishlist) {
+          setWishlistItems(cachedWishlist);
+          setWishlistCount(cachedWishlist.length);
+          console.log('💾 LOADED CACHED WISHLIST');
+        }
+      } catch (error) {
+        console.log('Wishlist cache load error:', error);
+      }
+    }
+
+    // Fetch fresh data in background
     try {
-      const setLoading = isRefreshing ? setWishlistRefreshing : setWishlistLoading;
       setLoading(true);
       const data = await productService.getWishlist(token);
       setWishlistItems(data);
       setWishlistCount(data.length);
+
+      // Cache the fresh data
+      await cacheUtils.set('wishlist_items', data);
     } catch (error: any) {
       console.error('Wishlist fetch error:', error);
     } finally {
-      const setLoading = isRefreshing ? setWishlistRefreshing : setWishlistLoading;
       setLoading(false);
     }
   };

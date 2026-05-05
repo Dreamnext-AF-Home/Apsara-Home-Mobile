@@ -70,50 +70,43 @@ function MarqueeBanner() {
   const pos1 = useRef(0);
   const pos2 = useRef(0);
   const contentWidthRef = useRef(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isScrollingRef = useRef(false);
 
   const startScrolling = (cw: number) => {
+    if (isScrollingRef.current) return; // Already scrolling
+    isScrollingRef.current = true;
+
     pos1.current = 0;
     pos2.current = cw;
     tx1.setValue(0);
     tx2.setValue(cw);
 
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    intervalRef.current = setInterval(() => {
+    const tick = () => {
       pos1.current -= 0.7;
       pos2.current -= 0.7;
 
-      // when a view goes fully off the left edge, teleport it to the right
       if (pos1.current <= -cw) pos1.current = cw;
       if (pos2.current <= -cw) pos2.current = cw;
 
       tx1.setValue(pos1.current);
       tx2.setValue(pos2.current);
-    }, 16);
+    };
+
+    const interval = setInterval(tick, 16);
+    return () => clearInterval(interval);
   };
 
   useEffect(() => {
-    // Keep the interval alive even if component remounts
-    const checkInterval = setInterval(() => {
-      if (!intervalRef.current && contentWidthRef.current > 0) {
-        startScrolling(contentWidthRef.current);
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(checkInterval);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    if (contentWidthRef.current > 0) {
+      startScrolling(contentWidthRef.current);
+    }
   }, []);
 
   const handleLayout = (e: any) => {
     const w = e.nativeEvent.layout.width;
     if (w && w !== contentWidthRef.current) {
       contentWidthRef.current = w;
-      startScrolling(w);
-    } else if (w && !intervalRef.current) {
-      // Restart scrolling if interval was cleared (e.g., after navigation)
+      isScrollingRef.current = false;
       startScrolling(w);
     }
   };
