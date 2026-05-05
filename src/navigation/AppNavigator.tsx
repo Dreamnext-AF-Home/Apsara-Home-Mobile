@@ -119,8 +119,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [previousSearchQuery, setPreviousSearchQuery] = useState<string | null>(null);
   const [searchSourceProductId, setSearchSourceProductId] = useState<number | null>(null);
-  const [deviceToken, setDeviceToken] = useState<string | null>(null);
-  const [showTokenModal, setShowTokenModal] = useState(false);
+  // const [deviceToken, setDeviceToken] = useState<string | null>(null);
+  // const [showTokenModal, setShowTokenModal] = useState(false);
 
   // Home screen data - persists across navigation
   const [homeCategories, setHomeCategories] = useState<CategoryItem[]>([]);
@@ -162,40 +162,40 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   }, []);
 
   // Setup push notifications
-  useEffect(() => {
-    const setupNotifications = async () => {
-      try {
-        // Request permissions
-        const { status } = await Notifications.requestPermissionsAsync();
-        console.log('Notification permission status:', status);
+  // useEffect(() => {
+  //   const setupNotifications = async () => {
+  //     try {
+  //       // Request permissions
+  //       const { status } = await Notifications.requestPermissionsAsync();
+  //       console.log('Notification permission status:', status);
 
-        // Get device push token
-        const pushToken = await Notifications.getExpoPushTokenAsync();
-        setDeviceToken(pushToken.data);
-        console.log('📱 DEVICE TOKEN:', pushToken.data);
+  //       // Get device push token
+  //       const pushToken = await Notifications.getExpoPushTokenAsync();
+  //       setDeviceToken(pushToken.data);
+  //       console.log('📱 DEVICE TOKEN:', pushToken.data);
 
-        // Set notification handler
-        Notifications.setNotificationHandler({
-          handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-          }),
-        });
+  //       // Set notification handler
+  //       Notifications.setNotificationHandler({
+  //         handleNotification: async () => ({
+  //           shouldShowAlert: true,
+  //           shouldPlaySound: true,
+  //           shouldSetBadge: true,
+  //         }),
+  //       });
 
-        // Listen for notifications
-        const subscription = Notifications.addNotificationResponseListener(({ notification }) => {
-          console.log('Notification received:', notification);
-        });
+  //       // Listen for notifications
+  //       const subscription = Notifications.addNotificationResponseListener(({ notification }) => {
+  //         console.log('Notification received:', notification);
+  //       });
 
-        return () => subscription.remove();
-      } catch (error) {
-        console.log('Notification setup error:', error);
-      }
-    };
+  //       return () => subscription.remove();
+  //     } catch (error) {
+  //       console.log('Notification setup error:', error);
+  //     }
+  //   };
 
-    setupNotifications();
-  }, []);
+  //   setupNotifications();
+  // }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -604,7 +604,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 key={key}
                 style={styles.navItem}
                 onPress={() => navigateTo(key)}
-                onLongPress={() => key === 'notification' && deviceToken && setShowTokenModal(true)}
+                // onLongPress={() => key === 'notification' && deviceToken && setShowTokenModal(true)}
               >
                 <View style={styles.indicator}>
                   {active && <View style={styles.indicatorLine} />}
@@ -650,7 +650,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           </TouchableOpacity>
         </Modal>
 
-        <Modal visible={showTokenModal} transparent animationType="fade" onRequestClose={() => setShowTokenModal(false)}>
+        {/* <Modal visible={showTokenModal} transparent animationType="fade" onRequestClose={() => setShowTokenModal(false)}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTokenModal(false)}>
             <View style={styles.tokenModal}>
               <Text style={styles.tokenTitle}>Push Notification Token</Text>
@@ -675,7 +675,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
-        </Modal>
+        </Modal> */}
       </SafeAreaView>
 
       {searchVisible && (
