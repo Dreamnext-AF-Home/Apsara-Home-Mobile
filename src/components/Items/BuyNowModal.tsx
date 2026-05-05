@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Image, TextInput, StyleSheet, Dimensions, BackHandler,
+  View, Text, TouchableOpacity, ScrollView, Image, TextInput, StyleSheet, Dimensions, BackHandler, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,9 +63,26 @@ export default function BuyNowModal({
   loading = false,
 }: BuyNowModalProps) {
   const insets = useSafeAreaInsets();
-  const scrollStartY = React.useRef(0);
-  const hasScrolledDown = React.useRef(false);
+  const scrollStartY = useRef(0);
+  const hasScrolledDown = useRef(false);
+  const slideAnim = useRef(new Animated.Value(300)).current;
   const [addingToCart, setAddingToCart] = React.useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, slideAnim]);
 
   useEffect(() => {
     if (!visible) return;
@@ -99,7 +116,12 @@ export default function BuyNowModal({
         activeOpacity={1}
         onPress={onClose}
       />
-      <View style={[styles.shopeeModal, { paddingBottom: insets.bottom || 16 }]}>
+      <Animated.View
+        style={[
+          styles.shopeeModal,
+          { paddingBottom: 0, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
         {/* Header */}
         <View style={styles.shopeeModalHeader}>
           <TouchableOpacity
@@ -345,7 +367,7 @@ export default function BuyNowModal({
         </ScrollView>
 
         {/* Bottom Total & Button - Styled like ProductDetailScreen */}
-        <View style={[styles.shopeeCheckoutFooterGradient, { paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom }]}>
+        <View style={[styles.shopeeCheckoutFooterGradient, { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }]}>
           {/* Total Info */}
           <View style={styles.checkoutTotalContainer}>
             <Text style={styles.checkoutTotalLabel}>Total Price</Text>
@@ -407,7 +429,7 @@ export default function BuyNowModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }

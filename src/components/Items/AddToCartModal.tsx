@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, Dimensions,
-  ActivityIndicator, TextInput, BackHandler,
+  ActivityIndicator, TextInput, BackHandler, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,8 +64,25 @@ export default function AddToCartModal({
   loading = false,
 }: AddToCartModalProps) {
   const insets = useSafeAreaInsets();
-  const scrollStartY = React.useRef(0);
-  const hasScrolledDown = React.useRef(false);
+  const scrollStartY = useRef(0);
+  const hasScrolledDown = useRef(false);
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, slideAnim]);
 
   useEffect(() => {
     if (!visible) return;
@@ -109,7 +126,12 @@ export default function AddToCartModal({
         activeOpacity={1}
         onPress={onClose}
       />
-      <View style={[styles.shopeeModal, { paddingBottom: insets.bottom || 16 }]}>
+      <Animated.View
+        style={[
+          styles.shopeeModal,
+          { paddingBottom: 0, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
         {/* Header */}
         <View style={styles.shopeeModalHeader}>
           <TouchableOpacity
@@ -315,7 +337,7 @@ export default function AddToCartModal({
         </ScrollView>
 
         {/* Bottom Buttons */}
-        <View style={[styles.shopeeCheckoutFooterGradient, { paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom }]}>
+        <View style={[styles.shopeeCheckoutFooterGradient, { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }]}>
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.checkoutBtn, loading && { opacity: 0.6 }]}
@@ -354,7 +376,7 @@ export default function AddToCartModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
