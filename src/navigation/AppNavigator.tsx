@@ -395,6 +395,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 loadingFeatured={homeLoadingFeatured}
                 setLoadingFeatured={setHomeLoadingFeatured}
                 dataFetchedRef={homeInitialFetchRef}
+                wishlistItems={wishlistItems}
+                onWishlistChange={() => fetchWishlistData()}
               />
             </>
           ) : (
