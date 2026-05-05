@@ -210,7 +210,7 @@ export default function AppHeader({
               ) : initial ? (
                 <Text style={styles.avatarInitial}>{initial}</Text>
               ) : (
-                <Ionicons name="person" size={18} color={Colors.textSecondary} />
+                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} />
               )}
             </View>
             <View style={styles.nameContainer}>
@@ -241,7 +241,7 @@ export default function AppHeader({
               onPress={() => setShowBalance(!showBalance)}
               activeOpacity={0.7}
             >
-              <Ionicons name={showBalance ? "eye" : "eye-off"} size={12} color={Colors.white} />
+              <Ionicons name={showBalance ? "eye-outline" : "eye-off-outline"} size={12} color={Colors.white} />
               <Text style={styles.pvText}>
                 {showBalance ? `₱${moneyBalance.toLocaleString()}` : '••••'}
               </Text>
@@ -251,7 +251,7 @@ export default function AppHeader({
               onPress={onCartPress}
               activeOpacity={0.7}
             >
-              <Ionicons name="cart" size={20} color={Colors.text} />
+              <Ionicons name="cart-outline" size={20} color={Colors.text} />
               {cartCount > 0 && (
                 <View style={styles.cartBadge}>
                   <Text style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
