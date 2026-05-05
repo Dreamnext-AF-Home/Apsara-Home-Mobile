@@ -718,9 +718,9 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             onBack={() => setShowCart(false)}
             onProductPress={(productId) => {
               setShowCart(false);
-              // Navigate to product details
-              // This will need to be implemented based on your navigation structure
-              console.log('Navigate to product:', productId);
+              setPreviousSearchQuery(null);
+              setPreviousTab(activeTabRef.current);
+              setSelectedProductId(productId);
             }}
             onCheckout={() => {
               setShowCart(false);
