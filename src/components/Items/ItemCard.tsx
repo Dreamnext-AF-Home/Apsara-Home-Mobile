@@ -1,13 +1,20 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import type { ProductCard } from '../../services/productService';
+import axios from 'axios';
+import { API_CONFIG } from '../../config/api';
+import Toast from 'react-native-toast-message';
 
 interface ItemCardProps {
   product: ProductCard;
   onPress?: (product: ProductCard) => void;
+  token?: string | null;
+  isWishlisted?: boolean;
+  wishlistId?: number;
+  onWishlistToggle?: (productId: number, isWishlisted: boolean) => void;
 }
 
 const BADGE_CONFIG = [
@@ -19,7 +26,14 @@ const BADGE_CONFIG = [
 export default function ItemCard({
   product,
   onPress,
+  token,
+  isWishlisted = false,
+  wishlistId,
+  onWishlistToggle,
 }: ItemCardProps) {
+  const [wishlisted, setWishlisted] = useState(isWishlisted);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+
   const displayPrice = product.memberPrice || product.originalPrice;
   const hasDiscount = displayPrice < product.originalPrice;
   const discountPct = hasDiscount
@@ -27,6 +41,55 @@ export default function ItemCard({
     : 0;
 
   const activeBadges = BADGE_CONFIG.filter(b => product.badges[b.key]);
+
+  const handleWishlistToggle = async () => {
+    if (!token) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please log in to add items to wishlist',
+      });
+      return;
+    }
+
+    try {
+      setIsTogglingWishlist(true);
+
+      if (wishlisted) {
+        // Remove from wishlist - DELETE request
+        if (wishlistId) {
+          await axios.delete(`${API_CONFIG.BASE_URL}/cart/${wishlistId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
+      } else {
+        // Add to wishlist - POST request
+        await axios.post(
+          `${API_CONFIG.BASE_URL}/wishlist`,
+          { product_id: product.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+
+      setWishlisted(!wishlisted);
+      onWishlistToggle?.(product.id, !wishlisted);
+
+      Toast.show({
+        type: 'success',
+        text1: wishlisted ? 'Removed from wishlist' : 'Added to wishlist',
+        text2: wishlisted ? 'Item removed from your wishlist' : 'Item added to your wishlist',
+      });
+    } catch (error: any) {
+      console.error('Error toggling wishlist:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: wishlisted ? 'Failed to remove from wishlist' : 'Failed to add to wishlist',
+      });
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
 
   return (
     <TouchableOpacity style={styles.container} onPress={() => onPress?.(product)} activeOpacity={0.8}>
@@ -42,6 +105,24 @@ export default function ItemCard({
             <Text style={styles.enjoyBadgeText}>Enjoy {discountPct}% OFF</Text>
           </View>
         )}
+
+        {/* Top-right: Heart icon for wishlist */}
+        <TouchableOpacity
+          style={[styles.wishlistButton, isTogglingWishlist && { opacity: 0.8 }]}
+          onPress={handleWishlistToggle}
+          disabled={isTogglingWishlist}
+          activeOpacity={0.7}
+        >
+          {isTogglingWishlist ? (
+            <ActivityIndicator size={16} color="#ef4444" />
+          ) : (
+            <Ionicons
+              name={wishlisted ? "heart" : "heart-outline"}
+              size={18}
+              color={wishlisted ? "#ef4444" : Colors.white}
+            />
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Border Below Image */}
@@ -178,6 +259,16 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 10,
     fontWeight: '700',
+  },
+  wishlistButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 16,
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageBorder: {
     height: 1,
