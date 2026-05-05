@@ -23,6 +23,8 @@ interface ProfileScreenProps {
   user?: User | null;
   onLogout?: () => void;
   onNavigateSettings?: () => void;
+  onCartPress?: () => void;
+  cartCount?: number;
 }
 
 const REFERRAL_STATS = [
@@ -50,7 +52,7 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onNavigateSettings }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0 }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
@@ -96,8 +98,13 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings }: Pr
           </View>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-            <Ionicons name="notifications-outline" size={20} color={Colors.text} />
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onCartPress}>
+            <Ionicons name="cart-outline" size={20} color={Colors.text} />
+            {cartCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onNavigateSettings}>
             <Ionicons name="settings-outline" size={20} color={Colors.text} />
@@ -317,6 +324,31 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: Colors.white,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.white,
+    lineHeight: 12,
   },
 
   // ── Body ──
