@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import { SwipeListView } from 'react-native-swipe-list-view';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import Toast from 'react-native-toast-message';
@@ -313,6 +314,33 @@ export default function WishlistScreen({ token, wishlistItems, loading, refreshi
     />
   );
 
+  const renderHiddenItem = (data: { item: WishlistItem }) => (
+    <View style={styles.rowBack}>
+      <TouchableOpacity
+        style={[styles.backLeftBtn, styles.backLeftBtnLeft]}
+        onPress={() => {
+          setSelectedProduct(data.item);
+          setShowAddToCartModal(true);
+        }}
+      >
+        <View style={styles.cartActionInner}>
+          <Ionicons name="cart-outline" size={22} color={Colors.white} />
+          <Text style={styles.backTextWhite}>Add to Cart</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.backRightBtn, styles.backRightBtnRight]}
+        onPress={() => removeFromWishlist(data.item.wishlist_id)}
+      >
+        <View style={styles.deleteActionInner}>
+          <Ionicons name="trash-outline" size={22} color={Colors.white} />
+          <Text style={styles.backTextWhite}>Delete</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -375,9 +403,22 @@ export default function WishlistScreen({ token, wishlistItems, loading, refreshi
         </View>
       </View>
 
-      <FlatList
+      <View style={styles.swipeHint}>
+        <Ionicons name="information-circle-outline" size={14} color={Colors.textSecondary} />
+        <Text style={styles.swipeHintText}>
+          Swipe <Text style={{ color: Colors.sky, fontWeight: '800' }}>right</Text> to add to cart, <Text style={{ color: '#ef4444', fontWeight: '800' }}>left</Text> to delete
+        </Text>
+      </View>
+
+      <SwipeListView
         data={sortedWishlist}
         renderItem={renderWishlistItem}
+        renderHiddenItem={renderHiddenItem}
+        leftOpenValue={85}
+        rightOpenValue={-85}
+        swipeToOpenPercent={30}
+        swipeToClosePercent={30}
+        useNativeDriver={false}
         keyExtractor={(item) => item.wishlist_id.toString()}
         contentContainerStyle={styles.listContent}
         scrollEnabled={true}
@@ -604,5 +645,70 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 14,
     fontWeight: '700',
+  },
+  rowBack: {
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 1,
+    marginBottom: 2,
+  },
+  backLeftBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 85,
+  },
+  backLeftBtnLeft: {
+    backgroundColor: Colors.sky,
+    left: 0,
+  },
+  backRightBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 85,
+  },
+  backRightBtnRight: {
+    backgroundColor: '#ef4444',
+    right: 0,
+  },
+  cartActionInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  deleteActionInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  backTextWhite: {
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  swipeHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  swipeHintText: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    letterSpacing: 0.3,
   },
 });
