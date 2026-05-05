@@ -64,9 +64,11 @@ interface CartScreenProps {
   onCheckout?: () => void;
   onBack?: () => void;
   onProductPress?: (productId: number) => void;
+  onProfilePress?: () => void;
+  wishlistCount?: number;
 }
 
-export default function CartScreen({ token, user, onCheckout, onBack, onProductPress }: CartScreenProps) {
+export default function CartScreen({ token, user, onCheckout, onBack, onProductPress, onProfilePress, wishlistCount = 0 }: CartScreenProps) {
   const insets = useSafeAreaInsets();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,8 +416,12 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           style={[styles.headerGradient, { paddingTop: insets.top }]}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
-              <Ionicons name="chevron-back" size={24} color={Colors.text} />
+            <TouchableOpacity 
+              style={styles.headerIcon}
+              onPress={onBack} 
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back-outline" size={20} color={Colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>My Cart</Text>
             
@@ -428,20 +434,24 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
                   console.log('Navigate to wishlist');
                 }}
               >
-                <Ionicons name="heart" size={20} color={Colors.text} />
+                <Ionicons name="heart-outline" size={20} color={Colors.text} />
               </TouchableOpacity>
               
-              <View style={styles.profileSection}>
+              <TouchableOpacity 
+                style={styles.profileSection}
+                activeOpacity={0.7}
+                onPress={onProfilePress}
+              >
                 <View style={styles.avatar}>
                   {user?.avatar_url ? (
                     <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
                   ) : user?.name ? (
                     <Text style={styles.avatarInitial}>{user.name.charAt(0).toUpperCase()}</Text>
                   ) : (
-                    <Ionicons name="person" size={16} color={Colors.textSecondary} />
+                    <Ionicons name="person" size={18} color={Colors.textSecondary} />
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </LinearGradient>
@@ -465,8 +475,12 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           style={[styles.headerGradient, { paddingTop: insets.top }]}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
-              <Ionicons name="chevron-back" size={24} color={Colors.text} />
+            <TouchableOpacity 
+              style={styles.headerIcon}
+              onPress={onBack} 
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back-outline" size={20} color={Colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>My Cart</Text>
             
@@ -479,20 +493,24 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
                   console.log('Navigate to wishlist');
                 }}
               >
-                <Ionicons name="heart" size={20} color={Colors.text} />
+                <Ionicons name="heart-outline" size={20} color={Colors.text} />
               </TouchableOpacity>
               
-              <View style={styles.profileSection}>
+              <TouchableOpacity 
+                style={styles.profileSection}
+                activeOpacity={0.7}
+                onPress={onProfilePress}
+              >
                 <View style={styles.avatar}>
                   {user?.avatar_url ? (
                     <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
                   ) : user?.name ? (
                     <Text style={styles.avatarInitial}>{user.name.charAt(0).toUpperCase()}</Text>
                   ) : (
-                    <Ionicons name="person" size={16} color={Colors.textSecondary} />
+                    <Ionicons name="person" size={18} color={Colors.textSecondary} />
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </LinearGradient>
@@ -517,8 +535,12 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
         style={[styles.headerGradient, { paddingTop: insets.top }]}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={24} color={Colors.text} />
+          <TouchableOpacity 
+            style={styles.headerIcon}
+            onPress={onBack} 
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back-outline" size={20} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Cart</Text>
           
@@ -532,20 +554,29 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
                 console.log('Navigate to wishlist');
               }}
             >
-              <Ionicons name="heart" size={20} color={Colors.text} />
+              <Ionicons name="heart-outline" size={20} color={Colors.text} />
+              {wishlistCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             
-            <View style={styles.profileSection}>
+            <TouchableOpacity 
+              style={styles.profileSection}
+              activeOpacity={0.7}
+              onPress={onProfilePress}
+            >
               <View style={styles.avatar}>
                 {user?.avatar_url ? (
                   <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
                 ) : user?.name ? (
                   <Text style={styles.avatarInitial}>{user.name.charAt(0).toUpperCase()}</Text>
                 ) : (
-                  <Ionicons name="person" size={16} color={Colors.textSecondary} />
+                  <Ionicons name="person" size={18} color={Colors.textSecondary} />
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
@@ -947,22 +978,29 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerIcon: {
-    padding: 4,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.sky + '20',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: Colors.sky,
   },
   avatarImage: {
     width: '100%',
@@ -970,8 +1008,33 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   avatarInitial: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.sky,
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: Colors.white,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.white,
+    lineHeight: 12,
   },
 });
