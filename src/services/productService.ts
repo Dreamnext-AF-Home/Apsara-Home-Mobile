@@ -233,9 +233,10 @@ export const productService = {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
-    
-    const response = await api.get(`/products/room/${roomType}`, { headers });
-    return response.data.data || response.data || [];
+
+    const response = await api.get(`/products?room_type=${roomType}&status=1&page=1&per_page=20`, { headers });
+    const data = response.data?.data || response.data?.products || response.data || [];
+    return Array.isArray(data) ? data : [];
   },
 
   async getProductReviews(productId: number, token?: string): Promise<ProductReviewsResponse | null> {

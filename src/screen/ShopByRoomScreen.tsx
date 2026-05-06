@@ -226,9 +226,10 @@ export default function ShopByRoomScreen({
       >
         {/* Filter Info Section - Scrolls with content */}
         <View style={styles.filterInfoContainer}>
-          <Text style={styles.filterInfoText}>
-            Filtered by room type = <Text style={styles.filterValue}>{selectedRoom.room_name}</Text>
-          </Text>
+          <View style={styles.filterTag}>
+            <Ionicons name="home-outline" size={14} color={Colors.sky} />
+            <Text style={styles.filterTagText}>{selectedRoom.room_name}</Text>
+          </View>
           <Text style={styles.productCountInfo}>
             {(currentPage - 1) * perPage + 1} - {Math.min(currentPage * perPage, totalProducts)} of {totalProducts} products
           </Text>
@@ -316,26 +317,37 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   filterInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 4,
+    gap: 8,
   },
-  filterInfoText: {
+  filterTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#eff6ff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.sky,
+  },
+  filterTagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.text,
-  },
-  filterValue: {
-    fontWeight: '800',
     color: Colors.sky,
   },
   productCountInfo: {
     fontSize: 12,
     color: Colors.textSecondary,
     fontWeight: '500',
+    flexShrink: 1,
   },
   masonryGrid: {
     flexDirection: 'row',
