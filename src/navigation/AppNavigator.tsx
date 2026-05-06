@@ -124,6 +124,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [previousSearchQuery, setPreviousSearchQuery] = useState<string | null>(null);
   const [searchSourceProductId, setSearchSourceProductId] = useState<number | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
   // const [deviceToken, setDeviceToken] = useState<string | null>(null);
   // const [showTokenModal, setShowTokenModal] = useState(false);
 
@@ -236,12 +238,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       const apiStart = performance.now();
       const [categoryData, brandData, roomData] = await Promise.all([
         authService.getCategories(token),
-        authService.getBrandsWithProducts(token, 6),
+        authService.getBrandsWithProducts(token, 100),
         axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
           headers: { Authorization: `Bearer ${token}` },
         }).then(res => res.data?.data || []).catch(() => []),
       ]);
       console.log(`📡 API CALLS: ${Math.round(performance.now() - apiStart)}ms`);
+      console.log('✅ BRANDS FETCHED:', brandData?.length, 'items');
+      console.log('📊 CATEGORIES FETCHED:', categoryData?.length, 'items');
+      console.log('🏠 ROOM TYPES FETCHED:', roomData?.length, 'items');
 
       const sortStart = performance.now();
       const sortedCategories = categoryData.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
@@ -249,19 +254,23 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
 
       // Update state with fresh data
       setHomeCategories(sortedCategories);
-      setHomeBrands(brandData);
-      setHomeRoomTypes(roomData);
+      setHomeBrands(brandData || []);
+      setHomeRoomTypes(roomData || []);
 
       // Update cache with fresh data
       await Promise.all([
         cacheUtils.set('home_categories', sortedCategories),
-        cacheUtils.set('home_brands', brandData),
-        cacheUtils.set('home_rooms', roomData),
+        cacheUtils.set('home_brands', brandData || []),
+        cacheUtils.set('home_rooms', roomData || []),
       ]);
 
       console.log(`⏱️ FRESH DATA READY: ${Math.round(performance.now() - totalStart)}ms`);
     } catch (error: any) {
-      console.error('Home data fetch error:', error);
+      console.error('❌ Home data fetch error:', error?.message);
+      // Even on error, ensure state has at least empty arrays
+      setHomeCategories([]);
+      setHomeBrands([]);
+      setHomeRoomTypes([]);
     } finally {
       setHomeLoadingFeatured(false);
     }
@@ -541,8 +550,14 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               user={user}
               cartCount={cartCount}
               roomId={selectedRoomId}
+              categoryId={selectedCategoryId}
+              brandId={selectedBrandId}
+              categories={homeCategories}
+              brands={homeBrands}
               onBack={() => {
                 setSelectedRoomId(null);
+                setSelectedCategoryId(null);
+                setSelectedBrandId(null);
                 navigateTo(previousTab);
               }}
               onProductPress={(id) => {
@@ -596,6 +611,14 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 onShopByRoomPress={(roomId: number) => {
                   setPreviousTab(activeTabRef.current);
                   setSelectedRoomId(roomId);
+                  setSelectedCategoryId(null);
+                  activeTabRef.current = 'shop';
+                  setActiveTab('shop');
+                }}
+                onShopByCategoryPress={(categoryId: number) => {
+                  setPreviousTab(activeTabRef.current);
+                  setSelectedCategoryId(categoryId);
+                  setSelectedRoomId(null);
                   activeTabRef.current = 'shop';
                   setActiveTab('shop');
                 }}
@@ -636,6 +659,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               return (
                 <Pressable key={key} style={styles.shopItem} onPress={() => {
                   setSelectedRoomId(null);
+                  setSelectedCategoryId(null);
+                  setSelectedBrandId(null);
                   navigateTo(key);
                 }}>
                   <View style={styles.shopSlot}>
