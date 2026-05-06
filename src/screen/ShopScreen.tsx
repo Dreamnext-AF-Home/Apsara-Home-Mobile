@@ -105,7 +105,7 @@ export default function ShopScreen({
 
       let url = `${API_CONFIG.BASE_URL}/products?status=1&page=${page}&per_page=${perPage}`;
       if (selectedRoomId) url += `&room_type=${selectedRoomId}`;
-      if (selectedCategoryId) url += `&catid=${selectedCategoryId}`;
+      if (selectedCategoryId) url += `&cat_id=${selectedCategoryId}`;
       if (selectedBrandId) url += `&brand_type=${selectedBrandId}`;
 
       const response = await axios.get(url, { headers });
@@ -216,8 +216,8 @@ export default function ShopScreen({
         brands={brands}
         onRoomFilterChange={(filterType, value) => {
           if (filterType === 'room') handleRoomSelect(value === 'All Room Types' ? null : ROOMS.find(r => r.room_name === value)?.room_id || null);
-          if (filterType === 'category') setSelectedCategoryId(value === 'All Categories' ? null : value);
-          if (filterType === 'brand') setSelectedBrandId(value === 'All Brands' ? null : value);
+          if (filterType === 'category') setSelectedCategoryId(value || null);
+          if (filterType === 'brand') setSelectedBrandId(value || null);
         }}
       />
 

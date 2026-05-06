@@ -290,6 +290,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    opacity: 0.9,
   },
   enjoyBadgeText: {
     color: Colors.white,
