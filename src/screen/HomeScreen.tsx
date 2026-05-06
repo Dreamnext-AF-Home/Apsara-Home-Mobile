@@ -49,6 +49,7 @@ interface HomeScreenProps {
   wishlistItems?: any[];
   onWishlistChange?: () => void;
   onShopByRoomPress?: (roomId: number) => void;
+  onShopByCategoryPress?: (categoryId: number) => void;
 }
 
 interface RoomType {
@@ -264,6 +265,7 @@ function HomeScreen({
   wishlistItems = [],
   onWishlistChange = () => {},
   onShopByRoomPress = () => {},
+  onShopByCategoryPress = () => {},
 }: HomeScreenProps) {
   console.log('📱 HomeScreen MOUNTED - Categories:', categories.length, 'Brands:', brands.length, 'Rooms:', roomTypes.length);
 
