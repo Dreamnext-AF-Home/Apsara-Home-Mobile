@@ -12,6 +12,8 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  PanResponder,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -51,6 +53,25 @@ export default function LevelProgress({
   loading = false,
 }: LevelProgressProps) {
   const [enlargedBadge, setEnlargedBadge] = useState<number | null>(null);
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx } = gestureState;
+        const threshold = 50;
+
+        if (enlargedBadge !== null) {
+          if (dx > threshold && enlargedBadge > 1) {
+            setEnlargedBadge(enlargedBadge - 1);
+          } else if (dx < -threshold && enlargedBadge < 5) {
+            setEnlargedBadge(enlargedBadge + 1);
+          }
+        }
+      },
+    })
+  ).current;
+
   const currentTierReq = TIER_REQUIREMENTS[currentRank];
   const nextRank = Math.min(5, currentRank + 1);
   const nextTierReq = TIER_REQUIREMENTS[nextRank];
@@ -255,11 +276,20 @@ export default function LevelProgress({
         <Modal
           visible={enlargedBadge !== null}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setEnlargedBadge(null)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setEnlargedBadge(null)}
+          >
+            <TouchableOpacity
+              style={styles.modalContent}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+              {...panResponder.panHandlers}
+            >
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={() => setEnlargedBadge(null)}
@@ -267,12 +297,57 @@ export default function LevelProgress({
                 <Ionicons name="close" size={24} color={Colors.white} />
               </TouchableOpacity>
 
-              {/* Badge Image */}
-              <Image
-                source={BADGE_IMAGES[enlargedBadge]}
-                style={styles.modalBadgeImage}
-                resizeMode="contain"
-              />
+              {/* Badge and Navigation Container */}
+              <View style={styles.modalBadgeContainer}>
+                {/* Navigation - Left Side */}
+                <TouchableOpacity
+                  style={[
+                    styles.modalSideNavBtn,
+                    enlargedBadge === 1 && styles.modalNavBtnDisabled,
+                  ]}
+                  onPress={() => {
+                    if (enlargedBadge && enlargedBadge > 1) {
+                      setEnlargedBadge(enlargedBadge - 1);
+                    }
+                  }}
+                  disabled={enlargedBadge === 1}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={28}
+                    color={enlargedBadge === 1 ? '#cbd5e1' : Colors.white}
+                  />
+                </TouchableOpacity>
+
+                {/* Badge Image */}
+                <Image
+                  source={BADGE_IMAGES[enlargedBadge]}
+                  style={styles.modalBadgeImage}
+                  resizeMode="contain"
+                />
+
+                {/* Navigation - Right Side */}
+                <TouchableOpacity
+                  style={[
+                    styles.modalSideNavBtn,
+                    enlargedBadge === 5 && styles.modalNavBtnDisabled,
+                  ]}
+                  onPress={() => {
+                    if (enlargedBadge && enlargedBadge < 5) {
+                      setEnlargedBadge(enlargedBadge + 1);
+                    }
+                  }}
+                  disabled={enlargedBadge === 5}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={28}
+                    color={enlargedBadge === 5 ? '#cbd5e1' : Colors.white}
+                  />
+                </TouchableOpacity>
+              </View>
 
               {/* Achievement Info */}
               <View style={styles.achievementInfo}>
@@ -318,8 +393,8 @@ export default function LevelProgress({
                   <Text style={styles.visitButtonText}>Visit AF Home Website</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
       )}
     </View>
@@ -515,6 +590,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+  },
+  modalBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginVertical: 16,
+    gap: 12,
+  },
+  modalSideNavBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  modalNavBtnDisabled: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalBadgeImage: {
     width: 200,
