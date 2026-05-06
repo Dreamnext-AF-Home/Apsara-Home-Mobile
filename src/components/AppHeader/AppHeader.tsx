@@ -35,6 +35,9 @@ interface AppHeaderProps {
   showRoomFilter?: boolean;
   selectedRoom?: string;
   onRoomFilterChange?: (filterType: string, value: any) => void;
+  showCategoryFilter?: boolean;
+  selectedCategory?: string;
+  categories?: any[];
 }
 
 const MARQUEE_ITEMS = [
@@ -155,6 +158,12 @@ export default function AppHeader({
   showRoomFilter = false,
   selectedRoom = 'Bedroom',
   onRoomFilterChange,
+  showCategoryFilter = false,
+  selectedCategory = 'All Categories',
+  categories = [],
+  showBrandFilter = false,
+  selectedBrand = 'All Brands',
+  brands = [],
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
@@ -312,12 +321,13 @@ export default function AppHeader({
       <HeaderFilter
         showRoomFilter={showRoomFilter}
         selectedRoom={selectedRoom}
+        showCategoryFilter={showCategoryFilter}
+        selectedCategory={selectedCategory}
+        categories={categories}
+        showBrandFilter={showBrandFilter}
+        selectedBrand={selectedBrand}
+        brands={brands}
         onFilterChange={(filterType, value) => {
-          Toast.show({
-            type: 'success',
-            text1: `${filterType.charAt(0).toUpperCase() + filterType.slice(1)} Updated`,
-            text2: `Selected: ${value}`,
-          });
           onRoomFilterChange?.(filterType, value);
         }}
       />
