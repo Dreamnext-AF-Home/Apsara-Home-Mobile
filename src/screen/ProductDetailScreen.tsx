@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity,
-  Dimensions, ActivityIndicator, BackHandler, TextInput, NativeSyntheticEvent, NativeScrollEvent, Animated,
+  Dimensions, ActivityIndicator, BackHandler, TextInput, NativeSyntheticEvent, NativeScrollEvent, Animated, Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,9 +18,16 @@ import PrimaryButton from '../components/Button/PrimaryButton';
 import AppHeader from '../components/AppHeader/AppHeader';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
+import Toast from 'react-native-toast-message';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - 8 - 8 - 8) / 2;
+
+interface WishlistItem {
+  wishlist_id: number;
+  product_id: number;
+  date_added: string;
+}
 
 interface ProductDetailScreenProps {
   productId: number;
@@ -29,6 +36,7 @@ interface ProductDetailScreenProps {
   onProductPress?: (id: number) => void;
   onSearch?: () => void;
   onCartUpdate?: () => void;
+  onWishlistToggle?: (productId: number, isWishlisted: boolean) => void;
   user?: {
     name?: string;
     avatar_url?: string;
@@ -41,6 +49,7 @@ interface ProductDetailScreenProps {
     };
   } | null;
   cartCount?: number;
+  wishlistItems?: WishlistItem[];
 }
 
 const BADGE_CONFIG = [
@@ -89,8 +98,10 @@ export default function ProductDetailScreen({
   onProductPress,
   onSearch,
   onCartUpdate,
+  onWishlistToggle,
   user,
   cartCount = 0,
+  wishlistItems = [],
 }: ProductDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const [product, setProduct] = useState<Product | null>(null);
@@ -133,6 +144,14 @@ export default function ProductDetailScreen({
     return () => backHandler.remove();
   }, [onBack, showBuyModal, showImageViewer]);
 
+  // Update wishlisted state when wishlistItems change
+  useEffect(() => {
+    if (product) {
+      const isProductWishlisted = wishlistItems.some(item => item.product_id === product.id);
+      setIsWishlisted(isProductWishlisted);
+    }
+  }, [wishlistItems, product?.id]);
+
   useEffect(() => {
     setLoading(true);
     setProduct(null);
@@ -149,6 +168,11 @@ export default function ProductDetailScreen({
       .then(async data => {
         if (!active) return;
         setProduct(data);
+
+        // Check if product is in wishlist
+        const isProductWishlisted = wishlistItems.some(item => item.product_id === data.id);
+        setIsWishlisted(isProductWishlisted);
+
         // Set first variant as default
         if (data.variants && data.variants.length > 0) {
           setSelectedVariant(data.variants[0].id);
@@ -363,30 +387,85 @@ export default function ProductDetailScreen({
     }
   };
 
+  const slugify = (text: string): string => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleShareProduct = async () => {
+    if (!product) return;
+
+    try {
+      const slug = slugify(product.name);
+      const shareUrl = `https://afhome.ph/product/${slug}-i${product.id}`;
+
+      await Share.share({
+        message: `Check out this product: ${product.name}\n\n${shareUrl}`,
+        url: shareUrl,
+        title: product.name,
+      });
+    } catch (error) {
+      console.error('Error sharing product:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to share product',
+      });
+    }
+  };
+
   const toggleWishlist = async () => {
-    if (!token || !product) {
-      console.log('Missing token or product');
+    if (!token) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please log in to add items to wishlist',
+      });
       return;
     }
 
-    setWishlistLoading(true);
-    try {
-      const response = await axios.post(
-        `${API_CONFIG.BASE_URL}/wishlist`,
-        {
-          product_id: product.id,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+    if (!product) {
+      console.log('Missing product');
+      return;
+    }
 
-      if (response.data?.success) {
-        setIsWishlisted(!isWishlisted);
-        console.log('Wishlist updated successfully');
+    try {
+      setWishlistLoading(true);
+
+      if (isWishlisted) {
+        // Remove from wishlist - DELETE request
+        await axios.delete(`${API_CONFIG.BASE_URL}/wishlist/${product.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        // Add to wishlist - POST request
+        await axios.post(
+          `${API_CONFIG.BASE_URL}/wishlist`,
+          { product_id: product.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
       }
-    } catch (error) {
+
+      const newWishlistState = !isWishlisted;
+      setIsWishlisted(newWishlistState);
+      onWishlistToggle?.(product.id, newWishlistState);
+      Toast.show({
+        type: 'success',
+        text1: isWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
+        text2: isWishlisted ? 'Item removed from your wishlist' : 'Item added to your wishlist',
+      });
+    } catch (error: any) {
       console.error('Failed to update wishlist:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: isWishlisted ? 'Failed to remove from wishlist' : 'Failed to add to wishlist',
+      });
     } finally {
       setWishlistLoading(false);
     }
@@ -531,24 +610,26 @@ export default function ProductDetailScreen({
               {/* Heart/Wishlist Icon */}
               <TouchableOpacity
                 onPress={toggleWishlist}
-                style={[styles.galleryIconBtn, wishlistLoading && { opacity: 0.6 }]}
+                style={styles.galleryIconBtn}
                 activeOpacity={0.7}
                 disabled={wishlistLoading}
               >
                 <View style={styles.galleryIconBtnInner}>
-                  <Ionicons
-                    name={isWishlisted ? 'heart' : 'heart-outline'}
-                    size={22}
-                    color={isWishlisted ? '#ef4444' : Colors.white}
-                  />
+                  {wishlistLoading ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <Ionicons
+                      name={isWishlisted ? 'heart' : 'heart-outline'}
+                      size={22}
+                      color={isWishlisted ? '#ef4444' : Colors.white}
+                    />
+                  )}
                 </View>
               </TouchableOpacity>
 
               {/* Share Icon */}
               <TouchableOpacity
-                onPress={() => {
-                  console.log('Share product');
-                }}
+                onPress={handleShareProduct}
                 style={styles.galleryIconBtn}
                 activeOpacity={0.7}
               >
@@ -1671,9 +1752,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1692,9 +1771,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
