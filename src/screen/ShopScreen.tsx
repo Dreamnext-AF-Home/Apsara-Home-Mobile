@@ -37,6 +37,10 @@ interface ShopScreenProps {
   user?: any;
   cartCount?: number;
   roomId?: number | null;
+  categoryId?: number | null;
+  brandId?: number | null;
+  categories?: any[];
+  brands?: any[];
   onBack?: () => void;
   onProductPress?: (id: number) => void;
   onCartPress?: () => void;
@@ -49,6 +53,10 @@ export default function ShopScreen({
   user,
   cartCount = 0,
   roomId = null,
+  categoryId = null,
+  brandId = null,
+  categories = [],
+  brands = [],
   onBack = () => {},
   onProductPress = () => {},
   onCartPress = () => {},
@@ -56,6 +64,8 @@ export default function ShopScreen({
   onWishlistChange = () => {},
 }: ShopScreenProps) {
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(roomId);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(categoryId);
+  const [selectedBrandId, setSelectedBrandId] = useState<number | null>(brandId);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,9 +104,9 @@ export default function ShopScreen({
       const headers = { Authorization: `Bearer ${token}` };
 
       let url = `${API_CONFIG.BASE_URL}/products?status=1&page=${page}&per_page=${perPage}`;
-      if (selectedRoomId) {
-        url = `${API_CONFIG.BASE_URL}/products?room_type=${selectedRoomId}&status=1&page=${page}&per_page=${perPage}`;
-      }
+      if (selectedRoomId) url += `&room_type=${selectedRoomId}`;
+      if (selectedCategoryId) url += `&catid=${selectedCategoryId}`;
+      if (selectedBrandId) url += `&brand_type=${selectedBrandId}`;
 
       const response = await axios.get(url, { headers });
 
@@ -124,12 +134,12 @@ export default function ShopScreen({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, selectedRoomId, perPage]);
+  }, [token, selectedRoomId, selectedCategoryId, selectedBrandId, perPage]);
 
   useEffect(() => {
     setCurrentPage(1);
     fetchProducts(1);
-  }, [selectedRoomId, fetchProducts]);
+  }, [selectedRoomId, selectedCategoryId, selectedBrandId, fetchProducts]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -198,7 +208,17 @@ export default function ShopScreen({
         onProfilePress={() => console.log('Profile pressed')}
         showRoomFilter={true}
         selectedRoom={selectedRoom?.room_name || 'All Room Types'}
-        onRoomFilterChange={(filterType, value) => filterType === 'room' && handleRoomSelect(value === 'All Room Types' ? null : ROOMS.find(r => r.room_name === value)?.room_id || null)}
+        showCategoryFilter={true}
+        selectedCategory={selectedCategoryId ? categories.find(c => c.id === selectedCategoryId)?.name : 'All Categories'}
+        categories={categories}
+        showBrandFilter={true}
+        selectedBrand={selectedBrandId ? brands.find(b => b.id === selectedBrandId)?.name : 'All Brands'}
+        brands={brands}
+        onRoomFilterChange={(filterType, value) => {
+          if (filterType === 'room') handleRoomSelect(value === 'All Room Types' ? null : ROOMS.find(r => r.room_name === value)?.room_id || null);
+          if (filterType === 'category') setSelectedCategoryId(value === 'All Categories' ? null : value);
+          if (filterType === 'brand') setSelectedBrandId(value === 'All Brands' ? null : value);
+        }}
       />
 
       <ScrollView
