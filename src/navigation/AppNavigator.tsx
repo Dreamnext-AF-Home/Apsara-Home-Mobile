@@ -23,6 +23,7 @@ import WishlistScreen from '../screen/WishlistScreen';
 import CartScreen from '../screen/CartScreen';
 import ProfileDetailsScreen from '../screen/ProfileDetailsScreen';
 import ShopScreen from '../screen/ShopScreen';
+import ShopByBrandScreen from '../screen/ShopByBrandScreen';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'notification' | 'profile' | 'settings';
 
@@ -126,6 +127,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<BrandItem | null>(null);
   // const [deviceToken, setDeviceToken] = useState<string | null>(null);
   // const [showTokenModal, setShowTokenModal] = useState(false);
 
@@ -545,29 +547,52 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               onShowReferralNetwork={(show) => setReferralNetworkFromTab(show)}
             />
           ) : activeTab === 'shop' ? (
-            <ShopScreen
-              token={token}
-              user={user}
-              cartCount={cartCount}
-              roomId={selectedRoomId}
-              categoryId={selectedCategoryId}
-              brandId={selectedBrandId}
-              categories={homeCategories}
-              brands={homeBrands}
-              onBack={() => {
-                setSelectedRoomId(null);
-                setSelectedCategoryId(null);
-                setSelectedBrandId(null);
-                navigateTo(previousTab);
-              }}
-              onProductPress={(id) => {
-                setPreviousSearchQuery(null);
-                setSelectedProductId(id);
-              }}
-              onCartPress={() => setShowCart(true)}
-              wishlistItems={wishlistItems}
-              onWishlistChange={() => fetchWishlistData()}
-            />
+            selectedBrandId && selectedBrand ? (
+              <ShopByBrandScreen
+                token={token}
+                user={user}
+                cartCount={cartCount}
+                brandId={selectedBrandId}
+                brand={selectedBrand}
+                categories={homeCategories}
+                onBack={() => {
+                  setSelectedBrandId(null);
+                  setSelectedBrand(null);
+                  navigateTo(previousTab);
+                }}
+                onProductPress={(id) => {
+                  setPreviousSearchQuery(null);
+                  setSelectedProductId(id);
+                }}
+                onCartPress={() => setShowCart(true)}
+                wishlistItems={wishlistItems}
+                onWishlistChange={() => fetchWishlistData()}
+              />
+            ) : (
+              <ShopScreen
+                token={token}
+                user={user}
+                cartCount={cartCount}
+                roomId={selectedRoomId}
+                categoryId={selectedCategoryId}
+                brandId={selectedBrandId}
+                categories={homeCategories}
+                brands={homeBrands}
+                onBack={() => {
+                  setSelectedRoomId(null);
+                  setSelectedCategoryId(null);
+                  setSelectedBrandId(null);
+                  navigateTo(previousTab);
+                }}
+                onProductPress={(id) => {
+                  setPreviousSearchQuery(null);
+                  setSelectedProductId(id);
+                }}
+                onCartPress={() => setShowCart(true)}
+                wishlistItems={wishlistItems}
+                onWishlistChange={() => fetchWishlistData()}
+              />
+            )
           ) : activeTab === 'home' ? (
             <>
               <AppHeader
@@ -622,6 +647,16 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   activeTabRef.current = 'shop';
                   setActiveTab('shop');
                 }}
+                onShopByBrandPress={(brandId: number) => {
+                  const brand = homeBrands.find(b => b.id === brandId);
+                  setPreviousTab(activeTabRef.current);
+                  setSelectedBrandId(brandId);
+                  setSelectedBrand(brand || null);
+                  setSelectedRoomId(null);
+                  setSelectedCategoryId(null);
+                  activeTabRef.current = 'shop';
+                  setActiveTab('shop');
+                }}
               />
             </>
           ) : (
@@ -661,6 +696,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setSelectedRoomId(null);
                   setSelectedCategoryId(null);
                   setSelectedBrandId(null);
+                  setSelectedBrand(null);
                   navigateTo(key);
                 }}>
                   <View style={styles.shopSlot}>

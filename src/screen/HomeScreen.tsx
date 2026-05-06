@@ -50,6 +50,7 @@ interface HomeScreenProps {
   onWishlistChange?: () => void;
   onShopByRoomPress?: (roomId: number) => void;
   onShopByCategoryPress?: (categoryId: number) => void;
+  onShopByBrandPress?: (brandId: number) => void;
 }
 
 interface RoomType {
@@ -124,9 +125,10 @@ function getBrandLogo(brand: BrandItem) {
   return null;
 }
 
-function CategoryCircle({ category, index }: { category: CategoryItem, index: number }) {
+function CategoryCircle({ category, index, onPress }: { category: CategoryItem, index: number, onPress?: (categoryId: number) => void }) {
   const image = useMemo(() => getCategoryImages(category)[0], [category]);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
 
   const badgeType = index === 0 ? 'Hot' : index === 2 ? 'New' : null;
 
@@ -140,25 +142,45 @@ function CategoryCircle({ category, index }: { category: CategoryItem, index: nu
     ).start();
   }, [badgeType, pulseAnim]);
 
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
-    <View style={styles.categoryCircleItem}>
-      <View style={[styles.circleImageWrap, styles.categoryCircle]}>
-        <Image
-          source={{ uri: image }}
-          style={styles.circleImage}
-        />
-        {badgeType && (
-          <Animated.View style={[
-            styles.categoryBadge,
-            badgeType === 'Hot' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#3b82f6' },
-            { transform: [{ scale: pulseAnim }] }
-          ]}>
-            <Text style={styles.categoryBadgeText}>{badgeType}</Text>
-          </Animated.View>
-        )}
-      </View>
-      <Text style={styles.circleLabel} numberOfLines={2}>{category.name}</Text>
-    </View>
+    <Animated.View style={[styles.categoryCircleItem, { transform: [{ scale }] }]}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => onPress?.(category.id)}
+      >
+        <View style={[styles.circleImageWrap, styles.categoryCircle]}>
+          <Image
+            source={{ uri: image }}
+            style={styles.circleImage}
+          />
+          {badgeType && (
+            <Animated.View style={[
+              styles.categoryBadge,
+              badgeType === 'Hot' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#3b82f6' },
+              { transform: [{ scale: pulseAnim }] }
+            ]}>
+              <Text style={styles.categoryBadgeText}>{badgeType}</Text>
+            </Animated.View>
+          )}
+        </View>
+        <Text style={styles.circleLabel} numberOfLines={2}>{category.name}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -266,6 +288,7 @@ function HomeScreen({
   onWishlistChange = () => {},
   onShopByRoomPress = () => {},
   onShopByCategoryPress = () => {},
+  onShopByBrandPress = () => {},
 }: HomeScreenProps) {
   console.log('📱 HomeScreen MOUNTED - Categories:', categories.length, 'Brands:', brands.length, 'Rooms:', roomTypes.length);
 
@@ -534,7 +557,7 @@ function HomeScreen({
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circleRow}>
             {categories.map((category, index) => (
-              <CategoryCircle key={`category-${category.id}`} category={category} index={index} />
+              <CategoryCircle key={`category-${category.id}`} category={category} index={index} onPress={onShopByCategoryPress} />
             ))}
           </ScrollView>
         )}
@@ -556,27 +579,29 @@ function HomeScreen({
               const logo = getBrandLogo(item);
 
               return (
-                <View key={`brand-${item.id}`} style={[styles.brandCard, { backgroundColor: colors.card }]}>
-                  <View style={styles.brandLogoContainer}>
-                    {logo ? (
-                      <Image source={{ uri: logo }} style={styles.brandLogoImage} />
-                    ) : (
-                      <View style={[styles.brandLogoFallback, { backgroundColor: Colors.sky }]}>
-                        <Text style={styles.brandFallbackInitialLarge}>{getBrandInitial(item)}</Text>
-                      </View>
-                    )}
-                    <View style={[styles.brandLogoOverlay, { backgroundColor: 'rgba(14, 165, 233, 0.85)' }]}>
-                      <Text style={[styles.brandCardNameOverlay, { color: Colors.white }]} numberOfLines={2}>
-                        {item.name}
-                      </Text>
-                      {item.total_products !== undefined && (
-                        <Text style={[styles.brandProductCountOverlay, { color: 'rgba(255,255,255,0.95)' }]}>
-                          {item.total_products} products
-                        </Text>
+                <Pressable key={`brand-${item.id}`} onPress={() => onShopByBrandPress?.(item.id)}>
+                  <View style={[styles.brandCard, { backgroundColor: colors.card }]}>
+                    <View style={styles.brandLogoContainer}>
+                      {logo ? (
+                        <Image source={{ uri: logo }} style={styles.brandLogoImage} />
+                      ) : (
+                        <View style={[styles.brandLogoFallback, { backgroundColor: Colors.sky }]}>
+                          <Text style={styles.brandFallbackInitialLarge}>{getBrandInitial(item)}</Text>
+                        </View>
                       )}
+                      <View style={[styles.brandLogoOverlay, { backgroundColor: 'rgba(14, 165, 233, 0.85)' }]}>
+                        <Text style={[styles.brandCardNameOverlay, { color: Colors.white }]} numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        {item.total_products !== undefined && (
+                          <Text style={[styles.brandProductCountOverlay, { color: 'rgba(255,255,255,0.95)' }]}>
+                            {item.total_products} products
+                          </Text>
+                        )}
+                      </View>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </ScrollView>
