@@ -21,6 +21,7 @@ import SettingsScreen from '../screen/SettingsScreen';
 import ProductDetailScreen from '../screen/ProductDetailScreen';
 import WishlistScreen from '../screen/WishlistScreen';
 import CartScreen from '../screen/CartScreen';
+import ProfileDetailsScreen from '../screen/ProfileDetailsScreen';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'notification' | 'profile' | 'settings';
 
@@ -111,6 +112,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [showProfileDetails, setShowProfileDetails] = useState(false);
+  const [profileDetailsFromTab, setProfileDetailsFromTab] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [previousTab, setPreviousTab] = useState<TabKey>('home');
@@ -479,7 +482,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);
                 }}
-                onProfilePress={() => navigateTo('profile')}
+                onProfilePress={() => setShowProfileDetails(true)}
                 onLogout={onLogout}
               />
               <WishlistScreen
@@ -512,6 +515,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               onNavigateSettings={() => navigateTo('settings')}
               onCartPress={() => setShowCart(true)}
               cartCount={cartCount}
+              onShowProfileDetails={(show) => setProfileDetailsFromTab(show)}
             />
           ) : activeTab === 'home' ? (
             <>
@@ -528,6 +532,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);
                 }}
+                onProfilePress={() => setShowProfileDetails(true)}
+                onLogout={onLogout}
               />
               <HomeScreen
                 token={token}
@@ -568,6 +574,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setPreviousTab(activeTabRef.current);
                   setSearchVisible(true);
                 }}
+                onProfilePress={() => setShowProfileDetails(true)}
+                onLogout={onLogout}
               />
               <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
                 <Text style={styles.h1}>{labelMap[activeTab]}</Text>
@@ -577,7 +585,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           )}
         </View>
 
-        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && (
+        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && !profileDetailsFromTab && (
           <View style={styles.navBar}>
             {TABS.map(key => {
               const active = activeTab === key;
@@ -741,6 +749,20 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             onCheckout={() => {
               setShowCart(false);
               // Navigate to checkout
+            }}
+          />
+        </View>
+      )}
+
+      {showProfileDetails && (
+        <View style={styles.cartScreenOverlay}>
+          <ProfileDetailsScreen
+            token={token}
+            cartCount={cartCount}
+            onClose={() => setShowProfileDetails(false)}
+            onCartPress={() => {
+              setShowProfileDetails(false);
+              setShowCart(true);
             }}
           />
         </View>
