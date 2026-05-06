@@ -20,7 +20,7 @@ interface HeaderFilterProps {
   selectedRoom?: string;
 }
 
-const SORT_OPTIONS = ['Relevant', 'Price: Low', 'Price: High', 'Newest'];
+const SORT_OPTIONS = ['Relevant', 'A-Z', 'Z-A', 'Price: Low', 'Price: High', 'Newest'];
 const PRICE_OPTIONS = ['All', 'Under ₱5k', '₱5k-₱20k', '₱20k-₱50k', 'Over ₱50k'];
 const ROOM_OPTIONS = [
   { id: 1, name: 'Bedroom' },
@@ -33,8 +33,6 @@ const ROOM_OPTIONS = [
   { id: 8, name: 'Bathroom' },
 ];
 
-type ViewType = 'grid' | 'list';
-
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.75;
 
@@ -43,7 +41,6 @@ export default function HeaderFilter({ onFilterChange, showRoomFilter = false, s
   const [activePrice, setActivePrice] = useState('All');
   const [activeRoom, setActiveRoom] = useState(selectedRoom);
   const [expandedFilter, setExpandedFilter] = useState<string | null>(null);
-  const [viewType, setViewType] = useState<ViewType>('grid');
 
   const modalTranslateY = useRef(new Animated.Value(MODAL_HEIGHT)).current;
   const panResponder = useRef(
@@ -109,66 +106,13 @@ export default function HeaderFilter({ onFilterChange, showRoomFilter = false, s
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* View Toggle - Card/List */}
-        <View style={styles.viewToggleWrapper}>
-          <TouchableOpacity
-            style={[
-              styles.viewToggleButton,
-              viewType === 'grid' && styles.viewToggleButtonActive,
-            ]}
-            onPress={() => {
-              setViewType('grid');
-              onFilterChange?.('viewType', 'grid');
-            }}
-          >
-            <Ionicons
-              name="apps-outline"
-              size={14}
-              color={viewType === 'grid' ? Colors.white : Colors.text}
-            />
-            <Text
-              style={[
-                styles.viewToggleText,
-                viewType === 'grid' && styles.viewToggleTextActive,
-              ]}
-            >
-              Card
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.viewToggleButton,
-              styles.viewToggleButtonLast,
-              viewType === 'list' && styles.viewToggleButtonActive,
-            ]}
-            onPress={() => {
-              setViewType('list');
-              onFilterChange?.('viewType', 'list');
-            }}
-          >
-            <Ionicons
-              name="reader-outline"
-              size={14}
-              color={viewType === 'list' ? Colors.white : Colors.text}
-            />
-            <Text
-              style={[
-                styles.viewToggleText,
-                viewType === 'list' && styles.viewToggleTextActive,
-              ]}
-            >
-              List
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Room Type - Always visible when in ShopByRoomScreen */}
         {showRoomFilter && (
           <View style={styles.filterItem}>
             <TouchableOpacity
               style={[
                 styles.filterButton,
-                expandedFilter === 'room' && styles.filterButtonActive,
+                (expandedFilter === 'room' || activeRoom !== 'Bedroom') && styles.filterButtonActive,
               ]}
               onPress={() => setExpandedFilter(expandedFilter === 'room' ? null : 'room')}
             >
@@ -353,39 +297,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 8,
     alignItems: 'center',
-  },
-  viewToggleWrapper: {
-    flexDirection: 'row',
-    gap: 0,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  viewToggleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
-  },
-  viewToggleButtonActive: {
-    backgroundColor: Colors.sky,
-    borderRightColor: Colors.sky,
-  },
-  viewToggleButtonLast: {
-    borderRightWidth: 0,
-  },
-  viewToggleText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  viewToggleTextActive: {
-    color: Colors.white,
   },
   filterItem: {
     position: 'relative',

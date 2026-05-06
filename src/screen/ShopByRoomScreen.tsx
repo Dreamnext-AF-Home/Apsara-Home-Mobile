@@ -8,6 +8,7 @@ import {
   Dimensions,
   Pressable,
   SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
@@ -72,6 +73,7 @@ export default function ShopByRoomScreen({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const perPage = 20;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -226,10 +228,52 @@ export default function ShopByRoomScreen({
       >
         {/* Filter Info Section - Scrolls with content */}
         <View style={styles.filterInfoContainer}>
-          <View style={styles.filterTag}>
-            <Ionicons name="home-outline" size={14} color={Colors.sky} />
-            <Text style={styles.filterTagText}>{selectedRoom.room_name}</Text>
+          <View style={styles.viewToggleWrapper}>
+            <TouchableOpacity
+              style={[
+                styles.viewToggleButton,
+                viewType === 'grid' && styles.viewToggleButtonActive,
+              ]}
+              onPress={() => setViewType('grid')}
+            >
+              <Ionicons
+                name="apps-outline"
+                size={14}
+                color={viewType === 'grid' ? Colors.white : Colors.text}
+              />
+              <Text
+                style={[
+                  styles.viewToggleText,
+                  viewType === 'grid' && styles.viewToggleTextActive,
+                ]}
+              >
+                Card
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.viewToggleButton,
+                styles.viewToggleButtonLast,
+                viewType === 'list' && styles.viewToggleButtonActive,
+              ]}
+              onPress={() => setViewType('list')}
+            >
+              <Ionicons
+                name="reader-outline"
+                size={14}
+                color={viewType === 'list' ? Colors.white : Colors.text}
+              />
+              <Text
+                style={[
+                  styles.viewToggleText,
+                  viewType === 'list' && styles.viewToggleTextActive,
+                ]}
+              >
+                List
+              </Text>
+            </TouchableOpacity>
           </View>
+
           <Text style={styles.productCountInfo}>
             {(currentPage - 1) * perPage + 1} - {Math.min(currentPage * perPage, totalProducts)} of {totalProducts} products
           </Text>
@@ -325,29 +369,45 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 8,
+    gap: 12,
   },
-  filterTag: {
+  viewToggleWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#eff6ff',
+    gap: 0,
+    backgroundColor: '#f3f4f6',
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: Colors.sky,
+    borderColor: '#e5e7eb',
   },
-  filterTagText: {
-    fontSize: 13,
+  viewToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRightWidth: 1,
+    borderRightColor: '#e5e7eb',
+  },
+  viewToggleButtonActive: {
+    backgroundColor: '#eff6ff',
+    borderRightColor: '#eff6ff',
+  },
+  viewToggleButtonLast: {
+    borderRightWidth: 0,
+  },
+  viewToggleText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: Colors.sky,
+    color: Colors.text,
+  },
+  viewToggleTextActive: {
+    color: Colors.text,
   },
   productCountInfo: {
     fontSize: 12,
     color: Colors.textSecondary,
     fontWeight: '500',
-    flexShrink: 1,
   },
   masonryGrid: {
     flexDirection: 'row',
