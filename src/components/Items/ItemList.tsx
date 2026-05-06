@@ -198,13 +198,6 @@ export default function ItemList({
             )}
           </View>
 
-          <View style={styles.stockRow}>
-            <Text style={styles.stockText}>
-              {inStock ? `${product.qty} available` : 'Out of Srtock'}
-            </Text>
-          </View>
-
-
         </View>
       </TouchableOpacity>
     </View>
@@ -409,13 +402,4 @@ const styles = StyleSheet.create({
     color: Colors.white,
     letterSpacing: 0.2,
   },
-  stockRow: {
-    marginTop: 2,
-  },
-  stockText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-
 });
