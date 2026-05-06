@@ -32,6 +32,9 @@ interface AppHeaderProps {
   onLogout?: () => void;
   searchPlaceholder?: string;
   cartCount?: number;
+  showRoomFilter?: boolean;
+  selectedRoom?: string;
+  onRoomFilterChange?: (filterType: string, value: any) => void;
 }
 
 const MARQUEE_ITEMS = [
@@ -149,6 +152,9 @@ export default function AppHeader({
   onLogout,
   searchPlaceholder = 'Search...',
   cartCount = 0,
+  showRoomFilter = false,
+  selectedRoom = 'Bedroom',
+  onRoomFilterChange,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const photoUrl = user?.avatar_url ?? null;
@@ -159,9 +165,13 @@ export default function AppHeader({
 
   const [dynamicPlaceholder, setDynamicPlaceholder] = useState(searchPlaceholder);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showFilter, setShowFilter] = useState(false);
+  const [showFilter, setShowFilter] = useState(showRoomFilter);
   const [showBalance, setShowBalance] = useState(true);
   const currentIndex = useRef(0);
+
+  useEffect(() => {
+    setShowFilter(showRoomFilter);
+  }, [showRoomFilter]);
 
   useEffect(() => {
     async function loadSuggestions() {
@@ -300,12 +310,15 @@ export default function AppHeader({
     </LinearGradient>
     {showFilter && (
       <HeaderFilter
+        showRoomFilter={showRoomFilter}
+        selectedRoom={selectedRoom}
         onFilterChange={(filterType, value) => {
           Toast.show({
             type: 'success',
             text1: `${filterType.charAt(0).toUpperCase() + filterType.slice(1)} Updated`,
             text2: `Selected: ${value}`,
           });
+          onRoomFilterChange?.(filterType, value);
         }}
       />
     )}
