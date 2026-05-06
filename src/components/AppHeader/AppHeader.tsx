@@ -27,6 +27,8 @@ interface AppHeaderProps {
   onFilterPress?: () => void;
   onSearchPress?: () => void;
   onCameraPress?: () => void;
+  onProfilePress?: () => void;
+  onLogout?: () => void;
   searchPlaceholder?: string;
   cartCount?: number;
 }
@@ -142,6 +144,8 @@ export default function AppHeader({
   onFilterPress,
   onSearchPress,
   onCameraPress,
+  onProfilePress,
+  onLogout,
   searchPlaceholder = 'Search...',
   cartCount = 0,
 }: AppHeaderProps) {
@@ -156,6 +160,7 @@ export default function AppHeader({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const currentIndex = useRef(0);
 
   useEffect(() => {
@@ -203,7 +208,11 @@ export default function AppHeader({
 
       <View style={styles.innerContent}>
         <View style={styles.topRow}>
-          <View style={styles.profileSection}>
+          <TouchableOpacity
+            style={styles.profileSection}
+            onPress={() => setShowProfileMenu(!showProfileMenu)}
+            activeOpacity={0.7}
+          >
             <View style={styles.avatar}>
               {photoUrl ? (
                 <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
@@ -233,7 +242,7 @@ export default function AppHeader({
                 </View>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.rightActions}>
             <TouchableOpacity
@@ -292,6 +301,35 @@ export default function AppHeader({
           });
         }}
       />
+    )}
+    {showProfileMenu && (
+      <View style={styles.profileMenuOverlay}>
+        <View style={styles.profileMenu}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowProfileMenu(false);
+              onProfilePress?.();
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-outline" size={18} color={Colors.sky} />
+            <Text style={styles.menuLabel}>My Profile</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowProfileMenu(false);
+              onLogout?.();
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+            <Text style={[styles.menuLabel, { color: '#ef4444' }]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     )}
     </>
   );
@@ -533,5 +571,45 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.white,
     lineHeight: 12,
+  },
+  profileMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    paddingTop: 80,
+    paddingLeft: 12,
+  },
+  profileMenu: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+    width: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  menuLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
   },
 });
