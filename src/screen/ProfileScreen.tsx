@@ -10,6 +10,8 @@ import { Colors } from '../constants/colors';
 import PrimaryButton from '../components/Button/PrimaryButton';
 import OutlineButton from '../components/Button/OutlineButton';
 import { referralService, ReferralTree } from '../services/referralService';
+import { accountService } from '../services/accountService';
+import LevelProgress from '../components/LevelProgress/LevelProgress';
 import ReferralNetworkScreen from './ReferralNetworkScreen';
 
 interface User {
@@ -64,6 +66,8 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   const [referralTree, setReferralTree] = useState<ReferralTree | null>(null);
   const [showReferralNetwork, setShowReferralNetwork] = useState(false);
   const [loadingReferral, setLoadingReferral] = useState(false);
+  const [loadingLoyalty, setLoadingLoyalty] = useState(false);
+  const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
   const firstName = user?.name?.split(' ')[0] ?? 'User';
@@ -83,6 +87,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   useEffect(() => {
     if (token) {
       fetchReferralTree();
+      fetchLoyaltyData();
     }
   }, [token]);
 
@@ -93,6 +98,19 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
       setReferralTree(data);
     } catch (error: any) {
       console.error('Error fetching referral tree:', error);
+    }
+  };
+
+  const fetchLoyaltyData = async () => {
+    if (!token) return;
+    setLoadingLoyalty(true);
+    try {
+      const snapshot = await accountService.getAccountSnapshot(token);
+      setLoyaltyData(snapshot.loyalty);
+    } catch (error: any) {
+      console.error('Error fetching loyalty data:', error);
+    } finally {
+      setLoadingLoyalty(false);
     }
   };
 
@@ -192,6 +210,28 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Level Progress */}
+        {loyaltyData && (
+          <LevelProgress
+            currentTier={loyaltyData.tier}
+            currentRank={loyaltyData.rank}
+            personalPv={loyaltyData.personal_pv}
+            referralCount={loyaltyData.referral_count}
+            activeMembers={loyaltyData.active_members_count}
+            activeBuilders={loyaltyData.active_builders_count}
+            activeLeaders={loyaltyData.active_leaders_count}
+            username={user?.username}
+            loading={loadingLoyalty}
+            onViewDetails={() => {
+              Toast.show({
+                type: 'info',
+                text1: 'Coming Soon',
+                text2: 'Level details screen will be available soon',
+              });
+            }}
+          />
+        )}
+
         {/* My Purchases */}
         <View style={styles.section}>
           <View style={styles.purchasesHeader}>
