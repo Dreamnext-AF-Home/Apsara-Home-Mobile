@@ -48,6 +48,7 @@ interface HomeScreenProps {
   dataFetchedRef?: React.MutableRefObject<boolean>;
   wishlistItems?: any[];
   onWishlistChange?: () => void;
+  onShopByRoomPress?: (roomId: number) => void;
 }
 
 interface RoomType {
@@ -191,7 +192,7 @@ function SampleAdCard({ title, subtitle }: { title: string, subtitle: string }) 
   );
 }
 
-function RoomItemComponent({ item }: { item: RoomType }) {
+function RoomItemComponent({ item, onPress }: { item: RoomType; onPress?: (roomId: number) => void }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -215,6 +216,7 @@ function RoomItemComponent({ item }: { item: RoomType }) {
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={() => onPress?.(item.room_id)}
         style={{ alignItems: 'center', width: '100%', gap: 6 }}
       >
         <View style={styles.roomCircleContainer}>
@@ -261,6 +263,7 @@ function HomeScreen({
   dataFetchedRef,
   wishlistItems = [],
   onWishlistChange = () => {},
+  onShopByRoomPress = () => {},
 }: HomeScreenProps) {
   console.log('📱 HomeScreen MOUNTED - Categories:', categories.length, 'Brands:', brands.length, 'Rooms:', roomTypes.length);
 
@@ -508,7 +511,7 @@ function HomeScreen({
         </View>
         <FlatList
           data={roomTypes.length > 0 ? roomTypes : FALLBACK_ROOMS}
-          renderItem={({ item }) => <RoomItemComponent item={item} />}
+          renderItem={({ item }) => <RoomItemComponent item={item} onPress={onShopByRoomPress} />}
           keyExtractor={item => `room-${item.room_id}`}
           numColumns={4}
           contentContainerStyle={styles.roomGrid}
