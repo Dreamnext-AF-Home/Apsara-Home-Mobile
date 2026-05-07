@@ -46,23 +46,34 @@ const cacheUtils = {
       if (!info.exists) {
         await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true });
       }
+      console.log('✅ Cache directory ready:', CACHE_DIR);
     } catch (error) {
-      console.log('Cache init error:', error);
+      console.log('❌ Cache init error:', error);
     }
   },
   async get<T = any>(key: string): Promise<T | null> {
     try {
-      const file = await FileSystem.readAsStringAsync(CACHE_DIR + key);
-      return JSON.parse(file);
-    } catch {
+      const filePath = CACHE_DIR + key;
+      const file = await FileSystem.readAsStringAsync(filePath);
+      const parsed = JSON.parse(file);
+      console.log(`✅ Cache READ SUCCESS [${key}]:`, parsed);
+      return parsed;
+    } catch (error) {
+      console.log(`⚠️ Cache READ FAILED [${key}]:`, error);
       return null;
     }
   },
   async set(key: string, data: any) {
     try {
-      await FileSystem.writeAsStringAsync(CACHE_DIR + key, JSON.stringify(data));
+      const filePath = CACHE_DIR + key;
+      const jsonData = JSON.stringify(data);
+      await FileSystem.writeAsStringAsync(filePath, jsonData);
+      console.log(`✅ Cache WRITE SUCCESS [${key}]:`, data);
+      // Verify the write by reading it back
+      const verified = await FileSystem.readAsStringAsync(filePath);
+      console.log(`✅ Cache WRITE VERIFIED [${key}]:`, JSON.parse(verified));
     } catch (error) {
-      console.log('Cache write error:', error);
+      console.log(`❌ Cache WRITE FAILED [${key}]:`, error);
     }
   },
 };
@@ -237,16 +248,35 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     const saveDarkMode = async () => {
       console.log('💾 ATTEMPTING TO SAVE DARK MODE:', isDarkMode);
       try {
+        await cacheUtils.init();
         await cacheUtils.set('dark_mode_pref', isDarkMode);
         console.log('✅ DARK MODE SAVED SUCCESSFULLY:', isDarkMode);
-        // Verify it was saved by reading it back
-        const verified = await cacheUtils.get<boolean>('dark_mode_pref');
-        console.log('🔍 VERIFICATION READ:', verified, '(Expected:', isDarkMode, ')');
       } catch (error) {
         console.log('❌ Error saving dark mode:', error);
       }
     };
     saveDarkMode();
+  }, [isDarkMode]);
+
+  // Double-check dark mode from cache periodically (helps with hot reload issues)
+  useEffect(() => {
+    const checkDarkModeCache = async () => {
+      try {
+        await cacheUtils.init();
+        const cachedDarkMode = await cacheUtils.get<boolean>('dark_mode_pref');
+        if (cachedDarkMode !== null && typeof cachedDarkMode === 'boolean' && cachedDarkMode !== isDarkMode) {
+          console.log('🔄 SYNCING DARK MODE FROM CACHE (hot reload detected):', cachedDarkMode);
+          setIsDarkMode(cachedDarkMode);
+        }
+      } catch (error) {
+        console.log('❌ Error checking dark mode cache:', error);
+      }
+    };
+
+    // Check on mount and every 2 seconds to catch hot reloads
+    checkDarkModeCache();
+    const interval = setInterval(checkDarkModeCache, 2000);
+    return () => clearInterval(interval);
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -578,6 +608,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               />
               <NotificationsScreen
                 token={token}
+                isDarkMode={isDarkMode}
               />
             </>
 
@@ -610,6 +641,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 wishlistItems={wishlistItems}
                 loading={wishlistLoading}
                 refreshing={wishlistRefreshing}
+                isDarkMode={isDarkMode}
                 onRefresh={() => fetchWishlistData(true)}
                 onProductPress={(id: number) => {
                   setPreviousSearchQuery(null);
@@ -635,6 +667,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               onNavigateSettings={() => navigateTo('settings')}
               onCartPress={() => setShowCart(true)}
               cartCount={cartCount}
+              isDarkMode={isDarkMode}
               onShowProfileDetails={(show) => setProfileDetailsFromTab(show)}
               onShowReferralNetwork={(show) => setReferralNetworkFromTab(show)}
             />
@@ -660,6 +693,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 }}
                 onCartPress={() => setShowCart(true)}
                 wishlistItems={wishlistItems}
+                isDarkMode={isDarkMode}
                 onWishlistChange={() => fetchWishlistData()}
               />
             ) : (
@@ -689,6 +723,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setSearchVisible(true);
                 }}
                 wishlistItems={wishlistItems}
+                isDarkMode={isDarkMode}
                 onWishlistChange={() => fetchWishlistData()}
               />
             )
