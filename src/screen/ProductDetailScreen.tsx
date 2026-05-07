@@ -107,6 +107,9 @@ export default function ProductDetailScreen({
 }: ProductDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const [product, setProduct] = useState<Product | null>(null);
+
+  // Debug logging
+  console.log(`🔍 ProductDetailScreen mounted with productId: ${productId}`);
   const [relatedProducts, setRelatedProducts] = useState<ProductCard[]>([]);
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
   const [productReviews, setProductReviews] = useState<ProductReviewsResponse | null>(null);
@@ -131,15 +134,20 @@ export default function ProductDetailScreen({
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
 
   useEffect(() => {
+    console.log(`🎯 ProductDetailScreen mounted for product ID: ${productId}`);
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      console.log('🔙 Back button pressed');
       if (showImageViewer) {
+        console.log('📸 Closing image viewer');
         setShowImageViewer(false);
         return true;
       }
       if (showBuyModal) {
+        console.log('🛒 Closing buy modal');
         setShowBuyModal(false);
         return true;
       }
+      console.log('🚪 Going back');
       onBack();
       return true;
     });
@@ -169,11 +177,13 @@ export default function ProductDetailScreen({
     productService.getProductById(productId, token ?? undefined)
       .then(async data => {
         if (!active) return;
+        console.log(`✅ Product loaded: ${data.name} (ID: ${data.id})`);
         setProduct(data);
 
         // Check if product is in wishlist
         const isProductWishlisted = wishlistItems.some(item => item.product_id === data.id);
         setIsWishlisted(isProductWishlisted);
+        console.log(`❤️ Is wishlisted: ${isProductWishlisted}`);
 
         // Set first variant as default
         if (data.variants && data.variants.length > 0) {
@@ -473,8 +483,27 @@ export default function ProductDetailScreen({
     }
   };
 
+  const colors = {
+    bg: isDarkMode ? '#0f172a' : '#ffffff',
+    containerBg: isDarkMode ? '#1e293b' : '#f8fbff',
+    text: isDarkMode ? '#f8fafc' : Colors.text,
+    textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
+    border: isDarkMode ? '#334155' : '#e5e7eb',
+    card: isDarkMode ? '#1e293b' : Colors.white,
+    cardBorder: isDarkMode ? '#334155' : '#e5e7eb',
+    divider: isDarkMode ? '#334155' : '#f1f5f9',
+  };
+
+  if (loading) {
+    console.log('⏳ ProductDetailScreen: Loading state...');
+  } else if (product) {
+    console.log(`📦 ProductDetailScreen: Rendering product "${product.name}"`);
+  } else {
+    console.log('❌ ProductDetailScreen: No product data available');
+  }
+
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.containerBg }]}>
       {loading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={Colors.sky} />
@@ -503,24 +532,25 @@ export default function ProductDetailScreen({
               onCartPress={() => console.log('Cart pressed')}
               onSearchPress={onSearch}
               onFilterPress={() => console.log('Filter pressed')}
+              isDarkMode={isDarkMode}
             />
           </Animated.View>
           <ScrollView
             ref={scrollRef}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.containerBg }]}
             onScroll={handleScrollEvent}
             scrollEventThrottle={16}
           >
           {/* Image Gallery */}
-          <View style={styles.galleryWrap}>
+          <View style={[styles.galleryWrap, { backgroundColor: Colors.white, borderBottomColor: colors.divider }]}>
             <ScrollView
               ref={galleryScrollRef}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               scrollEventThrottle={16}
-              style={{ backgroundColor: '#ffffff' }}
+              style={{ backgroundColor: Colors.white }}
               onMomentumScrollEnd={e => {
                 const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
                 setActiveImage(index);
@@ -551,12 +581,12 @@ export default function ProductDetailScreen({
                       setSelectedVariant(imagesWithVariants[i].variantId);
                     }
                   }}
-                  style={styles.galleryImageContainer}
+                  style={[styles.galleryImageContainer, { backgroundColor: Colors.white }]}
                 >
                   <Image source={{ uri: img }} style={styles.galleryImage} resizeMode="contain" />
                 </TouchableOpacity>
               )) : (
-                <View style={[styles.galleryImageContainer, styles.galleryFallback]}>
+                <View style={[styles.galleryImageContainer, styles.galleryFallback, { backgroundColor: Colors.white }]}>
                   <Ionicons name="image-outline" size={48} color="#d1d5db" />
                 </View>
               )}
@@ -580,7 +610,12 @@ export default function ProductDetailScreen({
                         setSelectedVariant(imagesWithVariants[i].variantId);
                       }
                     }}
-                    style={[styles.galleryDot, i === activeImage && styles.galleryDotActive]}
+                    style={[
+                      styles.galleryDot,
+                      i === activeImage
+                        ? styles.galleryDotActive
+                        : { borderColor: 'rgba(0, 0, 0, 0.5)' }
+                    ]}
                     activeOpacity={0.7}
                   />
                 ))}
@@ -656,17 +691,17 @@ export default function ProductDetailScreen({
                       </View>
 
           {/* Price and Badges Section */}
-          <View style={styles.priceAndBadgesSection}>
+          <View style={[styles.priceAndBadgesSection, { backgroundColor: colors.card }]}>
             {/* Price Card */}
-            <View style={styles.priceCard}>
+            <View style={[styles.priceCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
               <View style={styles.priceRow}>
                 <View style={styles.priceContent}>
-                  <Text style={styles.priceLabel}>Price</Text>
+                  <Text style={[styles.priceLabel, { color: colors.textSec }]}>Price</Text>
                   <View style={styles.priceDisplayRow}>
-                    <Text style={styles.currentPrice}>₱{(product.priceMember ?? 0).toLocaleString()}</Text>
+                    <Text style={[styles.currentPrice, { color: colors.text }]}>₱{(product.priceMember ?? 0).toLocaleString()}</Text>
                     {hasDiscount && (
                       <>
-                        <Text style={styles.originalPrice}>₱{(product.priceSrp ?? 0).toLocaleString()}</Text>
+                        <Text style={[styles.originalPrice, { color: colors.textSec }]}>₱{(product.priceSrp ?? 0).toLocaleString()}</Text>
                         <View style={styles.discountBadgeSmall}>
                           <Text style={styles.discountBadgeText}>{discountPct}% OFF</Text>
                         </View>
@@ -675,11 +710,11 @@ export default function ProductDetailScreen({
                   </View>
                 </View>
                 {product.soldCount > 0 && (
-                  <View style={styles.soldInfoCard}>
+                  <View style={[styles.soldInfoCard, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
                     <Ionicons name="bag-check-outline" size={16} color={Colors.sky} />
                     <View>
-                      <Text style={styles.soldLabelSmall}>Sold</Text>
-                      <Text style={styles.soldCountSmall}>{product.soldCount}</Text>
+                      <Text style={[styles.soldLabelSmall, { color: colors.textSec }]}>Sold</Text>
+                      <Text style={[styles.soldCountSmall, { color: colors.text }]}>{product.soldCount}</Text>
                     </View>
                   </View>
                 )}
@@ -687,8 +722,8 @@ export default function ProductDetailScreen({
             </View>
 
             {/* Badges Section */}
-            <View style={styles.badgesCard}>
-              <Text style={styles.badgesLabel}>Benefits & Info</Text>
+            <View style={[styles.badgesCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <Text style={[styles.badgesLabel, { color: colors.text }]}>Benefits & Info</Text>
               <View style={styles.badgesRow}>
             <LinearGradient
               colors={[Colors.sky, Colors.skyDark]}
@@ -726,26 +761,26 @@ export default function ProductDetailScreen({
           </View>
 
           {/* Product Name and Details */}
-          <View style={styles.nameSection}>
-            <View style={styles.nameCard}>
+          <View style={[styles.nameSection, { backgroundColor: colors.card }]}>
+            <View style={[styles.nameCard, { backgroundColor: colors.card, borderBottomColor: colors.cardBorder, borderTopColor: colors.cardBorder }]}>
               {/* Product Name and Rating Container */}
               <View style={styles.nameAndRatingContainer}>
                 {/* Product Name */}
-                <Text style={styles.productName}>{product.name}</Text>
+                <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
 
                 {/* Rating and Sold Row */}
                 <View style={styles.ratingAndSoldRow}>
-                  <View style={styles.ratingBadge}>
+                  <View style={[styles.ratingBadge, { backgroundColor: isDarkMode ? '#2d2a1a' : '#fffbeb' }]}>
                     <Ionicons name="star" size={13} color="#fbbf24" />
-                    <Text style={styles.ratingBadgeText}>4.8</Text>
-                    <Text style={styles.reviewCountText}>(2.5K reviews)</Text>
+                    <Text style={[styles.ratingBadgeText, { color: colors.text }]}>4.8</Text>
+                    <Text style={[styles.reviewCountText, { color: colors.textSec }]}>(2.5K reviews)</Text>
                   </View>
                   {product.soldCount > 0 && (
                     <>
-                      <View style={styles.dividerDot} />
+                      <View style={[styles.dividerDot, { backgroundColor: colors.divider }]} />
                       <View style={styles.soldBadge}>
-                        <Ionicons name="bag-check-outline" size={13} color={Colors.textSecondary} />
-                        <Text style={styles.soldCountText}>{product.soldCount} sold</Text>
+                        <Ionicons name="bag-check-outline" size={13} color={colors.textSec} />
+                        <Text style={[styles.soldCountText, { color: colors.textSec }]}>{product.soldCount} sold</Text>
                       </View>
                     </>
                   )}
@@ -753,7 +788,7 @@ export default function ProductDetailScreen({
               </View>
 
               {/* Divider */}
-              <View style={styles.sectionDivider} />
+              <View style={[styles.sectionDivider, { backgroundColor: colors.divider }]} />
 
               {/* Details Grid */}
               <View style={styles.detailsGrid}>
@@ -761,8 +796,8 @@ export default function ProductDetailScreen({
                 <View style={styles.detailItem}>
                   <Ionicons name="barcode-outline" size={15} color={Colors.sky} />
                   <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>SKU</Text>
-                    <Text style={styles.detailValue}>{product.sku}</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSec, fontWeight: '600' }]}>SKU</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{product.sku}</Text>
                   </View>
                 </View>
 
@@ -770,7 +805,7 @@ export default function ProductDetailScreen({
                 <View style={styles.detailItem}>
                   <Ionicons name="cube-outline" size={15} color={product.qty > 10 ? Colors.forest : '#ef4444'} />
                   <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>Stock</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSec, fontWeight: '600' }]}>Stock</Text>
                     <Text style={[styles.detailValue, product.qty > 10 ? { color: Colors.forest } : { color: '#ef4444' }]}>
                       {product.qty > 10 ? `${product.qty} available` : product.qty > 0 ? `Only ${product.qty} left` : 'Out of stock'}
                     </Text>
@@ -781,54 +816,54 @@ export default function ProductDetailScreen({
                 <View style={styles.detailItem}>
                   <Ionicons name="car-outline" size={15} color={Colors.sky} />
                   <View style={styles.detailContent}>
-                    <Text style={styles.detailLabel}>Delivery</Text>
-                    <Text style={styles.detailValue}>2-3 days</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSec, fontWeight: '600' }]}>Delivery</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>2-3 days</Text>
                   </View>
                 </View>
               </View>
 
               {/* Trust & Guarantee Section */}
-              <View style={styles.trustSection}>
-                <Text style={styles.trustSectionTitle}>🛡️ Buyer Protection</Text>
+              <View style={[styles.trustSection, { backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb', borderTopColor: colors.divider, borderBottomColor: colors.divider }]}>
+                <Text style={[styles.trustSectionTitle, { color: colors.text }]}>🛡️ Buyer Protection</Text>
                 <View style={styles.trustGridRow}>
-                  <View style={styles.trustItem}>
-                    <View style={styles.trustIconBox}>
+                  <View style={[styles.trustItem, { backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb', borderColor: colors.divider }]}>
+                    <View style={[styles.trustIconBox, { backgroundColor: isDarkMode ? '#111827' : '#eff6ff' }]}>
                       <Ionicons name="shield-checkmark" size={16} color={Colors.sky} />
                     </View>
-                    <Text style={styles.trustItemLabel}>Authentic</Text>
-                    <Text style={styles.trustItemSubtext}>100% Original</Text>
+                    <Text style={[styles.trustItemLabel, { color: colors.text }]}>Authentic</Text>
+                    <Text style={[styles.trustItemSubtext, { color: colors.textSec }]}>100% Original</Text>
                   </View>
-                  <View style={styles.trustItem}>
-                    <View style={styles.trustIconBox}>
+                  <View style={[styles.trustItem, { backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb', borderColor: colors.divider }]}>
+                    <View style={[styles.trustIconBox, { backgroundColor: isDarkMode ? '#111827' : '#fef2f2' }]}>
                       <Ionicons name="heart-half" size={16} color="#ef4444" />
                     </View>
-                    <Text style={styles.trustItemLabel}>Quality</Text>
-                    <Text style={styles.trustItemSubtext}>Verified</Text>
+                    <Text style={[styles.trustItemLabel, { color: colors.text }]}>Quality</Text>
+                    <Text style={[styles.trustItemSubtext, { color: colors.textSec }]}>Verified</Text>
                   </View>
-                  <View style={styles.trustItem}>
-                    <View style={styles.trustIconBox}>
+                  <View style={[styles.trustItem, { backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb', borderColor: colors.divider }]}>
+                    <View style={[styles.trustIconBox, { backgroundColor: isDarkMode ? '#111827' : '#f0fdf4' }]}>
                       <Ionicons name="arrow-undo" size={16} color={Colors.forest} />
                     </View>
-                    <Text style={styles.trustItemLabel}>Easy Return</Text>
-                    <Text style={styles.trustItemSubtext}>7 Days</Text>
+                    <Text style={[styles.trustItemLabel, { color: colors.text }]}>Easy Return</Text>
+                    <Text style={[styles.trustItemSubtext, { color: colors.textSec }]}>7 Days</Text>
                   </View>
                 </View>
               </View>
 
               {/* Additional Guarantees */}
               <View style={styles.guaranteesSection}>
-                <View style={styles.guaranteeItem}>
+                <View style={[styles.guaranteeItem, { backgroundColor: isDarkMode ? '#2d2a1a' : '#f9fafb' }]}>
                   <Ionicons name="lock-closed" size={14} color="#f97316" />
                   <View style={styles.guaranteeContent}>
-                    <Text style={styles.guaranteeTitle}>Secure Checkout</Text>
-                    <Text style={styles.guaranteeSubtext}>Safe payment processing</Text>
+                    <Text style={[styles.guaranteeTitle, { color: colors.text }]}>Secure Checkout</Text>
+                    <Text style={[styles.guaranteeSubtext, { color: colors.textSec }]}>Safe payment processing</Text>
                   </View>
                 </View>
-                <View style={styles.guaranteeItem}>
+                <View style={[styles.guaranteeItem, { backgroundColor: isDarkMode ? '#2d2a1a' : '#f9fafb' }]}>
                   <Ionicons name="rocket" size={14} color={Colors.sky} />
                   <View style={styles.guaranteeContent}>
-                    <Text style={styles.guaranteeTitle}>Fast Delivery</Text>
-                    <Text style={styles.guaranteeSubtext}>Quick nationwide shipping</Text>
+                    <Text style={[styles.guaranteeTitle, { color: colors.text }]}>Fast Delivery</Text>
+                    <Text style={[styles.guaranteeSubtext, { color: colors.textSec }]}>Quick nationwide shipping</Text>
                   </View>
                 </View>
               </View>
@@ -837,8 +872,8 @@ export default function ProductDetailScreen({
 
           {/* Variants */}
           {(product.variants?.length ?? 0) > 0 && (
-            <View style={styles.variantsSection}>
-              <Text style={styles.sectionLabel}>Variants ({product.variants.length})</Text>
+            <View style={[styles.variantsSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>Variants ({product.variants.length})</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -851,12 +886,13 @@ export default function ProductDetailScreen({
                       style={[
                         styles.variantCard,
                         selectedVariant === variant.id && styles.variantCardSelected,
+                        { borderColor: selectedVariant === variant.id ? Colors.sky : colors.divider, backgroundColor: colors.containerBg }
                       ]}
                       onPress={() => setSelectedVariant(variant.id)}
                       activeOpacity={0.7}
                     >
                       {/* Variant Image, Color Circle, or Label */}
-                      <View style={styles.variantMediaContainer}>
+                      <View style={[styles.variantMediaContainer, { backgroundColor: isDarkMode ? '#111827' : '#f1f5f9', borderBottomColor: colors.divider }]}>
                         {variant.images && variant.images.length > 0 ? (
                           <Image
                             source={{ uri: variant.images[0] }}
@@ -866,11 +902,11 @@ export default function ProductDetailScreen({
                         ) : variant.colorHex ? (
                           <View style={[
                             styles.variantColorCircle,
-                            { backgroundColor: variant.colorHex }
+                            { backgroundColor: variant.colorHex, borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : '#e5e7eb' }
                           ]} />
                         ) : (
-                          <View style={styles.variantPlaceholder}>
-                            <Ionicons name="image-outline" size={24} color="#d1d5db" />
+                          <View style={[styles.variantPlaceholder, { backgroundColor: colors.divider }]}>
+                            <Ionicons name="image-outline" size={24} color={colors.textSec} />
                           </View>
                         )}
                         {selectedVariant === variant.id && (
@@ -883,14 +919,14 @@ export default function ProductDetailScreen({
                       {/* Variant Info */}
                       <View style={styles.variantInfo}>
                         <Text
-                          style={styles.variantLabel}
+                          style={[styles.variantLabel, { color: colors.text }]}
                           numberOfLines={1}
                         >
                           {variant.color || variant.name || `Variant ${index + 1}`}
                         </Text>
                         {(variant.size || variant.style) && (
                           <Text
-                            style={styles.variantSubInfo}
+                            style={[styles.variantSubInfo, { color: colors.textSec }]}
                             numberOfLines={1}
                           >
                             {[variant.size, variant.style].filter(Boolean).join(' • ')}
@@ -899,12 +935,12 @@ export default function ProductDetailScreen({
                         <Text
                           style={[
                             styles.variantStock,
-                            variant.qty > 0 ? styles.stockAvailable : styles.stockLow
+                            { color: variant.qty > 0 ? (isDarkMode ? '#4ade80' : Colors.forest) : '#ef4444', fontWeight: '700' }
                           ]}
                         >
                           {variant.qty > 10 ? `${variant.qty} left` : variant.qty > 0 ? `${variant.qty} left` : 'Out of stock'}
                         </Text>
-                        <Text style={styles.variantPrice}>
+                        <Text style={[styles.variantPrice, { color: colors.text }]}>
                           ₱{(variant.priceMember ?? variant.priceSrp).toLocaleString()}
                         </Text>
                       </View>
@@ -921,21 +957,21 @@ export default function ProductDetailScreen({
                 const hasVariantDiscount = variantDiscount > 0;
 
                 return (
-                  <View style={styles.variantDetailsCard}>
+                  <View style={[styles.variantDetailsCard, { backgroundColor: colors.card, borderTopColor: colors.divider, borderBottomColor: colors.divider }]}>
                     {/* Header with price */}
-                    <View style={styles.variantDetailsHeader}>
+                    <View style={[styles.variantDetailsHeader, { borderBottomColor: colors.divider }]}>
                       <View>
-                        <Text style={styles.variantDetailsTitle}>
+                        <Text style={[styles.variantDetailsTitle, { color: colors.text }]}>
                           {variant.color || variant.name || 'Selected Variant'}
                         </Text>
-                        <Text style={styles.variantDetailsSku}>SKU: {variant.sku}</Text>
+                        <Text style={[styles.variantDetailsSku, { color: colors.textSec }]}>SKU: {variant.sku}</Text>
                       </View>
                       <View style={styles.variantPriceContainer}>
-                        <Text style={styles.variantPriceLarge}>
+                        <Text style={[styles.variantPriceLarge, { color: colors.text }]}>
                           ₱{(variant.priceMember ?? variant.priceSrp).toLocaleString()}
                         </Text>
                         {hasVariantDiscount && (
-                          <Text style={styles.variantPriceOriginal}>
+                          <Text style={[styles.variantPriceOriginal, { color: colors.textSec }]}>
                             ₱{(variant.priceSrp ?? 0).toLocaleString()}
                           </Text>
                         )}
@@ -943,36 +979,36 @@ export default function ProductDetailScreen({
                     </View>
 
                     {/* Details Grid */}
-                    <View style={styles.variantDetailsGrid}>
-                      <View style={styles.detailGridItem}>
+                    <View style={[styles.variantDetailsGrid, { gap: 8 }]}>
+                      <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
                         <Ionicons name="cube-outline" size={16} color={Colors.sky} />
-                        <Text style={styles.detailGridLabel}>Stock</Text>
+                        <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>Stock</Text>
                         <Text style={[
                           styles.detailGridValue,
-                          variant.qty > 0 ? styles.stockInStock : styles.stockOutOfStock
+                          { color: variant.qty > 0 ? (isDarkMode ? '#4ade80' : Colors.forest) : '#ef4444', fontWeight: '700' }
                         ]}>
                           {variant.qty}
                         </Text>
                       </View>
 
                       {variant.size && (
-                        <View style={styles.detailGridItem}>
+                        <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
                           <Ionicons name="expand-outline" size={16} color={Colors.sky} />
-                          <Text style={styles.detailGridLabel}>Size</Text>
-                          <Text style={styles.detailGridValue}>{variant.size}</Text>
+                          <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>Size</Text>
+                          <Text style={[styles.detailGridValue, { color: colors.text }]}>{variant.size}</Text>
                         </View>
                       )}
 
-                      <View style={styles.detailGridItem}>
+                      <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
                         <Ionicons name="star-outline" size={16} color={Colors.sky} />
-                        <Text style={styles.detailGridLabel}>PV</Text>
-                        <Text style={styles.detailGridValue}>{variant.prodpv}</Text>
+                        <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>PV</Text>
+                        <Text style={[styles.detailGridValue, { color: colors.text }]}>{variant.prodpv}</Text>
                       </View>
 
                       {hasVariantDiscount && (
-                        <View style={styles.detailGridItem}>
+                        <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
                           <Ionicons name="pricetag-outline" size={16} color="#ef4444" />
-                          <Text style={styles.detailGridLabel}>Save</Text>
+                          <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>Save</Text>
                           <Text style={[styles.detailGridValue, { color: '#ef4444' }]}>
                             ₱{variantDiscount.toLocaleString()}
                           </Text>
@@ -981,17 +1017,17 @@ export default function ProductDetailScreen({
                     </View>
 
                     {/* Additional Info */}
-                    <View style={styles.variantAdditionalInfo}>
+                    <View style={[styles.variantAdditionalInfo, { backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb' }]}>
                       {variant.style && (
                         <View style={styles.infoPair}>
-                          <Text style={styles.infoLabel}>Style:</Text>
-                          <Text style={styles.infoValue}>{variant.style}</Text>
+                          <Text style={[styles.infoLabel, { color: colors.textSec }]}>Style:</Text>
+                          <Text style={[styles.infoValue, { color: colors.text }]}>{variant.style}</Text>
                         </View>
                       )}
                       {(variant.width || variant.height || variant.dimension) && (
                         <View style={styles.infoPair}>
-                          <Text style={styles.infoLabel}>Dimensions:</Text>
-                          <Text style={styles.infoValue}>
+                          <Text style={[styles.infoLabel, { color: colors.textSec }]}>Dimensions:</Text>
+                          <Text style={[styles.infoValue, { color: colors.text }]}>
                             {[
                               variant.width && `W: ${variant.width}`,
                               variant.height && `H: ${variant.height}`,
@@ -1001,10 +1037,10 @@ export default function ProductDetailScreen({
                         </View>
                       )}
                       <View style={styles.infoPair}>
-                        <Text style={styles.infoLabel}>Status:</Text>
+                        <Text style={[styles.infoLabel, { color: colors.textSec }]}>Status:</Text>
                         <Text style={[
                           styles.infoValue,
-                          variant.qty > 0 ? styles.statusInStock : styles.statusOutOfStock
+                          { color: variant.qty > 0 ? (isDarkMode ? '#4ade80' : Colors.forest) : '#ef4444', fontWeight: '700' }
                         ]}>
                           {variant.qty > 0 ? '✓ In Stock' : '✗ Out of Stock'}
                         </Text>
@@ -1018,36 +1054,36 @@ export default function ProductDetailScreen({
 
           {/* Description & Specifications Wrapper */}
           {(!!product.description || !!product.specifications || !!product.material || !!product.warranty || product.pswidth || product.pslenght || product.psheight) && (
-            <View style={styles.descriptionsWrapper}>
+            <View style={[styles.descriptionsWrapper, { backgroundColor: colors.card, borderColor: colors.divider }]}>
               {/* Description */}
               {!!product.description && (
-                <View style={styles.descriptionSection}>
+                <View style={[styles.descriptionSection, { backgroundColor: colors.card, borderBottomColor: colors.divider, borderTopColor: colors.divider }]}>
               <TouchableOpacity
-                style={styles.descriptionHeader}
+                style={[styles.descriptionHeader, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}
                 onPress={() => setDescriptionExpanded(!descriptionExpanded)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.descriptionTitle}>Description</Text>
+                <Text style={[styles.descriptionTitle, { color: colors.text }]}>Description</Text>
                 <Ionicons
                   name={descriptionExpanded ? 'chevron-up' : 'chevron-down'}
                   size={20}
-                  color={Colors.text}
+                  color={colors.text}
                 />
               </TouchableOpacity>
               {descriptionExpanded && (
-                <View style={styles.descriptionContent}>
+                <View style={[styles.descriptionContent, { backgroundColor: colors.card }]}>
                   <View style={styles.descriptionContentInner}>
                     <RenderHtml
                       source={{ html: product.description }}
                       contentWidth={SCREEN_WIDTH - 16}
                       tagsStyles={{
-                        body: { color: Colors.text, fontSize: 14, lineHeight: 22 },
-                        h3: { color: Colors.text, fontSize: 16, fontWeight: '700', marginTop: 12, marginBottom: 6 },
-                        h4: { color: Colors.text, fontSize: 15, fontWeight: '600', marginTop: 10, marginBottom: 6 },
-                        p: { color: Colors.text, fontSize: 14, lineHeight: 22, marginBottom: 10 },
+                        body: { color: colors.text, fontSize: 14, lineHeight: 22 },
+                        h3: { color: colors.text, fontSize: 16, fontWeight: '700', marginTop: 12, marginBottom: 6 },
+                        h4: { color: colors.text, fontSize: 15, fontWeight: '600', marginTop: 10, marginBottom: 6 },
+                        p: { color: colors.text, fontSize: 14, lineHeight: 22, marginBottom: 10 },
                         ul: { marginLeft: 20, marginBottom: 10 },
-                        li: { color: Colors.text, fontSize: 14, lineHeight: 22, marginBottom: 6 },
-                        hr: { backgroundColor: '#e5e7eb', marginVertical: 12 },
+                        li: { color: colors.text, fontSize: 14, lineHeight: 22, marginBottom: 6 },
+                        hr: { backgroundColor: colors.divider, marginVertical: 12 },
                         strong: { fontWeight: '700' },
                       }}
                     />
@@ -1059,45 +1095,45 @@ export default function ProductDetailScreen({
 
               {/* Specifications */}
               {(!!product.specifications || !!product.material || !!product.warranty || product.pswidth || product.pslenght || product.psheight) && (
-                <View style={styles.specificationsSection}>
+                <View style={[styles.specificationsSection, { backgroundColor: colors.card, borderBottomColor: colors.divider, borderTopColor: colors.divider }]}>
                 <TouchableOpacity
-                  style={styles.specificationsHeader}
+                  style={[styles.specificationsHeader, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}
                   onPress={() => setSpecificationsExpanded(!specificationsExpanded)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.specificationsTitle}>Specifications</Text>
+                  <Text style={[styles.specificationsTitle, { color: colors.text }]}>Specifications</Text>
                   <Ionicons
                     name={specificationsExpanded ? 'chevron-up' : 'chevron-down'}
                     size={20}
-                    color={Colors.text}
+                    color={colors.text}
                   />
                 </TouchableOpacity>
                 {specificationsExpanded && (
-                  <View style={styles.specificationsContent}>
+                  <View style={[styles.specificationsContent, { backgroundColor: colors.card }]}>
                     <View style={styles.specificationsContentInner}>
                     {product.pswidth || product.pslenght || product.psheight ? (
                       <View style={styles.specRow}>
-                        <Text style={styles.specLabel}>Dimensions:</Text>
-                        <Text style={styles.specValue}>
+                        <Text style={[styles.specLabel, { color: colors.textSec }]}>Dimensions:</Text>
+                        <Text style={[styles.specValue, { color: colors.text }]}>
                           W: {product.pswidth} cm x D: {product.pslenght} cm x H: {product.psheight} cm
                         </Text>
                       </View>
                     ) : null}
                     {product.material ? (
                       <View style={styles.specRow}>
-                        <Text style={styles.specLabel}>Material:</Text>
-                        <Text style={styles.specValue}>{product.material}</Text>
+                        <Text style={[styles.specLabel, { color: colors.textSec }]}>Material:</Text>
+                        <Text style={[styles.specValue, { color: colors.text }]}>{product.material}</Text>
                       </View>
                     ) : null}
                     {product.warranty ? (
                       <View style={styles.specRow}>
-                        <Text style={styles.specLabel}>Warranty:</Text>
-                        <Text style={styles.specValue}>{product.warranty}</Text>
+                        <Text style={[styles.specLabel, { color: colors.textSec }]}>Warranty:</Text>
+                        <Text style={[styles.specValue, { color: colors.text }]}>{product.warranty}</Text>
                       </View>
                     ) : null}
                     {product.specifications ? (
                       <View style={styles.specRow}>
-                        <Text style={styles.specValue}>{product.specifications}</Text>
+                        <Text style={[styles.specValue, { color: colors.text }]}>{product.specifications}</Text>
                       </View>
                     ) : null}
                   </View>
@@ -1110,45 +1146,45 @@ export default function ProductDetailScreen({
 
           {/* Product Rating - Shopee Style */}
           <View style={styles.ratingSection}>
-            <View style={styles.ratingCard}>
+            <View style={[styles.ratingCard, { backgroundColor: colors.card, borderColor: colors.divider }]}>
               {productReviews && productReviews.summary ? (
                 <>
                   {/* Rating Summary Header */}
-                  <View style={styles.ratingSummaryHeader}>
+                  <View style={[styles.ratingSummaryHeader, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
                     <View style={styles.ratingScoreContainer}>
-                      <Text style={styles.ratingScoreLarge}>{((productReviews.summary.average || 0) || 0).toFixed(1)}</Text>
+                      <Text style={[styles.ratingScoreLarge, { color: colors.text }]}>{((productReviews.summary.average || 0) || 0).toFixed(1)}</Text>
                       <View style={styles.ratingStarsLarge}>
                         {[1, 2, 3, 4, 5].map(star => (
                           <Ionicons
                             key={star}
                             name={star <= Math.round(productReviews.summary.average || 0) ? 'star' : 'star-outline'}
                             size={20}
-                            color={star <= Math.round(productReviews.summary.average || 0) ? '#fbbf24' : '#d1d5db'}
+                            color={star <= Math.round(productReviews.summary.average || 0) ? '#fbbf24' : colors.divider}
                           />
                         ))}
                       </View>
                     </View>
                     <View style={styles.ratingStats}>
-                      <Text style={styles.ratingCount}>{productReviews.summary.count || 0} ratings</Text>
+                      <Text style={[styles.ratingCount, { color: colors.text }]}>{productReviews.summary.count || 0} ratings</Text>
                       <TouchableOpacity style={styles.viewAllButton}>
-                        <Text style={styles.viewAllText}>See all</Text>
+                        <Text style={[styles.viewAllText, { color: Colors.sky }]}>See all</Text>
                         <Ionicons name="chevron-forward" size={16} color={Colors.sky} />
                       </TouchableOpacity>
                     </View>
                   </View>
-                  
+
                   {/* Rating Distribution */}
-                  <View style={styles.ratingDistribution}>
+                  <View style={[styles.ratingDistribution, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
                     {[5, 4, 3, 2, 1].map(rating => {
                       const count = productReviews.reviews?.filter(r => r.rating === rating).length || 0;
                       const percentage = productReviews.summary.count > 0 ? (count / productReviews.summary.count) * 100 : 0;
                       return (
                         <View key={rating} style={styles.ratingBarRow}>
-                          <Text style={styles.ratingBarLabel}>{rating}★</Text>
-                          <View style={styles.ratingBarTrack}>
+                          <Text style={[styles.ratingBarLabel, { color: colors.text }]}>{rating}★</Text>
+                          <View style={[styles.ratingBarTrack, { backgroundColor: colors.divider }]}>
                             <View style={[styles.ratingBarFill, { width: `${percentage}%` }]} />
                           </View>
-                          <Text style={styles.ratingBarCount}>{count}</Text>
+                          <Text style={[styles.ratingBarCount, { color: colors.text }]}>{count}</Text>
                         </View>
                       );
                     })}
@@ -1156,24 +1192,24 @@ export default function ProductDetailScreen({
                   
                   {/* Customer Reviews */}
                   {productReviews.reviews && productReviews.reviews.length > 0 && (
-                    <View style={styles.reviewsSection}>
-                      <View style={styles.reviewsSectionHeader}>
-                        <Text style={styles.reviewsSectionTitle}>Customer Reviews</Text>
-                        <Text style={styles.reviewsSectionCount}>({productReviews.reviews.length})</Text>
+                    <View style={[styles.reviewsSection, { backgroundColor: colors.card }]}>
+                      <View style={[styles.reviewsSectionHeader, { borderBottomColor: colors.divider }]}>
+                        <Text style={[styles.reviewsSectionTitle, { color: colors.text }]}>Customer Reviews</Text>
+                        <Text style={[styles.reviewsSectionCount, { color: colors.textSec }]}>({productReviews.reviews.length})</Text>
                       </View>
                       {productReviews.reviews.slice(0, 2).map((review, index) => (
-                        <View key={review.id} style={styles.reviewCard}>
+                        <View key={review.id} style={[styles.reviewCard, { backgroundColor: colors.containerBg, borderColor: colors.divider }]}>
                           <View style={styles.reviewHeader}>
                             <View style={styles.reviewerInfo}>
                               <View style={styles.avatarContainer}>
-                                <Image 
-                                  source={{ uri: review.customer_avatar || 'https://via.placeholder.com/40' }} 
+                                <Image
+                                  source={{ uri: review.customer_avatar || 'https://via.placeholder.com/40' }}
                                   style={styles.reviewAvatar}
                                   resizeMode="cover"
                                 />
                               </View>
                               <View style={styles.reviewerDetails}>
-                                <Text style={styles.reviewCustomerName}>
+                                <Text style={[styles.reviewCustomerName, { color: colors.text }]}>
                                   {review.customer_name.charAt(0)}{review.customer_name.slice(1).replace(/./g, '*')}
                                 </Text>
                                 <View style={styles.reviewRatingRow}>
@@ -1183,31 +1219,31 @@ export default function ProductDetailScreen({
                                         key={star}
                                         name={star <= review.rating ? 'star' : 'star-outline'}
                                         size={12}
-                                        color={star <= review.rating ? '#fbbf24' : '#d1d5db'}
+                                        color={star <= review.rating ? '#fbbf24' : colors.divider}
                                       />
                                     ))}
                                   </View>
-                                  <Text style={styles.reviewRatingText}>{review.rating}.0</Text>
+                                  <Text style={[styles.reviewRatingText, { color: colors.textSec }]}>{review.rating}.0</Text>
                                 </View>
                               </View>
                             </View>
-                            <Text style={styles.reviewDate}>
-                              {new Date(review.created_at).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
+                            <Text style={[styles.reviewDate, { color: colors.textSec }]}>
+                              {new Date(review.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
                               })}
                             </Text>
                           </View>
-                          <Text style={styles.reviewComment}>{review.review}</Text>
+                          <Text style={[styles.reviewComment, { color: colors.text }]}>{review.review}</Text>
                           {index < productReviews.reviews.slice(0, 2).length - 1 && (
-                            <View style={styles.reviewSeparator} />
+                            <View style={[styles.reviewSeparator, { backgroundColor: colors.divider }]} />
                           )}
                         </View>
                       ))}
                       {productReviews.reviews.length > 2 && (
-                        <TouchableOpacity style={styles.seeAllReviewsBtn}>
-                          <Text style={styles.seeAllReviewsBtnText}>See all reviews ({productReviews.reviews.length})</Text>
+                        <TouchableOpacity style={[styles.seeAllReviewsBtn, { backgroundColor: colors.containerBg, borderTopColor: colors.divider }]}>
+                          <Text style={[styles.seeAllReviewsBtnText, { color: Colors.sky }]}>See all reviews ({productReviews.reviews.length})</Text>
                           <Ionicons name="chevron-forward" size={16} color={Colors.sky} />
                         </TouchableOpacity>
                       )}
@@ -1217,10 +1253,10 @@ export default function ProductDetailScreen({
               ) : (
                 <>
                   {/* No Ratings State */}
-                  <View style={styles.noRatingContainer}>
+                  <View style={[styles.noRatingContainer, { backgroundColor: colors.card }]}>
                     <View style={styles.noRatingScore}>
-                      <Ionicons name="star-outline" size={24} color="#d1d5db" />
-                      <Text style={styles.noRatingText}>No ratings yet</Text>
+                      <Ionicons name="star-outline" size={24} color={colors.divider} />
+                      <Text style={[styles.noRatingText, { color: colors.textSec }]}>No ratings yet</Text>
                     </View>
                     <TouchableOpacity style={styles.firstReviewButton}>
                       <Text style={styles.firstReviewButtonText}>Be the first to review</Text>
@@ -1233,9 +1269,9 @@ export default function ProductDetailScreen({
 
           {/* Brand Information */}
           {brandProfile && (
-            <View style={styles.brandSection}>
-              <Text style={styles.sectionLabel}>Shop Information</Text>
-              <View style={styles.brandCard}>
+            <View style={[styles.brandSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>Shop Information</Text>
+              <View style={[styles.brandCard, { backgroundColor: colors.containerBg, borderColor: colors.divider }]}>
                 <Image
                   source={{ uri: brandProfile.profile_picture || 'https://via.placeholder.com/60' }}
                   style={styles.brandLogo}
@@ -1243,29 +1279,28 @@ export default function ProductDetailScreen({
                 />
                 <View style={styles.brandInfo}>
                   <View style={styles.brandHeader}>
-                    <Text style={styles.brandName}>{brandProfile.name}</Text>
+                    <Text style={[styles.brandName, { color: colors.text }]}>{brandProfile.name}</Text>
                     <View style={[
                       styles.onlineDot,
                       brandProfile.is_online ? styles.onlineDotActive : styles.onlineDotInactive
                     ]} />
                   </View>
-                  <Text style={styles.brandSupplier}>{brandProfile.supplier_name}</Text>
                   <View style={styles.brandStats}>
                     <View style={styles.brandStat}>
                       <Ionicons name="star" size={12} color="#fbbf24" />
-                      <Text style={styles.brandStatText}>{(brandProfile.overall_rating || 0).toFixed(1)}</Text>
+                      <Text style={[styles.brandStatText, { color: colors.text }]}>{(brandProfile.overall_rating || 0).toFixed(1)}</Text>
                     </View>
                     <View style={styles.brandStatDivider} />
                     <View style={styles.brandStat}>
-                      <Text style={styles.brandStatText}>{brandProfile.total_reviews} reviews</Text>
+                      <Text style={[styles.brandStatText, { color: colors.text }]}>{brandProfile.total_reviews} reviews</Text>
                     </View>
                     <View style={styles.brandStatDivider} />
                     <View style={styles.brandStat}>
-                      <Text style={styles.brandStatText}>{brandProfile.total_products} products</Text>
+                      <Text style={[styles.brandStatText, { color: colors.text }]}>{brandProfile.total_products} products</Text>
                     </View>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.chatButton} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.chatButton, { backgroundColor: isDarkMode ? '#111827' : '#f0f9ff' }]} activeOpacity={0.7}>
                   <Ionicons name="chevron-forward" size={20} color={Colors.sky} />
                 </TouchableOpacity>
               </View>
@@ -1274,16 +1309,16 @@ export default function ProductDetailScreen({
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (
-            <View style={styles.relatedSection}>
-              <View style={styles.relatedHeader}>
+            <View style={[styles.relatedSection, { backgroundColor: colors.card }]}>
+              <View style={[styles.relatedHeader, { borderBottomColor: colors.divider }]}>
                 <Ionicons name="grid-outline" size={15} color={Colors.sky} />
-                <Text style={styles.relatedTitle}>Related Products</Text>
+                <Text style={[styles.relatedTitle, { color: colors.text }]}>Related Products</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll}>
                 <View style={styles.relatedRow}>
                   {relatedProducts.map(p => (
                     <View key={p.id} style={styles.relatedCard}>
-                      <ItemCard product={p} onPress={item => onProductPress?.(item.id)} />
+                      <ItemCard product={p} onPress={item => onProductPress?.(item.id)} isDarkMode={isDarkMode} />
                     </View>
                   ))}
                 </View>
@@ -1291,13 +1326,13 @@ export default function ProductDetailScreen({
             </View>
           )}
         </ScrollView>
-        
+
         {/* Buy Now Button - Fixed Bottom */}
         <LinearGradient
-          colors={['#f0f9ff', '#f0fdf4']}
+          colors={isDarkMode ? ['#0f172a', '#1e293b'] : ['#f0f9ff', '#f0fdf4']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.buyNowContainer}
+          style={[styles.buyNowContainer, { borderTopColor: colors.divider }]}
         >
           <View style={{ paddingTop: 8, paddingBottom: insets.bottom || 4 }}>
           {/* Decorative Icon */}
@@ -2588,8 +2623,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   descriptionSection: {
+    borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   descriptionHeader: {
     flexDirection: 'row',
@@ -2625,6 +2660,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   specificationsSection: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
   },
   specificationsHeader: {
     flexDirection: 'row',
