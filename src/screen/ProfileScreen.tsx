@@ -126,7 +126,6 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
 
   useEffect(() => {
     if (token) {
-      fetchReferralTree();
       fetchLoyaltyData();
       fetchOrderCounts();
     }
@@ -167,22 +166,29 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
 
 
   const handleViewNetwork = async () => {
-    if (!referralTree) {
-      setLoadingReferral(true);
-      try {
-        const data = await referralService.getReferralTree(token!);
-        setReferralTree(data);
-      } catch (error: any) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: error.message || 'Failed to load referral network',
-        });
-      } finally {
-        setLoadingReferral(false);
-      }
+    if (!token) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Missing authentication token',
+      });
+      return;
     }
-    setShowReferralNetwork(true);
+
+    setLoadingReferral(true);
+    try {
+      const data = await referralService.getReferralTree(token);
+      setReferralTree(data);
+      setShowReferralNetwork(true);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to load referral network',
+      });
+    } finally {
+      setLoadingReferral(false);
+    }
   };
 
   const handleShare = async (url: string, type?: 'signup' | 'shopping') => {

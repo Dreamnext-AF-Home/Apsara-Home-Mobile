@@ -6,7 +6,6 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -187,8 +186,13 @@ export default function ReferralNetworkScreen({ token, onBack, tree }: ReferralN
   if (!tree) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.sky} />
+        <View style={styles.emptyContainer}>
+          <Ionicons name="people-outline" size={40} color={Colors.textSecondary} />
+          <Text style={styles.emptyTitle}>No referral network data</Text>
+          <Text style={styles.emptyText}>Unable to load your referral tree right now.</Text>
+          <TouchableOpacity style={styles.emptyBackBtn} onPress={onBack} activeOpacity={0.7}>
+            <Text style={styles.emptyBackBtnText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -534,9 +538,33 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  loadingContainer: {
+  emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  emptyBackBtn: {
+    marginTop: 6,
+    backgroundColor: Colors.sky,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  emptyBackBtnText: {
+    color: Colors.white,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
