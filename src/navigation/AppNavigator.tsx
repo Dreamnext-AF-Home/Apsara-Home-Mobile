@@ -833,22 +833,27 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               const active = activeTab === key;
 
             if (key === 'home') {
+              const count = badgeCount[key] ?? 0;
               return (
-                <Pressable key={key} style={styles.navItem} onPress={() => navigateTo(key)}>
+                <Pressable
+                  key={key}
+                  style={styles.navItem}
+                  onPress={() => navigateTo(key)}
+                >
                   <View style={styles.indicator}>
                     {active && <View style={styles.indicatorLine} />}
                   </View>
-                  <View style={[styles.iconWrap, { alignItems: 'center', justifyContent: 'center' }]}>
-                    <Image
-                      source={require('../../assets/home_logo.png')}
-                      style={[
-                        styles.homeLogoImage,
-                        {
-                          opacity: active ? 1 : 0.6,
-                          tintColor: active ? (isDarkMode ? '#38bdf8' : Colors.sky) : (isDarkMode ? '#d1d5db' : Colors.textSecondary),
-                        }
-                      ]}
+                  <View style={styles.iconWrap}>
+                    <Ionicons
+                      name={active ? iconActive[key] : iconInactive[key]}
+                      size={24}
+                      color={active ? (isDarkMode ? '#38bdf8' : Colors.sky) : (isDarkMode ? '#d1d5db' : Colors.textSecondary)}
                     />
+                    {count > 0 && (
+                      <View style={[styles.badge, isDarkMode && styles.badgeDark]}>
+                        <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+                      </View>
+                    )}
                   </View>
                   <Text style={[
                     styles.navLabel,
@@ -874,10 +879,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   <View style={styles.shopSlot}>
                     <View style={[styles.shopDiamond, active && styles.shopDiamondActive]}>
                       <View style={styles.shopDiamondInner}>
-                        <Ionicons
-                          name={active ? iconActive[key] : iconInactive[key]}
-                          size={22}
-                          color={Colors.white}
+                        <Image
+                          source={require('../../assets/home_logo.png')}
+                          style={[
+                            styles.shopLogoImage,
+                            {
+                              opacity: 1,
+                              tintColor: Colors.white,
+                            }
+                          ]}
                         />
                       </View>
                     </View>
@@ -1165,6 +1175,12 @@ const styles = StyleSheet.create({
     height: 26,
     resizeMode: 'contain',
   },
+  shopLogoImage: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+    marginTop: -4,
+  },
   badge: {
     position: 'absolute',
     top: -4,
@@ -1265,6 +1281,9 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-45deg' }],
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   menuOverlay: {
     flex: 1,
