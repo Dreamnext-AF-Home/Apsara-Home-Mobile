@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginScreen from './src/screen/LoginScreen';
 import SignupScreen from './src/screen/SignupScreen';
 import OtpScreen from './src/screen/OtpScreen';
@@ -14,6 +15,15 @@ import { storageService, StoredUser } from './src/services/storageService';
 import LoadingScreen from './src/screen/LoadingScreen';
 
 type AuthScreen = 'login' | 'signup' | 'otp';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+    },
+  },
+});
 
 interface AuthUser {
   id: string;
@@ -166,17 +176,19 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      {isLoading ? (
-        <LoadingScreen />
-      ) : !hasOnboarded ? (
-        <OnboardingScreen onDone={handleOnboardingDone} />
-      ) : authenticated ? (
-        <AppNavigator user={authUser} token={authToken} onLogout={logout} />
-      ) : (
-        renderAuth()
-      )}
-      <Toast />
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        {isLoading ? (
+          <LoadingScreen />
+        ) : !hasOnboarded ? (
+          <OnboardingScreen onDone={handleOnboardingDone} />
+        ) : authenticated ? (
+          <AppNavigator user={authUser} token={authToken} onLogout={logout} />
+        ) : (
+          renderAuth()
+        )}
+        <Toast />
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }
