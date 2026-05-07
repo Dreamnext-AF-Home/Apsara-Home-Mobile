@@ -18,6 +18,7 @@ import { API_CONFIG } from '../config/api';
 import ItemList from '../components/Items/ItemList';
 import AddToCartModal from '../components/Items/AddToCartModal';
 import MultipleItemsCartModal from '../components/Items/MultipleItemsCartModal';
+import { ChatBotIcon } from '../components/ChatBot';
 
 interface WishlistItem {
   wishlist_id: number;
@@ -383,6 +384,7 @@ export default function WishlistScreen({ token, wishlistItems, loading, refreshi
   const sortedWishlist = getSortedWishlist();
 
   return (
+    <View style={{ flex: 1, position: 'relative' }}>
     <View style={styles.wrapper}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -532,6 +534,10 @@ export default function WishlistScreen({ token, wishlistItems, loading, refreshi
           />
         )}
       </Modal>
+    </View>
+
+    {/* Chat Bot Icon */}
+    <ChatBotIcon position="bottom-left" visible={true} />
     </View>
   );
 }

@@ -24,6 +24,7 @@ import {
   BrandCardSkeleton
 } from '../components/SkeletonLoader/SkeletonLoader';
 import { usePrefetchProducts } from '../hooks/usePrefetchProducts';
+import { ChatBotIcon } from '../components/ChatBot';
 
 interface HomeScreenProps {
   token?: string | null;
@@ -432,7 +433,8 @@ function HomeScreen({
   console.log('🎨 HomeScreen RENDERING...');
 
   return (
-    <ScrollView
+    <View style={{ flex: 1, position: 'relative' }}>
+      <ScrollView
       style={[styles.container, { backgroundColor: colors.bg }]} 
       contentContainerStyle={styles.content} 
       showsVerticalScrollIndicator={false}
@@ -668,8 +670,11 @@ function HomeScreen({
           )}
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
 
+      {/* Chat Bot Icon */}
+      <ChatBotIcon position="bottom-left" visible={true} />
+    </View>
   );
 }
 

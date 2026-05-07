@@ -14,6 +14,7 @@ import { accountService } from '../services/accountService';
 import LevelProgress from '../components/LevelProgress/LevelProgress';
 import ReferralNetworkScreen from './ReferralNetworkScreen';
 import ProfileDetailsScreen from './ProfileDetailsScreen';
+import { ChatBotIcon } from '../components/ChatBot';
 
 interface User {
   id: string;
@@ -164,6 +165,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   };
 
   return (
+    <View style={{ flex: 1, position: 'relative' }}>
     <View style={styles.root}>
       {/* ── Header ── */}
       <LinearGradient
@@ -579,6 +581,10 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
           />
         </View>
       )}
+    </View>
+
+    {/* Chat Bot Icon */}
+    <ChatBotIcon position="bottom-left" visible={true} />
     </View>
   );
 }

@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
+import { ChatBotIcon } from '../components/ChatBot';
 import { Colors } from '../constants/colors';
 import Toast from 'react-native-toast-message';
 
@@ -520,6 +521,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
   }
 
   return (
+    <View style={{ flex: 1, position: 'relative' }}>
     <View style={styles.container}>
       {/* Header with Gradient extending to top */}
       <LinearGradient
@@ -631,6 +633,10 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           </TouchableOpacity>
         </View>
       )}
+    </View>
+
+    {/* Chat Bot Icon */}
+    <ChatBotIcon position="bottom-left" visible={true} />
     </View>
   );
 }

@@ -19,6 +19,7 @@ import AppHeader from '../components/AppHeader/AppHeader';
 import Toast from 'react-native-toast-message';
 import { useOptimizedProducts } from '../hooks/useOptimizedProducts';
 import { Skeleton } from '../components/SkeletonLoader/SkeletonLoader';
+import { ChatBotIcon } from '../components/ChatBot';
 
 const { width } = Dimensions.get('window');
 
@@ -383,6 +384,7 @@ function ShopScreen({
   };
 
   return (
+    <View style={{ flex: 1, position: 'relative' }}>
     <SafeAreaView style={styles.container} edges={[]}>
       <AppHeader
         user={user}
@@ -431,6 +433,10 @@ function ShopScreen({
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
+
+    {/* Chat Bot Icon */}
+    <ChatBotIcon position="bottom-left" visible={true} />
+    </View>
   );
 }
 
