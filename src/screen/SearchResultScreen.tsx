@@ -25,6 +25,7 @@ interface SearchResultScreenProps {
   query: string;
   onBack?: () => void;
   onProductPress?: (product: ProductCard) => void;
+  isDarkMode?: boolean;
 }
 
 export default function SearchResultScreen({
@@ -32,6 +33,7 @@ export default function SearchResultScreen({
   query,
   onBack,
   onProductPress,
+  isDarkMode = false,
 }: SearchResultScreenProps) {
   const [products, setProducts] = useState<ProductCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,30 +128,30 @@ export default function SearchResultScreen({
   }, [products]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]} edges={['top']}>
+      <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <View style={styles.headerLeft}>
           {onBack && (
             <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+              <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#f8fafc' : Colors.text} />
             </TouchableOpacity>
           )}
           <View>
-            <Text style={styles.headerTitle}>Search Results</Text>
-            <Text style={styles.headerQuery}>"{query}"</Text>
+            <Text style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]}>Search Results</Text>
+            <Text style={[styles.headerQuery, isDarkMode && styles.headerQueryDark]}>"{query}"</Text>
           </View>
         </View>
-        <Text style={styles.headerCount}>{products.length} items</Text>
+        <Text style={[styles.headerCount, isDarkMode && styles.headerCountDark]}>{products.length} items</Text>
       </View>
 
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <Ionicons name="search-outline" size={48} color={Colors.textSecondary} />
-          <Text style={styles.loadingText}>Searching...</Text>
+        <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
+          <Ionicons name="search-outline" size={48} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} />
+          <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>Searching...</Text>
         </View>
       ) : (
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, isDarkMode && styles.scrollDark]}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -157,9 +159,9 @@ export default function SearchResultScreen({
           }
         >
           {products.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={48} color={Colors.textSecondary} />
-              <Text style={styles.emptyText}>No results found for "{query}"</Text>
+            <View style={[styles.emptyContainer, isDarkMode && styles.emptyContainerDark]}>
+              <Ionicons name="search-outline" size={48} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} />
+              <Text style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}>No results found for "{query}"</Text>
             </View>
           ) : (
             <View style={styles.masonryGrid}>
@@ -264,5 +266,37 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  // Dark mode styles
+  containerDark: {
+    backgroundColor: '#0f172a',
+  },
+  headerDark: {
+    backgroundColor: '#1f2937',
+    borderBottomColor: '#374151',
+  },
+  headerTitleDark: {
+    color: '#f8fafc',
+  },
+  headerQueryDark: {
+    color: '#9ca3af',
+  },
+  headerCountDark: {
+    color: '#9ca3af',
+  },
+  scrollDark: {
+    backgroundColor: '#0f172a',
+  },
+  loadingContainerDark: {
+    backgroundColor: '#0f172a',
+  },
+  loadingTextDark: {
+    color: '#9ca3af',
+  },
+  emptyContainerDark: {
+    backgroundColor: '#0f172a',
+  },
+  emptyTextDark: {
+    color: '#9ca3af',
   },
 });

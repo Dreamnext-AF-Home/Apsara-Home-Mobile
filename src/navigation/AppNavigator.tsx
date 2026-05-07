@@ -25,6 +25,7 @@ import ProfileDetailsScreen from '../screen/ProfileDetailsScreen';
 import ShopScreen from '../screen/ShopScreen';
 import ShopByBrandScreen from '../screen/ShopByBrandScreen';
 import NotificationsScreen from '../screen/NotificationsScreen';
+import LoadingScreen from '../screen/LoadingScreen';
 import { orderService } from '../services/orderService';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'notification' | 'profile' | 'settings';
@@ -144,6 +145,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [homeFeaturedProducts, setHomeFeaturedProducts] = useState<ProductCard[]>([]);
   const [homeRoomTypes, setHomeRoomTypes] = useState<RoomType[]>([]);
   const [homeLoadingFeatured, setHomeLoadingFeatured] = useState(false);
+  const [isInitialHomeDataReady, setIsInitialHomeDataReady] = useState(false);
   const homeInitialFetchRef = useRef(false);
 
   // Wishlist data - persists across navigation
@@ -158,25 +160,37 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   // Initialize cache and preload data on mount
   useEffect(() => {
     const init = async () => {
+      console.log('🚀 APP NAVIGATOR MOUNTING - INITIALIZING CACHE...');
       await cacheUtils.init();
       // Preload cached home data and dark mode preference immediately
       try {
-        const [cachedCats, cachedBrands, cachedRooms, cachedDarkMode] = await Promise.all([
+        console.log('📂 READING CACHE FILES...');
+        const [cachedCats, cachedBrands, cachedRooms, cachedProducts, cachedDarkMode] = await Promise.all([
           cacheUtils.get<CategoryItem[]>('home_categories'),
           cacheUtils.get<BrandItem[]>('home_brands'),
           cacheUtils.get<RoomType[]>('home_rooms'),
+          cacheUtils.get<ProductCard[]>('home_featured_products'),
           cacheUtils.get<boolean>('dark_mode_pref'),
         ]);
+        console.log('📍 CACHE READ RESULTS:', {
+          cachedDarkMode,
+          isDarkModeType: typeof cachedDarkMode,
+          isNull: cachedDarkMode === null,
+          cachedProductsCount: cachedProducts?.length || 0,
+        });
         if (cachedCats?.length) setHomeCategories(cachedCats);
         if (cachedBrands?.length) setHomeBrands(cachedBrands);
         if (cachedRooms?.length) setHomeRoomTypes(cachedRooms);
+        if (cachedProducts?.length) setHomeFeaturedProducts(cachedProducts);
         if (cachedDarkMode !== null && typeof cachedDarkMode === 'boolean') {
-          console.log('📱 LOADED DARK MODE:', cachedDarkMode);
+          console.log('✅ LOADING DARK MODE FROM CACHE:', cachedDarkMode);
           setIsDarkMode(cachedDarkMode);
+        } else {
+          console.log('⚠️ NO VALID CACHED DARK MODE FOUND - USING DEFAULT FALSE');
         }
         console.log('✅ PRELOADED CACHE ON APP START');
       } catch (error) {
-        console.log('Preload error:', error);
+        console.log('❌ Preload error:', error);
       }
     };
     init();
@@ -221,11 +235,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   // Save dark mode preference to cache whenever it changes
   useEffect(() => {
     const saveDarkMode = async () => {
+      console.log('💾 ATTEMPTING TO SAVE DARK MODE:', isDarkMode);
       try {
         await cacheUtils.set('dark_mode_pref', isDarkMode);
-        console.log('💾 SAVED DARK MODE:', isDarkMode);
+        console.log('✅ DARK MODE SAVED SUCCESSFULLY:', isDarkMode);
+        // Verify it was saved by reading it back
+        const verified = await cacheUtils.get<boolean>('dark_mode_pref');
+        console.log('🔍 VERIFICATION READ:', verified, '(Expected:', isDarkMode, ')');
       } catch (error) {
-        console.log('Error saving dark mode:', error);
+        console.log('❌ Error saving dark mode:', error);
       }
     };
     saveDarkMode();
@@ -272,48 +290,60 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const fetchHomeData = async () => {
     if (!token) return;
 
-    // Fetch fresh data in background (cache already preloaded on app start)
     try {
       setHomeLoadingFeatured(true);
       const totalStart = performance.now();
-      console.log('🔄 FETCHING FRESH DATA...');
+      console.log('🔄 FETCHING INITIAL DATA (FAST)...');
 
-      const apiStart = performance.now();
-      const [categoryData, brandData, roomData] = await Promise.all([
-        authService.getCategories(token),
-        authService.getBrandsWithProducts(token, 100),
+      // STEP 1: Fetch only categories first (fast, ~200ms)
+      const categoryStart = performance.now();
+      const categoryData = await authService.getCategories(token);
+      const sortedCategories = categoryData.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+      console.log(`⚡ CATEGORIES FETCHED: ${Math.round(performance.now() - categoryStart)}ms`);
+
+      // Update state immediately with categories
+      setHomeCategories(sortedCategories);
+      await cacheUtils.set('home_categories', sortedCategories);
+
+      // Ready to show home screen with at least categories
+      console.log(`✅ HOME READY FOR DISPLAY: ${Math.round(performance.now() - totalStart)}ms`);
+      setIsInitialHomeDataReady(true);
+
+      // STEP 2: Lazy load brands, rooms, and featured products in background
+      console.log('🔄 LAZY LOADING OTHER DATA...');
+      const lazyStart = performance.now();
+      const [brandData, roomData, productData] = await Promise.all([
+        authService.getBrandsWithProducts(token, 50),
         axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
           headers: { Authorization: `Bearer ${token}` },
         }).then(res => res.data?.data || []).catch(() => []),
+        productService.getProductCards(token).catch(() => []),
       ]);
-      console.log(`📡 API CALLS: ${Math.round(performance.now() - apiStart)}ms`);
-      console.log('✅ BRANDS FETCHED:', brandData?.length, 'items');
-      console.log('📊 CATEGORIES FETCHED:', categoryData?.length, 'items');
-      console.log('🏠 ROOM TYPES FETCHED:', roomData?.length, 'items');
+      console.log(`📡 LAZY LOAD COMPLETE: ${Math.round(performance.now() - lazyStart)}ms`);
 
-      const sortStart = performance.now();
-      const sortedCategories = categoryData.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
-      console.log(`🔄 SORTING: ${Math.round(performance.now() - sortStart)}ms`);
+      // Filter for affordahome brand products
+      const affordahomeProducts = Array.isArray(productData)
+        ? productData.filter(p => p.brandName?.toLowerCase() === 'affordahome')
+        : [];
 
-      // Update state with fresh data
-      setHomeCategories(sortedCategories);
+      console.log('🏠 AFFORDAHOME PRODUCTS:', affordahomeProducts.length);
+
+      // Update state with lazy-loaded data
       setHomeBrands(brandData || []);
       setHomeRoomTypes(roomData || []);
+      setHomeFeaturedProducts(affordahomeProducts.slice(0, 10));
 
-      // Update cache with fresh data
+      // Update cache
       await Promise.all([
-        cacheUtils.set('home_categories', sortedCategories),
         cacheUtils.set('home_brands', brandData || []),
         cacheUtils.set('home_rooms', roomData || []),
+        cacheUtils.set('home_featured_products', affordahomeProducts.slice(0, 10)),
       ]);
 
-      console.log(`⏱️ FRESH DATA READY: ${Math.round(performance.now() - totalStart)}ms`);
+      console.log(`⏱️ ALL DATA READY: ${Math.round(performance.now() - totalStart)}ms`);
     } catch (error: any) {
       console.error('❌ Home data fetch error:', error?.message);
-      // Even on error, ensure state has at least empty arrays
-      setHomeCategories([]);
-      setHomeBrands([]);
-      setHomeRoomTypes([]);
+      setIsInitialHomeDataReady(true);
     } finally {
       setHomeLoadingFeatured(false);
     }
@@ -518,6 +548,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             <SearchResultScreen
               token={token}
               query={searchQuery}
+              isDarkMode={isDarkMode}
               onBack={() => {
                 setSearchQuery(null);
                 setSearchVisible(true);
@@ -662,6 +693,9 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               />
             )
           ) : activeTab === 'home' ? (
+            !isInitialHomeDataReady ? (
+              <LoadingScreen />
+            ) : (
             <>
               <AppHeader
                 user={user}
@@ -728,6 +762,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 }}
               />
             </>
+            )
           ) : (
             <>
               <AppHeader
@@ -755,7 +790,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           )}
         </View>
 
-        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && !profileDetailsFromTab && !referralNetworkFromTab && !(activeTab === 'shop' && selectedBrandId !== null && selectedBrand !== null) && (
+        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && !profileDetailsFromTab && !referralNetworkFromTab && !(activeTab === 'shop' && selectedBrandId !== null && selectedBrand !== null) && (activeTab !== 'home' || isInitialHomeDataReady) && (
           <SafeAreaView edges={['bottom']} style={[styles.navBarContainer, isDarkMode && styles.navBarContainerDark]}>
             <View style={[styles.navBar, isDarkMode && styles.navBarDark]}>
               {TABS.map(key => {
@@ -905,6 +940,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       {searchVisible && (
         <SearchScreen
           token={token}
+          isDarkMode={isDarkMode}
           onBack={() => {
             setSearchVisible(false);
             setActiveTab(previousTab);

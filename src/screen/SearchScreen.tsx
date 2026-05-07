@@ -19,6 +19,7 @@ interface SearchScreenProps {
   token?: string | null;
   onProductPress?: (id: number) => void;
   onSearchSubmit?: (query: string) => void;
+  isDarkMode?: boolean;
 }
 
 interface RecommendationItem {
@@ -44,8 +45,20 @@ function getHistoryLabel(item: SearchHistoryItem) {
   return item.query ?? item.term ?? item.keyword ?? item.name ?? '';
 }
 
-export default function SearchScreen({ onBack, token, onProductPress, onSearchSubmit }: SearchScreenProps) {
+export default function SearchScreen({ onBack, token, onProductPress, onSearchSubmit, isDarkMode = false }: SearchScreenProps) {
   const insets = useSafeAreaInsets();
+
+  const colors = {
+    bg: isDarkMode ? '#0f172a' : '#f0f9ff',
+    headerBg: isDarkMode ? '#1f2937' : Colors.white,
+    text: isDarkMode ? '#f8fafc' : Colors.text,
+    textSecondary: isDarkMode ? '#9ca3af' : Colors.textSecondary,
+    input: isDarkMode ? '#374151' : Colors.white,
+    inputBorder: isDarkMode ? '#4b5563' : '#e5e7eb',
+    border: isDarkMode ? '#334155' : '#e2e8f0',
+    liveRow: isDarkMode ? '#1e293b' : Colors.white,
+  };
+
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -212,47 +225,47 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
   const hasQuery = query.trim().length > 0;
 
   return (
-    <Animated.View style={[styles.root, { transform: [{ translateX: slideAnim }] }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+    <Animated.View style={[styles.root, isDarkMode && styles.rootDark, { transform: [{ translateX: slideAnim }] }]}>
+      <View style={[styles.header, isDarkMode && styles.headerDark, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={handleBack} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={styles.searchWrapper}>
-          <Ionicons name="search-outline" size={16} color={Colors.textSecondary} style={styles.searchIcon} />
+        <View style={[styles.searchWrapper, isDarkMode && styles.searchWrapperDark]}>
+          <Ionicons name="search-outline" size={16} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             ref={inputRef}
-            style={styles.searchInput}
+            style={[styles.searchInput, isDarkMode && styles.searchInputDark]}
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={() => submitSearch(query)}
             placeholder="Search products..."
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             returnKeyType="search"
           />
           {hasQuery ? (
             <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
+              <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-              <Ionicons name="camera-outline" size={18} color={Colors.textSecondary} />
+              <Ionicons name="camera-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
 
         <TouchableOpacity onPress={handleBack} style={styles.cancelBtn} activeOpacity={0.7}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={[styles.cancelText, isDarkMode && styles.cancelTextDark]}>Cancel</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={[styles.scroll, { backgroundColor: hasQuery ? Colors.white : '#f0f9ff' }]}
+        style={[styles.scroll, { backgroundColor: hasQuery ? colors.liveRow : colors.bg }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={{ backgroundColor: Colors.white, height: 1000, position: 'absolute', top: -1000, left: 0, right: 0 }} />
+        <View style={{ backgroundColor: colors.liveRow, height: 1000, position: 'absolute', top: -1000, left: 0, right: 0 }} />
         
         {/* Live search results */}
         {hasQuery && (
@@ -260,13 +273,13 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
             {loadingLive ? (
               <View style={styles.liveLoading}>
                 <ActivityIndicator size="small" color={Colors.sky} />
-                <Text style={styles.liveLoadingText}>Searching...</Text>
+                <Text style={[styles.liveLoadingText, isDarkMode && styles.liveLoadingTextDark]}>Searching...</Text>
               </View>
             ) : liveResults.length > 0 ? (
               liveResults.map((item, index) => (
                 <TouchableOpacity
                   key={`live-${item.id}`}
-                  style={[styles.liveRow, index < liveResults.length - 1 && styles.liveRowBorder]}
+                  style={[styles.liveRow, isDarkMode && styles.liveRowDark, index < liveResults.length - 1 && styles.liveRowBorder, isDarkMode && index < liveResults.length - 1 && styles.liveRowBorderDark]}
                   activeOpacity={0.8}
                   onPress={() => {
                     submitSearch(item.name);
@@ -275,7 +288,7 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
                 >
                   <Image source={{ uri: item.image }} style={styles.liveThumb} resizeMode="cover" />
                   <View style={styles.liveInfo}>
-                    <Text style={styles.liveName} numberOfLines={2}>{item.name}</Text>
+                    <Text style={[styles.liveName, isDarkMode && styles.liveNameDark]} numberOfLines={2}>{item.name}</Text>
                     <View style={styles.livePriceRow}>
                       <Text style={styles.livePrice}>
                         ₱{item.discounted_price.toLocaleString()}
@@ -296,13 +309,13 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
                       </View>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+                  <Ionicons name="chevron-forward" size={16} color={isDarkMode ? '#4b5563' : '#d1d5db'} />
                 </TouchableOpacity>
               ))
             ) : (
               <View style={styles.liveEmpty}>
-                <Ionicons name="search-outline" size={28} color="#d1d5db" />
-                <Text style={styles.liveEmptyText}>No results for "{query}"</Text>
+                <Ionicons name="search-outline" size={28} color={isDarkMode ? '#4b5563' : '#d1d5db'} />
+                <Text style={[styles.liveEmptyText, isDarkMode && styles.liveEmptyTextDark]}>No results for "{query}"</Text>
               </View>
             )}
           </View>
@@ -310,23 +323,23 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
 
         {/* Recent searches */}
         {!hasQuery && (
-          <View style={styles.section}>
+          <View style={[styles.section, isDarkMode && styles.sectionDark]}>
             <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Recent Searches</Text>
+              <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Recent Searches</Text>
               {loadingHistory && <ActivityIndicator size="small" color={Colors.sky} />}
             </View>
             <View style={styles.historyList}>
               {recentSearches.slice(0, showAllRecent ? recentSearches.length : 5).map((term, index, arr) => (
                 <TouchableOpacity
                   key={`recent-${term.toLowerCase()}`}
-                  style={[styles.historyRow, index < arr.length - 1 && styles.historyRowBorder]}
+                  style={[styles.historyRow, index < arr.length - 1 && styles.historyRowBorder, isDarkMode && index < arr.length - 1 && styles.historyRowBorderDark]}
                   onPress={() => submitSearch(term)}
                   activeOpacity={0.7}
                   disabled={savingQuery}
                 >
-                  <Ionicons name="time-outline" size={15} color={Colors.textSecondary} />
-                  <Text style={styles.historyText} numberOfLines={1} ellipsizeMode="tail">{term}</Text>
-                  <Ionicons name="arrow-forward-outline" size={13} color="#d1d5db" />
+                  <Ionicons name="time-outline" size={15} color={colors.textSecondary} />
+                  <Text style={[styles.historyText, isDarkMode && styles.historyTextDark]} numberOfLines={1} ellipsizeMode="tail">{term}</Text>
+                  <Ionicons name="arrow-forward-outline" size={13} color={isDarkMode ? '#4b5563' : '#d1d5db'} />
                 </TouchableOpacity>
               ))}
               {!showAllRecent && recentSearches.length > 5 && (
@@ -335,7 +348,7 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
                   onPress={() => setShowAllRecent(true)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.historySeeMoreText}>See more</Text>
+                  <Text style={[styles.historySeeMoreText, isDarkMode && styles.historySeeMoreTextDark]}>See more</Text>
                   <Ionicons name="chevron-down" size={14} color={Colors.sky} />
                 </TouchableOpacity>
               )}
@@ -345,41 +358,41 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
 
         {/* Recommendations */}
         {!hasQuery && (
-          <View style={styles.recsSection}>
+          <View style={[styles.recsSection, isDarkMode && styles.recsSectionDark]}>
             <View style={styles.sectionRow}>
               <View style={styles.recsTitleRow}>
                 <Ionicons name="sparkles" size={14} color={Colors.sky} />
-                <Text style={styles.sectionTitle}>Recommended for You</Text>
+                <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Recommended for You</Text>
               </View>
               {loadingRecs && <ActivityIndicator size="small" color={Colors.sky} />}
             </View>
 
             {loadingRecs && recommendations.length === 0 ? (
-              <View style={styles.recsTable}>
+              <View style={[styles.recsTable, isDarkMode && styles.recsTableDark]}>
                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <View key={i} style={styles.recsTableCell}>
+                  <View key={i} style={[styles.recsTableCell, isDarkMode && styles.recsTableCellDark]}>
                     <View style={styles.recBoxContainer}>
-                      <View style={[styles.recBoxWrap, { backgroundColor: '#f1f5f9' }]} />
+                      <View style={[styles.recBoxWrap, { backgroundColor: isDarkMode ? '#374151' : '#f1f5f9' }]} />
                     </View>
-                    <View style={{ height: 10, width: 40, backgroundColor: '#f1f5f9', borderRadius: 4, marginTop: 4 }} />
+                    <View style={{ height: 10, width: 40, backgroundColor: isDarkMode ? '#374151' : '#f1f5f9', borderRadius: 4, marginTop: 4 }} />
                   </View>
                 ))}
               </View>
             ) : (
-              <View style={styles.recsTable}>
+              <View style={[styles.recsTable, isDarkMode && styles.recsTableDark]}>
                 {recommendations.map((item) => (
                   <TouchableOpacity
                     key={`rec-${item.id}`}
-                    style={styles.recsTableCell}
+                    style={[styles.recsTableCell, isDarkMode && styles.recsTableCellDark]}
                     activeOpacity={0.8}
                     onPress={() => onProductPress?.(item.id)}
                   >
                     <View style={styles.recBoxContainer}>
-                      <View style={styles.recBoxWrap}>
+                      <View style={[styles.recBoxWrap, isDarkMode && styles.recBoxWrapDark]}>
                         <Image source={{ uri: item.image }} style={styles.roomImage} resizeMode="contain" />
                       </View>
                     </View>
-                    <Text style={styles.circleLabel} numberOfLines={2}>{item.name}</Text>
+                    <Text style={[styles.circleLabel, isDarkMode && styles.circleLabelDark]} numberOfLines={2}>{item.name}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -638,5 +651,70 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 14,
     paddingHorizontal: 4,
+  },
+  // Dark mode styles
+  rootDark: {
+    backgroundColor: '#0f172a',
+  },
+  headerDark: {
+    backgroundColor: '#1f2937',
+    borderBottomColor: '#374151',
+  },
+  searchWrapperDark: {
+    backgroundColor: '#374151',
+    borderColor: '#4b5563',
+  },
+  searchInputDark: {
+    color: '#f8fafc',
+  },
+  cancelTextDark: {
+    color: '#38bdf8',
+  },
+  liveRowDark: {
+    backgroundColor: '#1e293b',
+  },
+  liveRowBorderDark: {
+    borderBottomColor: '#334155',
+  },
+  liveNameDark: {
+    color: '#f8fafc',
+  },
+  liveLoadingTextDark: {
+    color: '#9ca3af',
+  },
+  liveEmptyTextDark: {
+    color: '#9ca3af',
+  },
+  sectionDark: {
+    backgroundColor: '#1e293b',
+  },
+  sectionTitleDark: {
+    color: '#f8fafc',
+  },
+  historyRowBorderDark: {
+    borderBottomColor: '#334155',
+  },
+  historyTextDark: {
+    color: '#f8fafc',
+  },
+  historySeeMoreTextDark: {
+    color: '#38bdf8',
+  },
+  recsSectionDark: {
+    backgroundColor: '#1e293b',
+  },
+  recsTableDark: {
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+  },
+  recsTableCellDark: {
+    borderColor: '#334155',
+    backgroundColor: '#1e293b',
+  },
+  recBoxWrapDark: {
+    backgroundColor: '#374151',
+  },
+  circleLabelDark: {
+    color: '#f8fafc',
   },
 });

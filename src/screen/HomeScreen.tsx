@@ -337,7 +337,21 @@ function HomeScreen({
 
       setCategories(sortByOrder(categoryData));
       setBrands(brandData);
-      setFeaturedProducts(Array.isArray(productData) ? productData.slice(0, 4) : []);
+
+      // Filter for affordahome brand products and get at least 10
+      const affordahomeProducts = Array.isArray(productData)
+        ? productData.filter(p => p.brandName?.toLowerCase() === 'affordahome')
+        : [];
+
+      console.log('🏠 Affordahome Products Debug:', {
+        totalProducts: Array.isArray(productData) ? productData.length : 0,
+        affordahomeCount: affordahomeProducts.length,
+        affordahomeProducts: affordahomeProducts.slice(0, 10).map(p => ({ id: p.id, name: p.name, brand: p.brandName })),
+        allBrands: Array.isArray(productData) ? [...new Set(productData.map(p => p.brandName))].slice(0, 10) : [],
+      });
+
+      setFeaturedProducts(affordahomeProducts.slice(0, 10));
+
       setRoomTypes(roomData);
     } catch (error: any) {
       console.error('Home data fetch error:', error);
@@ -394,7 +408,12 @@ function HomeScreen({
   const masonryColumns = useMemo(() => {
     const leftColumn: any[] = [];
     const rightColumn: any[] = [];
-    
+
+    console.log('📊 Masonry Layout Debug:', {
+      featuredProductsCount: featuredProducts.length,
+      featuredProducts: featuredProducts.map(p => ({ id: p.id, name: p.name })),
+    });
+
     featuredProducts.forEach((product, index) => {
       if (index % 2 === 0) {
         leftColumn.push(product);
@@ -402,7 +421,7 @@ function HomeScreen({
         rightColumn.push(product);
       }
     });
-    
+
     // Add sample ads
     if (leftColumn.length > 0) {
       leftColumn.splice(1, 0, { id: 'sample-ad-1', isAd: true, title: 'Summer Sale', subtitle: 'Up to 50% off' });
@@ -410,6 +429,13 @@ function HomeScreen({
     if (rightColumn.length > 0) {
       rightColumn.splice(2, 0, { id: 'sample-ad-2', isAd: true, title: 'New Arrivals', subtitle: 'Explore now' });
     }
+
+    console.log('📦 Masonry Columns Result:', {
+      leftColumnCount: leftColumn.length,
+      rightColumnCount: rightColumn.length,
+      leftColumnItems: leftColumn.map(item => ({ id: item.id, isAd: item.isAd })),
+      rightColumnItems: rightColumn.map(item => ({ id: item.id, isAd: item.isAd })),
+    });
 
     return { leftColumn, rightColumn };
   }, [featuredProducts]);
@@ -818,7 +844,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f9ff',
     marginHorizontal: -8,
-    marginBottom: 16,
+    marginBottom: 0,
     borderBottomWidth: 0.5,
     borderBottomColor: '#e0f2fe',
   },
