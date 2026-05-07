@@ -822,6 +822,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   activeTabRef.current = 'shop';
                   setActiveTab('shop');
                 }}
+                onCartPress={() => setShowCart(true)}
+                onReferralPress={() => setReferralNetworkFromTab(true)}
               />
             </>
             )

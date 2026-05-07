@@ -37,6 +37,8 @@ interface HomeScreenProps {
   } | null;
   isDarkMode?: boolean;
   onProductPress?: (id: number) => void;
+  onCartPress?: () => void;
+  onReferralPress?: () => void;
   categories?: CategoryItem[];
   setCategories?: (categories: CategoryItem[]) => void;
   brands?: BrandItem[];
@@ -276,6 +278,8 @@ function HomeScreen({
   user,
   isDarkMode = false,
   onProductPress,
+  onCartPress = () => {},
+  onReferralPress = () => {},
   categories = [],
   setCategories = () => {},
   brands = [],
@@ -511,14 +515,22 @@ function HomeScreen({
           </View>
           <Text style={[styles.statsLabel, { color: colors.textSec }]}>Total Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+          activeOpacity={0.7}
+          onPress={onCartPress}
+        >
           <View style={styles.statsMain}>
             <Ionicons name="cart-outline" size={18} color="#0ea5e9" />
             <Text style={[styles.statsValue, { color: colors.text }]}>{totalCart}</Text>
           </View>
           <Text style={[styles.statsLabel, { color: colors.textSec }]}>Total Cart</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+          activeOpacity={0.7}
+          onPress={onReferralPress}
+        >
           <View style={styles.statsMain}>
             <Ionicons name="people-outline" size={18} color="#22c55e" />
             <Text style={[styles.statsValue, { color: colors.text }]}>{totalReferrals}</Text>
