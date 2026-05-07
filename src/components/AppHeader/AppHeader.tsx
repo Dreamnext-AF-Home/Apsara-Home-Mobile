@@ -329,6 +329,7 @@ export default function AppHeader({
         showBrandFilter={showBrandFilter}
         selectedBrand={selectedBrand}
         brands={brands}
+        isDarkMode={isDarkMode}
         onFilterChange={(filterType, value) => {
           onRoomFilterChange?.(filterType, value);
         }}
