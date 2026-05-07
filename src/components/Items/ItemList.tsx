@@ -45,6 +45,7 @@ export interface ItemListProps {
   onRemove?: (wishlistId: number) => void;
   onAddToCart?: (wishlistId: number) => void;
   onSelect?: (wishlistId: number) => void;
+  isDarkMode?: boolean;
 }
 
 export default function ItemList({
@@ -56,9 +57,18 @@ export default function ItemList({
   onRemove,
   onAddToCart,
   onSelect,
+  isDarkMode = false,
 }: ItemListProps) {
   const [isWishlisted, setIsWishlisted] = useState(true);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const colors = {
+    bg: isDarkMode ? '#1e293b' : Colors.white,
+    text: isDarkMode ? '#f8fafc' : Colors.text,
+    textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
+    border: isDarkMode ? '#334155' : '#e5e7eb',
+    selectedBg: isDarkMode ? '#0f4c7f' : '#f0f7ff',
+  };
 
   const discount = Math.round(
     ((product.priceSrp - product.priceMember) / product.priceSrp) * 100
@@ -90,7 +100,7 @@ export default function ItemList({
   };
 
   return (
-    <View style={[styles.container, isSelected && styles.containerSelected]}>
+    <View style={[styles.container, { backgroundColor: colors.bg, borderBottomColor: colors.border }, isSelected && { backgroundColor: colors.selectedBg }]}>
       {(discount > 0 || !inStock) && (
         <LinearGradient
           colors={['transparent', Colors.sky + '15']}
@@ -105,7 +115,7 @@ export default function ItemList({
         onPress={handleSelectWithAnimation}
         activeOpacity={0.7}
       >
-        <Animated.View style={[styles.checkboxBox, isSelected && styles.checkboxBoxChecked, { transform: [{ scale: scaleAnim }] }]}>
+        <Animated.View style={[styles.checkboxBox, isSelected && styles.checkboxBoxChecked, !isSelected && { borderColor: colors.border }, { transform: [{ scale: scaleAnim }] }]}>
           {isSelected && <Ionicons name="checkmark" size={14} color={Colors.white} />}
         </Animated.View>
       </TouchableOpacity>
@@ -115,7 +125,7 @@ export default function ItemList({
         onPress={() => onProductPress?.(product.id)}
         activeOpacity={0.7}
       >
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#0f172a' : '#f3f4f6' }]}>
           <Image
             source={{ uri: product.image }}
             style={styles.productImage}
@@ -134,7 +144,7 @@ export default function ItemList({
 
         <View style={styles.detailsContainer}>
           <View style={styles.brandRow}>
-            <Text style={styles.brand} numberOfLines={1}>
+            <Text style={[styles.brand, { color: colors.textSec }]} numberOfLines={1}>
               {product.brand}
             </Text>
             {inStock && (
@@ -143,20 +153,20 @@ export default function ItemList({
               </View>
             )}
           </View>
-          <Text style={styles.productName} numberOfLines={2}>
+          <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
             {product.name}
           </Text>
 
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={12} color="#fbbf24" />
-            <Text style={styles.rating}>{product.avgRating || 'No rating'}</Text>
+            <Text style={[styles.rating, { color: colors.textSec }]}>{product.avgRating || 'No rating'}</Text>
           </View>
 
           <View style={styles.priceRow}>
-            <Text style={styles.memberPrice}>
+            <Text style={[styles.memberPrice, { color: colors.text }]}>
               ₱{product.priceMember.toLocaleString()}
             </Text>
-            <Text style={styles.srpPrice}>
+            <Text style={[styles.srpPrice, { color: colors.textSec }]}>
               ₱{product.priceSrp.toLocaleString()}
             </Text>
           </View>
