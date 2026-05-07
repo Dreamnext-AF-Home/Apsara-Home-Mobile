@@ -59,6 +59,8 @@ export default function HeaderFilter({
 }: HeaderFilterProps) {
   const [activeSort, setActiveSort] = useState('Relevant');
   const [activePrice, setActivePrice] = useState('All');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [activeRoom, setActiveRoom] = useState(selectedRoom);
   const [activeCategory, setActiveCategory] = useState(selectedCategory);
   const [activeBrand, setActiveBrand] = useState(selectedBrand);
@@ -112,8 +114,17 @@ export default function HeaderFilter({
   ).current;
 
   useEffect(() => {
-    if (expandedFilter === 'room' || expandedFilter === 'category' || expandedFilter === 'brand') {
-      modalTranslateY.setValue(0);
+    if (expandedFilter === 'room' || expandedFilter === 'category' || expandedFilter === 'brand' || expandedFilter === 'sort' || expandedFilter === 'price') {
+      // Animate modal into view
+      Animated.spring(modalTranslateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 60,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Reset modal position when closing
+      modalTranslateY.setValue(MODAL_HEIGHT);
     }
   }, [expandedFilter, modalTranslateY]);
 
@@ -137,8 +148,19 @@ export default function HeaderFilter({
 
   const handlePrice = (price: string) => {
     setActivePrice(price);
+    setMinPrice('');
+    setMaxPrice('');
     setExpandedFilter(null);
     onFilterChange?.('price', price);
+  };
+
+  const handleCustomPriceRange = () => {
+    if (minPrice || maxPrice) {
+      const rangeLabel = `₱${minPrice || '0'}-₱${maxPrice || '∞'}`;
+      setActivePrice(rangeLabel);
+      setExpandedFilter(null);
+      onFilterChange?.('price', { min: minPrice ? parseInt(minPrice) : 0, max: maxPrice ? parseInt(maxPrice) : null });
+    }
   };
 
   const handleRoom = (room: string) => {
@@ -540,31 +562,76 @@ export default function HeaderFilter({
             />
           </TouchableOpacity>
 
-          {expandedFilter === 'sort' && (
-            <View style={[styles.dropdown, { backgroundColor: colors.dropdownBg, borderColor: colors.dropdownBorder }]}>
-              {SORT_OPTIONS.map((sort) => (
-                <TouchableOpacity
-                  key={sort}
-                  style={[
-                    styles.dropdownItem,
-                    { borderBottomColor: colors.dropdownItem },
-                    activeSort === sort && { backgroundColor: colors.buttonBgActive },
-                  ]}
-                  onPress={() => handleSort(sort)}
+          <Modal
+            visible={expandedFilter === 'sort'}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setExpandedFilter(null)}
+          >
+            <View style={styles.modalContainer}>
+              <Pressable
+                style={styles.modalOverlay}
+                onPress={() => setExpandedFilter(null)}
+              />
+              <Animated.View
+                style={[
+                  styles.roomFilterModal,
+                  { backgroundColor: colors.modalBg },
+                  {
+                    transform: [{ translateY: modalTranslateY }],
+                  },
+                ]}
+                {...panResponder.panHandlers}
+              >
+                <View style={styles.roomFilterHandleContainer}>
+                  <View style={[styles.roomFilterHandle, { backgroundColor: colors.handle }]} />
+                </View>
+                <View style={[styles.roomFilterHeader, { borderBottomColor: colors.dropdownItem }]}>
+                  <Text style={[styles.roomFilterTitle, { color: colors.text }]}>Sort By</Text>
+                  <TouchableOpacity onPress={() => setExpandedFilter(null)}>
+                    <Ionicons name="close-circle" size={28} color={colors.textSec} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  style={styles.roomFilterList}
+                  showsVerticalScrollIndicator={false}
                 >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      { color: colors.text },
-                      activeSort === sort && { color: Colors.sky, fontWeight: '700' },
-                    ]}
-                  >
-                    {sort}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                  {SORT_OPTIONS.map((sort, index) => (
+                    <TouchableOpacity
+                      key={sort}
+                      style={[
+                        styles.roomFilterItem,
+                        { borderBottomColor: colors.dropdownItem },
+                        index === SORT_OPTIONS.length - 1 && styles.roomFilterItemLast,
+                        activeSort === sort && { backgroundColor: colors.buttonBgActive },
+                      ]}
+                      onPress={() => {
+                        handleSort(sort);
+                        setExpandedFilter(null);
+                      }}
+                    >
+                      <View style={styles.roomFilterItemContent}>
+                        <Text
+                          style={[
+                            styles.roomFilterItemText,
+                            { color: colors.text },
+                            activeSort === sort && { fontWeight: '700', color: Colors.sky },
+                          ]}
+                        >
+                          {sort}
+                        </Text>
+                      </View>
+                      {activeSort === sort && (
+                        <View style={styles.roomFilterCheckmark}>
+                          <Ionicons name="checkmark" size={20} color={Colors.sky} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
             </View>
-          )}
+          </Modal>
         </View>
 
         {/* Price */}
@@ -586,31 +653,125 @@ export default function HeaderFilter({
             />
           </TouchableOpacity>
 
-          {expandedFilter === 'price' && (
-            <View style={[styles.dropdown, { backgroundColor: colors.dropdownBg, borderColor: colors.dropdownBorder }]}>
-              {PRICE_OPTIONS.map((price) => (
-                <TouchableOpacity
-                  key={price}
-                  style={[
-                    styles.dropdownItem,
-                    { borderBottomColor: colors.dropdownItem },
-                    activePrice === price && { backgroundColor: colors.buttonBgActive },
-                  ]}
-                  onPress={() => handlePrice(price)}
+          <Modal
+            visible={expandedFilter === 'price'}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setExpandedFilter(null)}
+          >
+            <View style={styles.modalContainer}>
+              <Pressable
+                style={styles.modalOverlay}
+                onPress={() => setExpandedFilter(null)}
+              />
+              <Animated.View
+                style={[
+                  styles.roomFilterModal,
+                  { backgroundColor: colors.modalBg },
+                  {
+                    transform: [{ translateY: modalTranslateY }],
+                  },
+                ]}
+                {...panResponder.panHandlers}
+              >
+                <View style={styles.roomFilterHandleContainer}>
+                  <View style={[styles.roomFilterHandle, { backgroundColor: colors.handle }]} />
+                </View>
+                <View style={[styles.roomFilterHeader, { borderBottomColor: colors.dropdownItem }]}>
+                  <Text style={[styles.roomFilterTitle, { color: colors.text }]}>Price Range</Text>
+                  <TouchableOpacity onPress={() => setExpandedFilter(null)}>
+                    <Ionicons name="close-circle" size={28} color={colors.textSec} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  style={styles.roomFilterList}
+                  showsVerticalScrollIndicator={false}
                 >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      { color: colors.text },
-                      activePrice === price && { color: Colors.sky, fontWeight: '700' },
-                    ]}
-                  >
-                    {price}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                  {/* Custom Price Range Input */}
+                  <View style={[styles.customPriceContainer, { backgroundColor: colors.dropdownItem, borderBottomColor: colors.dropdownItem }]}>
+                    <Text style={[styles.customPriceLabel, { color: colors.text }]}>Custom Range</Text>
+                    <View style={styles.priceInputRow}>
+                      <TextInput
+                        style={[
+                          styles.priceInput,
+                          {
+                            backgroundColor: colors.bg,
+                            borderColor: colors.border,
+                            color: colors.text,
+                          }
+                        ]}
+                        placeholder="Min"
+                        placeholderTextColor={colors.textSec}
+                        value={minPrice}
+                        onChangeText={setMinPrice}
+                        keyboardType="numeric"
+                      />
+                      <Text style={[styles.priceInputDash, { color: colors.text }]}>-</Text>
+                      <TextInput
+                        style={[
+                          styles.priceInput,
+                          {
+                            backgroundColor: colors.bg,
+                            borderColor: colors.border,
+                            color: colors.text,
+                          }
+                        ]}
+                        placeholder="Max"
+                        placeholderTextColor={colors.textSec}
+                        value={maxPrice}
+                        onChangeText={setMaxPrice}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.applyPriceBtn, { backgroundColor: Colors.sky }]}
+                      onPress={handleCustomPriceRange}
+                    >
+                      <Text style={styles.applyPriceBtnText}>Apply</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Preset Price Options */}
+                  <View style={[styles.presetPriceHeader, { borderTopColor: colors.dropdownItem, borderBottomColor: colors.dropdownItem }]}>
+                    <Text style={[styles.presetPriceLabel, { color: colors.textSec }]}>Or select preset</Text>
+                  </View>
+
+                  {PRICE_OPTIONS.map((price, index) => (
+                    <TouchableOpacity
+                      key={price}
+                      style={[
+                        styles.roomFilterItem,
+                        { borderBottomColor: colors.dropdownItem },
+                        index === PRICE_OPTIONS.length - 1 && styles.roomFilterItemLast,
+                        activePrice === price && { backgroundColor: colors.buttonBgActive },
+                      ]}
+                      onPress={() => {
+                        handlePrice(price);
+                        setExpandedFilter(null);
+                      }}
+                    >
+                      <View style={styles.roomFilterItemContent}>
+                        <Text
+                          style={[
+                            styles.roomFilterItemText,
+                            { color: colors.text },
+                            activePrice === price && { fontWeight: '700', color: Colors.sky },
+                          ]}
+                        >
+                          {price}
+                        </Text>
+                      </View>
+                      {activePrice === price && (
+                        <View style={styles.roomFilterCheckmark}>
+                          <Ionicons name="checkmark" size={20} color={Colors.sky} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
             </View>
-          )}
+          </Modal>
         </View>
 
       </ScrollView>
@@ -796,5 +957,61 @@ const styles = StyleSheet.create({
   noResultsText: {
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  customPriceContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  customPriceLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: Colors.text,
+  },
+  priceInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  priceInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: Colors.text,
+  },
+  priceInputDash: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  applyPriceBtn: {
+    backgroundColor: Colors.sky,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyPriceBtnText: {
+    color: Colors.white,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  presetPriceHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderTopColor: '#f3f4f6',
+    borderBottomColor: '#f3f4f6',
+  },
+  presetPriceLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
 });

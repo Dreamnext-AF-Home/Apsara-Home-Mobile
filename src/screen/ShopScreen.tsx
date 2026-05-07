@@ -91,6 +91,8 @@ function ShopScreen({
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(roomId);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(categoryId);
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(brandId);
+  const [selectedSort, setSelectedSort] = useState('Relevant');
+  const [selectedPrice, setSelectedPrice] = useState<any>('All');
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const prefetchedPageRef = useRef(2);
@@ -162,15 +164,80 @@ function ShopScreen({
     console.log(`🏷️ Brand filter changed to: ${brandId}`);
   }, []);
 
+  const handleSortSelect = useCallback((sort: string) => {
+    setSelectedSort(sort);
+    setCurrentPage(1);
+    prefetchedPageRef.current = 2;
+    console.log(`Sort filter changed to: ${sort}`);
+  }, []);
+
+  const handlePriceSelect = useCallback((price: any) => {
+    setSelectedPrice(price);
+    setCurrentPage(1);
+    prefetchedPageRef.current = 2;
+    console.log(`Price filter changed to:`, price);
+  }, []);
+
   // Get products from current page only
   const currentPageProducts = useMemo(() => {
-    const products = data?.pages?.[currentPage - 1]?.products || [];
+    let products = data?.pages?.[currentPage - 1]?.products || [];
+
+    // Apply price filter
+    if (selectedPrice && selectedPrice !== 'All') {
+      products = products.filter((product: Product) => {
+        const price = product.price || 0;
+        switch (selectedPrice) {
+          case 'Under ₱5k':
+            return price < 5000;
+          case '₱5k-₱20k':
+            return price >= 5000 && price < 20000;
+          case '₱20k-₱50k':
+            return price >= 20000 && price < 50000;
+          case 'Over ₱50k':
+            return price >= 50000;
+          default:
+            if (typeof selectedPrice === 'object' && selectedPrice.min !== undefined) {
+              const min = selectedPrice.min || 0;
+              const max = selectedPrice.max || Infinity;
+              return price >= min && price <= max;
+            }
+            return true;
+        }
+      });
+    }
+
+    // Apply sort
+    if (selectedSort && selectedSort !== 'Relevant') {
+      products = [...products];
+      switch (selectedSort) {
+        case 'A-Z':
+          products.sort((a: Product, b: Product) => (a.name || '').localeCompare(b.name || ''));
+          break;
+        case 'Z-A':
+          products.sort((a: Product, b: Product) => (b.name || '').localeCompare(a.name || ''));
+          break;
+        case 'Price: Low':
+          products.sort((a: Product, b: Product) => (a.price || 0) - (b.price || 0));
+          break;
+        case 'Price: High':
+          products.sort((a: Product, b: Product) => (b.price || 0) - (a.price || 0));
+          break;
+        case 'Newest':
+          products.sort((a: Product, b: Product) => {
+            const dateA = new Date(a.created_at || 0).getTime();
+            const dateB = new Date(b.created_at || 0).getTime();
+            return dateB - dateA;
+          });
+          break;
+      }
+    }
+
     if (products.length > 0) {
       const loadTime = Date.now() - shopScreenLoadStartRef.current;
       console.log(`⚡ ShopScreen READY: ${products.length} products (page ${currentPage}) loaded in ${loadTime}ms`);
     }
     return products;
-  }, [data?.pages, currentPage]);
+  }, [data?.pages, currentPage, selectedSort, selectedPrice]);
 
   // Get pagination info
   const paginationInfo = useMemo(() => {
@@ -444,6 +511,12 @@ function ShopScreen({
           }
           if (filterType === 'brand') {
             handleBrandSelect(value || null);
+          }
+          if (filterType === 'sort') {
+            handleSortSelect(value);
+          }
+          if (filterType === 'price') {
+            handlePriceSelect(value);
           }
         }}
       />
