@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     overflow: 'hidden',
-    backgroundColor: Colors.white,
+    backgroundColor: '#f1f5f9',
     borderWidth: 2,
     borderColor: Colors.sky,
     justifyContent: 'center',
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   floatingMessageBubble: {
-    backgroundColor: Colors.white,
+    backgroundColor: '#f1f5f9',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
