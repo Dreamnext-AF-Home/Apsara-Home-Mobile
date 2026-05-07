@@ -111,7 +111,8 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
   }, [token]);
 
   const runLiveSearch = useCallback((q: string) => {
-    if (!token || !q.trim()) {
+    const trimmed = q.trim();
+    if (!token || trimmed.length < 2) {
       setLiveResults([]);
       setLoadingLive(false);
       return;
@@ -119,25 +120,35 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
     let active = true;
     setLoadingLive(true);
     axios.get(`${API_CONFIG.BASE_URL}/search/live`, {
-      params: { q: q.trim() },
+      params: { q: trimmed, limit: 10 },
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => {
         if (!active) return;
+        console.log('🔍 Live search response:', res.data);
         if (res.data?.success && Array.isArray(res.data?.data)) {
           setLiveResults(res.data.data);
+        } else if (Array.isArray(res.data?.data)) {
+          setLiveResults(res.data.data);
+        } else if (Array.isArray(res.data)) {
+          setLiveResults(res.data);
         } else {
           setLiveResults([]);
         }
       })
-      .catch(() => { if (active) setLiveResults([]); })
+      .catch(err => {
+        if (active) {
+          console.error('🔍 Live search error:', err.message);
+          setLiveResults([]);
+        }
+      })
       .finally(() => { if (active) setLoadingLive(false); });
     return () => { active = false; };
   }, [token]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!query.trim()) {
+    if (query.trim().length < 2) {
       setLiveResults([]);
       setLoadingLive(false);
       return;
