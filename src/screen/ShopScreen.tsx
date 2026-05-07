@@ -380,7 +380,7 @@ function ShopScreen({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <AppHeader
         user={user}
         cartCount={cartCount}
@@ -436,15 +436,15 @@ export default memo(ShopScreen);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.white,
   },
   flatList: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.white,
   },
   flatListContent: {
-    paddingBottom: 32,
-    backgroundColor: 'transparent',
+    paddingBottom: 12,
+    backgroundColor: Colors.white,
   },
   filterInfoContainer: {
     flexDirection: 'row',
