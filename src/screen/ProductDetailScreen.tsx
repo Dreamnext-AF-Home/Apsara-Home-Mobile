@@ -50,6 +50,7 @@ interface ProductDetailScreenProps {
   } | null;
   cartCount?: number;
   wishlistItems?: WishlistItem[];
+  isDarkMode?: boolean;
 }
 
 const BADGE_CONFIG = [
@@ -102,6 +103,7 @@ export default function ProductDetailScreen({
   user,
   cartCount = 0,
   wishlistItems = [],
+  isDarkMode = false,
 }: ProductDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const [product, setProduct] = useState<Product | null>(null);
@@ -1668,6 +1670,7 @@ export default function ProductDetailScreen({
         images={images}
         selectedVariant={selectedVariant}
         quantity={quantity}
+        isDarkMode={isDarkMode}
         onClose={() => setShowAddToCartModal(false)}
         onSelectVariant={setSelectedVariant}
         onQuantityChange={setQuantity}
