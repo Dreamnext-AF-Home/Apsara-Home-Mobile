@@ -584,7 +584,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
     </View>
 
     {/* Chat Bot Icon */}
-    <ChatBotIcon position="bottom-left" visible={true} />
+    <ChatBotIcon position="bottom-right" visible={true} />
     </View>
   );
 }

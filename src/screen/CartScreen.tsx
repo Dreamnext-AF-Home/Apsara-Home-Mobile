@@ -636,7 +636,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
     </View>
 
     {/* Chat Bot Icon */}
-    <ChatBotIcon position="bottom-left" visible={true} />
+    <ChatBotIcon position="bottom-right" visible={true} />
     </View>
   );
 }

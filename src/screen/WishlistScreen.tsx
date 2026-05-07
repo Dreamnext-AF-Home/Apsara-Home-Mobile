@@ -537,7 +537,7 @@ export default function WishlistScreen({ token, wishlistItems, loading, refreshi
     </View>
 
     {/* Chat Bot Icon */}
-    <ChatBotIcon position="bottom-left" visible={true} />
+    <ChatBotIcon position="bottom-right" visible={true} />
     </View>
   );
 }

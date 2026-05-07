@@ -673,7 +673,7 @@ function HomeScreen({
       </ScrollView>
 
       {/* Chat Bot Icon */}
-      <ChatBotIcon position="bottom-left" visible={true} />
+      <ChatBotIcon position="bottom-right" visible={true} />
     </View>
   );
 }
