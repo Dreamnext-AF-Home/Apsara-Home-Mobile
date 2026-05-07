@@ -709,7 +709,7 @@ function HomeScreen({
                   const wishlistItem = wishlistItems?.find(w => w.product.id === item.id);
                   return (
                     <View key={item.id} style={styles.featuredProductItem}>
-                      {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} token={token} onPress={onProductPress ? (product) => onProductPress(product.id) : undefined} isWishlisted={!!wishlistItem} wishlistId={wishlistItem?.wishlist_id} onWishlistToggle={onWishlistChange} />}
+                      {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} token={token} isDarkMode={isDarkMode} onPress={onProductPress ? (product) => onProductPress(product.id) : undefined} isWishlisted={!!wishlistItem} wishlistId={wishlistItem?.wishlist_id} onWishlistToggle={onWishlistChange} />}
                     </View>
                   );
                 })}
@@ -719,7 +719,7 @@ function HomeScreen({
                   const wishlistItem = wishlistItems?.find(w => w.product.id === item.id);
                   return (
                     <View key={item.id} style={styles.featuredProductItem}>
-                      {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} token={token} onPress={onProductPress ? (product) => onProductPress(product.id) : undefined} isWishlisted={!!wishlistItem} wishlistId={wishlistItem?.wishlist_id} onWishlistToggle={onWishlistChange} />}
+                      {item.isAd ? <SampleAdCard title={item.title} subtitle={item.subtitle} /> : <ItemCard product={item as ProductCard} token={token} isDarkMode={isDarkMode} onPress={onProductPress ? (product) => onProductPress(product.id) : undefined} isWishlisted={!!wishlistItem} wishlistId={wishlistItem?.wishlist_id} onWishlistToggle={onWishlistChange} />}
                     </View>
                   );
                 })}
