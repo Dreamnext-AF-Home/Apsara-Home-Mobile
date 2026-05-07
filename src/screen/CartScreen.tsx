@@ -533,36 +533,36 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Header with Gradient extending to top */}
       <LinearGradient
-        colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
+        colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={[styles.headerGradient, { paddingTop: insets.top }]}
+        style={[styles.headerGradient, { paddingTop: insets.top, backgroundColor: colors.containerBg, borderBottomColor: colors.border }]}
       >
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.headerIcon}
-            onPress={onBack} 
+            onPress={onBack}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back-outline" size={20} color={Colors.text} />
+            <Ionicons name="chevron-back-outline" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Cart</Text>
-          
+          <Text style={[styles.headerTitle, { color: colors.text }]}>My Cart</Text>
+
           {/* Wishlist Icon */}
           <TouchableOpacity
             style={styles.headerIcon}
             activeOpacity={0.7}
             onPress={() => {
               // Navigate to wishlist - you'll need to implement this navigation
-              
+
             }}
           >
-            <Ionicons name="heart-outline" size={20} color={Colors.text} />
+            <Ionicons name="heart-outline" size={20} color={colors.text} />
             {wishlistCount > 0 && (
-              <View style={styles.badge}>
+              <View style={[styles.badge, { borderColor: colors.containerBg }]}>
                 <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
               </View>
             )}
