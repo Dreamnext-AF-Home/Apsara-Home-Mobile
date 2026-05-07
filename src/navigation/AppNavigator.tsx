@@ -140,6 +140,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [previousSearchQuery, setPreviousSearchQuery] = useState<string | null>(null);
   const [searchSourceProductId, setSearchSourceProductId] = useState<number | null>(null);
+  const [shopSourceProductId, setShopSourceProductId] = useState<number | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
@@ -573,6 +574,24 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                   setWishlistItems(prev => prev.filter(item => item.product_id !== productId));
                 }
               }}
+              onShopNavigate={(brandType, shopName) => {
+                // Store the current product ID so we can return to it
+                setShopSourceProductId(selectedProductId);
+                // Clear selected product to allow ShopByBrandScreen to show
+                setSelectedProductId(null);
+                // Navigate to ShopByBrandScreen
+                setSelectedBrandId(brandType);
+                // Create brand object from available data
+                setSelectedBrand({
+                  id: brandType,
+                  name: shopName,
+                });
+                // Store previous tab so we can go back to ProductDetailScreen later
+                setPreviousTab(activeTabRef.current);
+                // Switch to shop tab to show ShopByBrandScreen
+                setActiveTab('shop');
+                activeTabRef.current = 'shop';
+              }}
               isDarkMode={isDarkMode}
             />
           ) : searchQuery ? (
@@ -684,8 +703,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 onBack={() => {
                   setSelectedBrandId(null);
                   setSelectedBrand(null);
-                  setActiveTab(previousTab);
-                  activeTabRef.current = previousTab;
+                  // If we came from ProductDetailScreen, restore it
+                  if (shopSourceProductId !== null) {
+                    setSelectedProductId(shopSourceProductId);
+                    setShopSourceProductId(null);
+                  } else {
+                    // Otherwise go back to the previous tab
+                    setActiveTab(previousTab);
+                    activeTabRef.current = previousTab;
+                  }
                 }}
                 onProductPress={(id) => {
                   setPreviousSearchQuery(null);
