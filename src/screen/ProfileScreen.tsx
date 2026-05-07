@@ -39,6 +39,7 @@ interface ProfileScreenProps {
   token?: string | null;
   onShowProfileDetails?: (show: boolean) => void;
   onShowReferralNetwork?: (show: boolean) => void;
+  isDarkMode?: boolean;
 }
 
 const REFERRAL_STATS = [
@@ -67,8 +68,21 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, isDarkMode = false }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
+
+  const colors = {
+    bg: isDarkMode ? '#0f172a' : '#f0f9ff',
+    containerBg: isDarkMode ? '#1f2937' : Colors.white,
+    text: isDarkMode ? '#f8fafc' : Colors.text,
+    textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
+    border: isDarkMode ? '#374151' : '#e5e7eb',
+    borderLight: isDarkMode ? '#475569' : '#f1f5f9',
+    cardBg: isDarkMode ? '#1e293b' : '#f8fafc',
+    headerBg: isDarkMode ? '#1f2937' : Colors.white,
+    socialIconBg: isDarkMode ? '#334155' : '#f8fafc',
+    purchaseIconBg: isDarkMode ? '#334155' : '#f8fafc',
+  };
   const [enlargedQR, setEnlargedQR] = useState<'signup' | 'shopping' | null>(null);
   const [referralTree, setReferralTree] = useState<ReferralTree | null>(null);
   const [showReferralNetwork, setShowReferralNetwork] = useState(false);
@@ -190,13 +204,13 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
       {/* ── Header ── */}
       <LinearGradient
-        colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
+        colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.headerBg, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity style={styles.headerLeft} onPress={() => setShowProfileDetails(true)} activeOpacity={0.7}>
           <View style={styles.headerAvatar}>
@@ -208,12 +222,12 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
           </View>
           <View style={styles.headerNameContainer}>
             <View style={styles.headerNameRow}>
-              <Text style={styles.headerName} numberOfLines={1}>{user?.name ?? 'Guest'}</Text>
-              <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} style={styles.profileIcon} />
+              <Text style={[styles.headerName, { color: colors.text }]} numberOfLines={1}>{user?.name ?? 'Guest'}</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textSec} style={styles.profileIcon} />
             </View>
             {user?.username && (
               <View style={styles.usernameRow}>
-                <Text style={styles.usernameText}>@{user.username}</Text>
+                <Text style={[styles.usernameText, { color: Colors.sky }]}>@{user.username}</Text>
                 {user?.badge_name && (
                   <>
                     <View style={styles.usernameDot} />
@@ -236,16 +250,16 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
           </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onCartPress}>
-            <Ionicons name="cart-outline" size={20} color={Colors.text} />
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]} activeOpacity={0.7} onPress={onCartPress}>
+            <Ionicons name="cart-outline" size={20} color={colors.text} />
             {cartCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onNavigateSettings}>
-            <Ionicons name="settings-outline" size={20} color={Colors.text} />
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]} activeOpacity={0.7} onPress={onNavigateSettings}>
+            <Ionicons name="settings-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -268,6 +282,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
             activeLeaders={loyaltyData.active_leaders_count}
             username={user?.username}
             loading={loadingLoyalty}
+            isDarkMode={isDarkMode}
             onViewDetails={() => {
               Toast.show({
                 type: 'info',
@@ -279,12 +294,12 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         )}
 
         {/* My Purchases */}
-        <View style={styles.section}>
-          <View style={styles.purchasesHeader}>
-            <Text style={styles.purchasesTitle}>My Purchases</Text>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+          <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
+            <Text style={[styles.purchasesTitle, { color: colors.text }]}>My Purchases</Text>
             <TouchableOpacity style={styles.purchasesViewAll}>
               <View style={styles.purchasesViewAllContainer}>
-                <Text style={styles.purchasesViewAllText}>View Purchase History</Text>
+                <Text style={[styles.purchasesViewAllText, { color: colors.textSec }]}>View Purchase History</Text>
                 {orderCounts?.all !== undefined && (
                   <View style={styles.countBadge}>
                     <Text style={styles.countBadgeText}>{orderCounts.all}</Text>
@@ -307,37 +322,37 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 activeOpacity={0.7}
                 onPress={() => handlePurchaseItemClick(item.label)}
               >
-                <View style={styles.purchaseIconContainer}>
+                <View style={[styles.purchaseIconContainer, { backgroundColor: colors.purchaseIconBg }]}>
                   <Ionicons name={item.icon} size={24} color={Colors.sky} />
                   {item.key && orderCounts?.[item.key] !== undefined && orderCounts[item.key] > 0 && (
-                    <View style={styles.itemCountBadge}>
+                    <View style={[styles.itemCountBadge, { borderColor: isDarkMode ? colors.containerBg : Colors.white }]}>
                       <Text style={styles.itemCountBadgeText}>
                         {orderCounts[item.key] > 99 ? '99+' : orderCounts[item.key]}
                       </Text>
                     </View>
                   )}
                 </View>
-                <Text style={styles.purchaseLabel}>{item.label}</Text>
+                <Text style={[styles.purchaseLabel, { color: colors.text }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
         {/* My Referrals */}
-        <View style={styles.section}>
-          <View style={styles.purchasesHeader}>
-            <Text style={styles.purchasesTitle}>My Referrals</Text>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+          <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
+            <Text style={[styles.purchasesTitle, { color: colors.text }]}>My Referrals</Text>
             <TouchableOpacity
               style={styles.purchasesViewAll}
               onPress={handleViewNetwork}
               disabled={loadingReferral}
             >
               {loadingReferral ? (
-                <ActivityIndicator size="small" color={Colors.textSecondary} />
+                <ActivityIndicator size="small" color={colors.textSec} />
               ) : (
                 <>
-                  <Text style={styles.purchasesViewAllText}>View Network</Text>
-                  <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
+                  <Text style={[styles.purchasesViewAllText, { color: colors.textSec }]}>View Network</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.textSec} />
                 </>
               )}
             </TouchableOpacity>
@@ -353,8 +368,8 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                   <View style={[styles.referralIconContainer, { backgroundColor: '#e0f2fe' }]}>
                     <Ionicons name="people-outline" size={28} color={Colors.sky} />
                   </View>
-                  <Text style={styles.referralItemValue}>{referralTree.summary.total_network}</Text>
-                  <Text style={styles.referralItemLabel}>Total</Text>
+                  <Text style={[styles.referralItemValue, { color: colors.text }]}>{referralTree.summary.total_network}</Text>
+                  <Text style={[styles.referralItemLabel, { color: colors.textSec }]}>Total</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.referralItem}
@@ -364,8 +379,8 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                   <View style={[styles.referralIconContainer, { backgroundColor: '#fef3c7' }]}>
                     <Ionicons name="person-outline" size={28} color="#f59e0b" />
                   </View>
-                  <Text style={styles.referralItemValue}>{referralTree.summary.direct_count}</Text>
-                  <Text style={styles.referralItemLabel}>Direct</Text>
+                  <Text style={[styles.referralItemValue, { color: colors.text }]}>{referralTree.summary.direct_count}</Text>
+                  <Text style={[styles.referralItemLabel, { color: colors.textSec }]}>Direct</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.referralItem}
@@ -375,8 +390,8 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                   <View style={[styles.referralIconContainer, { backgroundColor: '#dcfce7' }]}>
                     <Ionicons name="cash-outline" size={28} color="#16a34a" />
                   </View>
-                  <Text style={styles.referralItemValue}>₱{referralTree.root.total_earnings}</Text>
-                  <Text style={styles.referralItemLabel}>Earned</Text>
+                  <Text style={[styles.referralItemValue, { color: colors.text }]}>₱{referralTree.root.total_earnings}</Text>
+                  <Text style={[styles.referralItemLabel, { color: colors.textSec }]}>Earned</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -386,32 +401,32 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         </View>
 
         {/* Affiliate Referral QR */}
-        <View style={styles.section}>
-          <View style={styles.purchasesHeader}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+          <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
             <View>
-              <Text style={styles.purchasesTitle}>Affiliate Referral QR</Text>
-              <Text style={styles.qrSubtitle}>Ready to Share</Text>
+              <Text style={[styles.purchasesTitle, { color: colors.text }]}>Affiliate Referral QR</Text>
+              <Text style={[styles.qrSubtitle, { color: Colors.sky }]}>Ready to Share</Text>
             </View>
           </View>
 
           <View style={styles.qrContainer}>
             {/* Signup QR Section */}
-            <View style={styles.qrCard}>
+            <View style={[styles.qrCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={styles.qrCardHeader}>
-                <View style={styles.qrIconBox}>
+                <View style={[styles.qrIconBox, { backgroundColor: isDarkMode ? '#0c2340' : '#e0f2fe' }]}>
                   <Ionicons name="person-add" size={16} color={Colors.sky} />
                 </View>
-                <Text style={styles.qrCardTitle}>Invite Members</Text>
+                <Text style={[styles.qrCardTitle, { color: colors.text }]}>Invite Members</Text>
               </View>
-              <Text style={styles.qrCardDescription}>
+              <Text style={[styles.qrCardDescription, { color: colors.textSec }]}>
                 Use this link when someone wants to register as your referral.
               </Text>
 
-              <Text style={styles.qrTopLabel}>Signup referral QR code</Text>
+              <Text style={[styles.qrTopLabel, { color: Colors.sky }]}>Signup referral QR code</Text>
 
               <View style={styles.qrMain}>
                 <TouchableOpacity
-                  style={styles.qrImageWrapper}
+                  style={[styles.qrImageWrapper, { backgroundColor: colors.containerBg, borderColor: colors.border }]}
                   activeOpacity={0.7}
                   onPress={() => setEnlargedQR('signup')}
                 >
@@ -426,9 +441,9 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 </TouchableOpacity>
 
                 <View style={styles.qrInfo}>
-                  <Text style={styles.qrLabel}>Member signup link</Text>
-                  <View style={styles.qrLinkBox}>
-                    <Text style={styles.qrLinkText} numberOfLines={2}>{signupUrl}</Text>
+                  <Text style={[styles.qrLabel, { color: colors.textSec }]}>Member signup link</Text>
+                  <View style={[styles.qrLinkBox, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                    <Text style={[styles.qrLinkText, { color: Colors.sky }]} numberOfLines={2}>{signupUrl}</Text>
                   </View>
                 </View>
               </View>
@@ -450,17 +465,17 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
               </View>
             </View>
 
-            <View style={styles.qrSeparator} />
+            <View style={[styles.qrSeparator, { backgroundColor: colors.border }]} />
 
             {/* Shopping QR Section */}
-            <View style={styles.qrCard}>
+            <View style={[styles.qrCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={styles.qrCardHeader}>
                 <View style={[styles.qrIconBox, { backgroundColor: '#f0fdf4' }]}>
                   <Ionicons name="cart" size={16} color="#16a34a" />
                 </View>
-                <Text style={styles.qrCardTitle}>Share Shopping Link</Text>
+                <Text style={[styles.qrCardTitle, { color: colors.text }]}>Share Shopping Link</Text>
               </View>
-              <Text style={styles.qrCardDescription}>
+              <Text style={[styles.qrCardDescription, { color: colors.textSec }]}>
                 Use this link for non-members who only want to shop. Their checkout will carry your referral automatically.
               </Text>
 
@@ -468,7 +483,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
 
               <View style={styles.qrMain}>
                 <TouchableOpacity
-                  style={styles.qrImageWrapper}
+                  style={[styles.qrImageWrapper, { backgroundColor: colors.containerBg, borderColor: colors.border }]}
                   activeOpacity={0.7}
                   onPress={() => setEnlargedQR('shopping')}
                 >
@@ -483,9 +498,9 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 </TouchableOpacity>
 
                 <View style={styles.qrInfo}>
-                  <Text style={styles.qrLabel}>Shopping referral link</Text>
-                  <View style={styles.qrLinkBox}>
-                    <Text style={styles.qrLinkText} numberOfLines={2}>{shoppingUrl}</Text>
+                  <Text style={[styles.qrLabel, { color: colors.textSec }]}>Shopping referral link</Text>
+                  <View style={[styles.qrLinkBox, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                    <Text style={[styles.qrLinkText, { color: Colors.sky }]} numberOfLines={2}>{shoppingUrl}</Text>
                   </View>
                 </View>
               </View>
@@ -510,13 +525,13 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         </View>
 
         {/* Menu */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
           {MENU_ITEMS.map((item, index) => (
             <TouchableOpacity
               key={item.label}
               style={[
                 styles.menuRow,
-                index < MENU_ITEMS.length - 1 && styles.menuRowBorder,
+                index < MENU_ITEMS.length - 1 && [styles.menuRowBorder, { borderBottomColor: colors.borderLight }],
               ]}
               activeOpacity={0.7}
               onPress={() => {
@@ -524,27 +539,27 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 if (item.key === 'settings') onNavigateSettings?.();
               }}
             >
-              <View style={[styles.menuIcon, item.danger && styles.menuIconDanger]}>
+              <View style={[styles.menuIcon, item.danger && styles.menuIconDanger, { backgroundColor: isDarkMode ? (item.danger ? '#7f1d1d' : '#0c2340') : (item.danger ? '#fee2e2' : '#e0f2fe') }]}>
                 <Ionicons
                   name={item.icon}
                   size={18}
                   color={item.danger ? Colors.error : Colors.sky}
                 />
               </View>
-              <Text style={[styles.menuLabel, item.danger && styles.menuLabelDanger]}>
+              <Text style={[styles.menuLabel, item.danger && styles.menuLabelDanger, { color: item.danger ? Colors.error : colors.text }]}>
                 {item.label}
               </Text>
               {item.chevron && (
-                <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+                <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
               )}
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Connect with Us */}
-        <View style={styles.section}>
-          <View style={styles.purchasesHeader}>
-            <Text style={styles.purchasesTitle}>Connect with Us</Text>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+          <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
+            <Text style={[styles.purchasesTitle, { color: colors.text }]}>Connect with Us</Text>
           </View>
           <View style={styles.purchasesGrid}>
             {SOCIAL_ITEMS.map((item) => (
@@ -554,10 +569,10 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 activeOpacity={0.7}
                 onPress={() => item.url && Linking.openURL(item.url)}
               >
-                <View style={styles.purchaseIconContainer}>
+                <View style={[styles.purchaseIconContainer, { backgroundColor: colors.socialIconBg }]}>
                   <Ionicons name={item.icon} size={24} color={item.color} />
                 </View>
-                <Text style={styles.purchaseLabel}>{item.label}</Text>
+                <Text style={[styles.purchaseLabel, { color: colors.text }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -572,7 +587,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         onRequestClose={() => setEnlargedQR(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.containerBg }]}>
             <TouchableOpacity
               style={styles.modalCloseBtn}
               onPress={() => setEnlargedQR(null)}
@@ -590,7 +605,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
               resizeMode="contain"
             />
 
-            <Text style={styles.modalQrUrl}>
+            <Text style={[styles.modalQrUrl, { color: colors.textSec }]}>
               {enlargedQR === 'signup' ? signupUrl : shoppingUrl}
             </Text>
 
@@ -633,7 +648,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
     </View>
 
     {/* Chat Bot Icon */}
-    <ChatBotIcon position="bottom-right" visible={true} />
+    <ChatBotIcon position="bottom-right" visible={true} isDarkMode={isDarkMode} />
     </View>
   );
 }
@@ -651,7 +666,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingBottom: 16,
-    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -847,7 +863,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
   purchasesTitle: {
     fontSize: 15,
@@ -896,10 +911,9 @@ const styles = StyleSheet.create({
     width: 80,
   },
   purchaseIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -914,7 +928,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.white,
   },
   itemCountBadgeText: {
     fontSize: 9,
@@ -978,11 +991,9 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   qrCard: {
-    backgroundColor: '#f8fafc',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   qrCardHeader: {
     flexDirection: 'row',
@@ -1026,9 +1037,10 @@ const styles = StyleSheet.create({
   qrImageWrapper: {
     width: 100,
     height: 100,
-    backgroundColor: Colors.white,
     padding: 8,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1060,12 +1072,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   qrLinkBox: {
-    backgroundColor: '#f1f5f9',
     padding: 8,
     borderRadius: 8,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderStyle: 'dashed',
   },
   qrLinkText: {
@@ -1087,10 +1097,8 @@ const styles = StyleSheet.create({
 
   // ── Menu ──
   section: {
-    backgroundColor: Colors.white,
     borderRadius: 16,
     borderWidth: 0.5,
-    borderColor: '#e5e7eb',
     overflow: 'hidden',
   },
   menuRow: {
@@ -1102,7 +1110,6 @@ const styles = StyleSheet.create({
   },
   menuRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
   menuIcon: {
     width: 36,
