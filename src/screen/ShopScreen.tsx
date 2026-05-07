@@ -103,10 +103,13 @@ function ShopScreen({
     brandId: selectedBrandId,
   });
 
-  // Scroll to top when page changes
+  // Scroll to top when page changes or filters change
   useEffect(() => {
-    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, [currentPage]);
+    const scrollTimeout = setTimeout(() => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, 50);
+    return () => clearTimeout(scrollTimeout);
+  }, [currentPage, selectedRoomId, selectedCategoryId, selectedBrandId]);
 
   // Background prefetch ONLY the next page (not multiple pages)
   useEffect(() => {
