@@ -237,12 +237,25 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           }),
         });
 
-        // Listen for notification responses
-        const subscription = Notifications.addNotificationResponseClearedListener(() => {
-          console.log('Notification cleared');
+        // Listen for incoming notifications (when app is in foreground)
+        const notificationSubscription = Notifications.addNotificationReceivedListener((notification: any) => {
+          console.log('🔔 Notification Received:', notification);
+          Toast.show({
+            type: 'info',
+            text1: notification.request.content.title || 'Notification',
+            text2: notification.request.content.body || '',
+          });
         });
 
-        return () => subscription.remove();
+        // Listen for notification responses (when user taps notification)
+        const responseSubscription = Notifications.addNotificationResponseListener((response: any) => {
+          console.log('📱 Notification Tapped:', response.notification);
+        });
+
+        return () => {
+          notificationSubscription.remove();
+          responseSubscription.remove();
+        };
       } catch (error) {
         console.log('Notification setup error:', error);
       }
