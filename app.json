@@ -22,8 +22,6 @@
     "android": {
     "package": "com.afhome.mobile",
 
-    "googleServicesFile": "./android/app/google-services.json",
-
     "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon1.png",
         "backgroundColor": "#ffffff"

@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Colors } from '../constants/colors';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
@@ -217,12 +219,24 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   useEffect(() => {
     const setupNotifications = async () => {
       try {
+        if (!Device.isDevice) {
+          console.log('Push notifications require a physical device');
+          return;
+        }
+
         // Request permissions
         const { status } = await Notifications.requestPermissionsAsync();
         console.log('Notification permission status:', status);
+        if (status !== 'granted') return;
 
-        // Get device push token
-        const pushToken = await Notifications.getExpoPushTokenAsync();
+        // Get Expo push token (standalone, no Firebase app init)
+        const projectId = Constants.easConfig?.projectId || Constants.expoConfig?.extra?.eas?.projectId;
+        if (!projectId) {
+          console.log('Expo projectId not found; cannot register for Expo push token.');
+          return;
+        }
+
+        const pushToken = await Notifications.getExpoPushTokenAsync({ projectId });
         setDeviceToken(pushToken.data);
         console.log('📱 DEVICE TOKEN:', pushToken.data);
 

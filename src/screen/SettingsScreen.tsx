@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Clipboard, Alert, Modal, Pressable,
+  View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Colors } from '../constants/colors';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -14,108 +14,87 @@ interface SettingsScreenProps {
   setIsDarkMode: (value: boolean) => void;
 }
 
-interface ErrorDetails {
-  message: string;
-  code?: string;
-  details?: string;
-}
-
 export default function SettingsScreen({ onBack, isDarkMode, setIsDarkMode }: SettingsScreenProps) {
-  const [deviceToken, setDeviceToken] = useState<string | null>(null);
-  const [showTokenModal, setShowTokenModal] = useState(false);
-  const [error, setError] = useState<ErrorDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notificationStatus, setNotificationStatus] = useState<'enabled' | 'disabled' | 'error'>('disabled');
+  const [pushToken, setPushToken] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [testMessage, setTestMessage] = useState('Hello from Apsara!');
+  const [tokenCopied, setTokenCopied] = useState(false);
 
   useEffect(() => {
-    initializePushNotifications();
+    registerForPushNotifications();
   }, []);
 
-  const initializePushNotifications = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Check permissions
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      console.log('📱 Current notification permission status:', existingStatus);
+  const registerForPushNotifications = async () => {
+    if (!Device.isDevice) {
+      Alert.alert('Info', 'Push notifications work on physical devices only.');
+      return;
+    }
 
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
+
       if (existingStatus !== 'granted') {
-        console.log('📱 Requesting notification permissions...');
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
-        console.log('📱 Permission request result:', status);
       }
 
       if (finalStatus !== 'granted') {
-        throw {
-          code: 'PERMISSION_DENIED',
-          message: 'Notification permission not granted',
-          details: 'User denied or has not granted permission to receive push notifications. Please enable notifications in device settings.'
-        };
+        Alert.alert('Error', 'Failed to get push notification permissions');
+        return;
       }
 
-      // Get push token
-      const pushToken = await Notifications.getExpoPushTokenAsync();
-      if (!pushToken.data) {
-        throw {
-          code: 'NO_TOKEN',
-          message: 'Failed to retrieve push token',
-          details: 'The Expo service did not return a valid token. Check your Expo credentials and internet connection.'
-        };
-      }
-
-      setDeviceToken(pushToken.data);
-      setNotificationStatus('enabled');
-      console.log('✅ Push Token successfully retrieved:', pushToken.data);
-      console.log('✅ Notification status: ENABLED');
-    } catch (err: any) {
-      let errorDetails: ErrorDetails;
-
-      if (err.code) {
-        // Custom error with code
-        errorDetails = {
-          message: err.message,
-          code: err.code,
-          details: err.details
-        };
-      } else if (err.name === 'ExpoAPIError') {
-        errorDetails = {
-          message: 'Expo API Error',
-          code: err.code || 'EXPO_API_ERROR',
-          details: `${err.message}\n\nThis usually means there's an issue with your Expo project configuration or credentials. Check your EAS credentials and ensure your app is properly configured in Expo.`
-        };
-      } else if (err.message?.includes('Network')) {
-        errorDetails = {
-          message: 'Network Error',
-          code: 'NETWORK_ERROR',
-          details: 'Unable to connect to Expo servers. Check your internet connection and try again.'
-        };
-      } else {
-        errorDetails = {
-          message: err.message || 'Unknown error occurred',
-          code: 'UNKNOWN_ERROR',
-          details: `Error Details: ${JSON.stringify(err)}\n\nTry restarting the app or checking your internet connection.`
-        };
-      }
-
-      setError(errorDetails);
-      setNotificationStatus('error');
-      setDeviceToken('ERROR');
-      console.error('❌ Push Notification Error:', errorDetails);
-    } finally {
-      setIsLoading(false);
+      const token = await Notifications.getExpoPushTokenAsync();
+      setPushToken(token.data);
+    } catch (error) {
+      Alert.alert('Error', `Failed to get push token: ${error}`);
     }
   };
 
-  const handleRetry = () => {
-    initializePushNotifications();
+  const copyToClipboard = () => {
+    if (pushToken) {
+      // In a real app, you'd use a clipboard library
+      Alert.alert('Token Copied', pushToken);
+      setTokenCopied(true);
+      setTimeout(() => setTokenCopied(false), 2000);
+    }
   };
 
-  const handleCopyToken = () => {
-    if (deviceToken) {
-      Clipboard.setString(deviceToken);
-      Alert.alert('Copied!', 'Push token copied to clipboard');
+  const sendTestNotification = async () => {
+    if (!pushToken || !testMessage.trim()) {
+      Alert.alert('Error', 'Please get token first and enter a message');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Test Notification',
+          body: testMessage,
+          data: { timestamp: new Date().toISOString() },
+          sound: 'default',
+          badge: 1,
+        },
+        trigger: null,
+      });
+      Alert.alert('Success', 'Test notification sent!');
+    } catch (error) {
+      Alert.alert('Error', `Failed to send notification: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getNewToken = async () => {
+    setLoading(true);
+    try {
+      await registerForPushNotifications();
+      Alert.alert('Success', 'Token refreshed');
+    } catch (error) {
+      Alert.alert('Error', `Failed to refresh token: ${error}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,126 +127,66 @@ export default function SettingsScreen({ onBack, isDarkMode, setIsDarkMode }: Se
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Push Notifications Testing</Text>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={getNewToken}
+            disabled={loading}
+          >
+            {loading && <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />}
+            <Ionicons name="paper-plane" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>Get Push Token</Text>
+          </TouchableOpacity>
+
+          {pushToken ? (
+            <View style={styles.tokenContainer}>
+              <View style={styles.tokenHeader}>
+                <Text style={styles.tokenLabel}>Your Push Token:</Text>
+                <TouchableOpacity
+                  onPress={copyToClipboard}
+                  style={styles.copyButton}
+                >
+                  <Ionicons name={tokenCopied ? 'checkmark' : 'copy'} size={16} color={Colors.sky} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.tokenText} selectable>{pushToken}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageLabel}>Test Message:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter notification message"
+              value={testMessage}
+              onChangeText={setTestMessage}
+              placeholderTextColor={Colors.textSecondary}
+              multiline
+              maxLength={150}
+            />
+            <Text style={styles.charCount}>{testMessage.length}/150</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, styles.sendButton]}
+            onPress={sendTestNotification}
+            disabled={loading || !pushToken}
+          >
+            {loading && <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />}
+            <Ionicons name="send" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>Send Test Notification</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.infoBox}>
           <Ionicons name="information-circle-outline" size={20} color={Colors.textSecondary} />
           <Text style={styles.infoText}>
-            Dark mode is currently a preview feature. More settings will be available in future updates.
+            This is a standalone Expo push notification testing tool. No Firebase connection required.
           </Text>
         </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Push Notifications</Text>
-            <View style={[
-              styles.statusBadge,
-              {
-                backgroundColor: notificationStatus === 'enabled' ? '#d1fae5'
-                  : notificationStatus === 'error' ? '#fee2e2'
-                    : '#f3f4f6'
-              }
-            ]}>
-              <Ionicons
-                name={notificationStatus === 'enabled' ? 'checkmark-circle' : notificationStatus === 'error' ? 'alert-circle' : 'help-circle'}
-                size={14}
-                color={notificationStatus === 'enabled' ? '#059669'
-                  : notificationStatus === 'error' ? '#dc2626'
-                    : '#6b7280'}
-              />
-              <Text style={[
-                styles.statusText,
-                {
-                  color: notificationStatus === 'enabled' ? '#059669'
-                    : notificationStatus === 'error' ? '#dc2626'
-                      : '#6b7280'
-                }
-              ]}>
-                {notificationStatus === 'enabled' ? 'Enabled' : notificationStatus === 'error' ? 'Error' : 'Disabled'}
-              </Text>
-            </View>
-          </View>
-
-          {isLoading && (
-            <View style={styles.loadingBox}>
-              <Ionicons name="hourglass-outline" size={20} color={Colors.sky} />
-              <Text style={styles.loadingText}>Initializing push notifications...</Text>
-            </View>
-          )}
-
-          {error && (
-            <View style={styles.errorBox}>
-              <View style={styles.errorHeader}>
-                <Ionicons name="alert-circle" size={20} color="#dc2626" />
-                <Text style={styles.errorTitle}>{error.message}</Text>
-              </View>
-              {error.code && (
-                <Text style={styles.errorCode}>Error Code: {error.code}</Text>
-              )}
-              {error.details && (
-                <Text style={styles.errorDetails}>{error.details}</Text>
-              )}
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={handleRetry}
-              >
-                <Ionicons name="refresh" size={16} color={Colors.sky} />
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {!isLoading && deviceToken && deviceToken !== 'ERROR' && (
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => setShowTokenModal(true)}
-            >
-              <View style={styles.settingLabelContainer}>
-                <View style={[styles.iconContainer, { backgroundColor: '#dbeafe' }]}>
-                  <Ionicons name="notifications-outline" size={20} color={Colors.sky} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingLabel}>Push Token</Text>
-                  <Text style={styles.tokenPreview} numberOfLines={1}>
-                    {`${deviceToken.substring(0, 30)}...`}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
       </ScrollView>
-
-      <Modal visible={showTokenModal} transparent animationType="fade" onRequestClose={() => setShowTokenModal(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowTokenModal(false)}>
-          <Pressable style={styles.tokenModal} onPress={(e) => e.stopPropagation?.()}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Push Notification Token</Text>
-              <TouchableOpacity onPress={() => setShowTokenModal(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.tokenBox}>
-              <Text style={styles.tokenText} selectable>{deviceToken || 'Loading...'}</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.copyButton}
-              onPress={handleCopyToken}
-            >
-              <Ionicons name="copy" size={18} color={Colors.white} />
-              <Text style={styles.copyButtonText}>Copy Token</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowTokenModal(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -313,30 +232,13 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 20,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',
@@ -360,6 +262,80 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text,
   },
+  button: {
+    flexDirection: 'row',
+    backgroundColor: Colors.sky,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  sendButton: {
+    backgroundColor: '#10b981',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  tokenContainer: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.sky,
+  },
+  tokenHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tokenLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+  },
+  copyButton: {
+    padding: 8,
+  },
+  tokenText: {
+    fontSize: 11,
+    color: Colors.text,
+    fontFamily: 'monospace',
+    lineHeight: 16,
+  },
+  messageContainer: {
+    marginBottom: 12,
+  },
+  messageLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  input: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    maxHeight: 100,
+  },
+  charCount: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'right',
+  },
   infoBox: {
     flexDirection: 'row',
     backgroundColor: '#f1f5f9',
@@ -373,143 +349,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 18,
-  },
-  tokenPreview: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  tokenModal: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 380,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  tokenBox: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  tokenText: {
-    fontSize: 11,
-    color: Colors.text,
-    fontFamily: 'monospace',
-    lineHeight: 16,
-  },
-  copyButton: {
-    backgroundColor: Colors.sky,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    gap: 6,
-  },
-  copyButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  closeButton: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  closeButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
-    textAlign: 'center',
-  },
-  loadingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f9ff',
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  loadingText: {
-    flex: 1,
-    fontSize: 13,
-    color: Colors.sky,
-    fontWeight: '500',
-  },
-  errorBox: {
-    backgroundColor: '#fef2f2',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  errorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  errorTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#dc2626',
-  },
-  errorCode: {
-    fontSize: 11,
-    color: '#991b1b',
-    fontFamily: 'monospace',
-    marginBottom: 8,
-    paddingHorizontal: 2,
-  },
-  errorDetails: {
-    fontSize: 12,
-    color: '#7f1d1d',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.sky,
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
-  },
-  retryButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.sky,
   },
 });
