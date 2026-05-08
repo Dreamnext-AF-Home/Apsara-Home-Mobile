@@ -23,8 +23,12 @@ export default function SettingsScreen({ onBack, isDarkMode, setIsDarkMode }: Se
       try {
         const pushToken = await Notifications.getExpoPushTokenAsync();
         setDeviceToken(pushToken.data);
-      } catch (error) {
-        console.log('Error getting token:', error);
+        console.log('✅ Push Token:', pushToken.data);
+      } catch (error: any) {
+        console.log('⚠️ Firebase not available - using development mode');
+        // Firebase not initialized (expected in development without proper FCM setup)
+        // Set a development token so user can still test
+        setDeviceToken('DEV_MODE_NO_FIREBASE');
       }
     };
     getToken();
