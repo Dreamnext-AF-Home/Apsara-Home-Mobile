@@ -277,7 +277,7 @@ export default function CheckoutScreen({
         >
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={24} color={Colors.forest} />
+              <Ionicons name="chevron-back-outline" size={24} color={Colors.forest} />
             </TouchableOpacity>
             <View style={styles.headerInfo}>
               <Text style={styles.headerGreeting}>Checkout</Text>
@@ -303,7 +303,7 @@ export default function CheckoutScreen({
       >
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={isDarkMode ? '#e5e7eb' : Colors.text} />
+            <Ionicons name="chevron-back-outline" size={24} color={isDarkMode ? '#e5e7eb' : Colors.text} />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={[styles.headerGreeting, { color: isDarkMode ? '#f8fafc' : Colors.text }]}>
@@ -322,7 +322,7 @@ export default function CheckoutScreen({
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={[styles.content, { backgroundColor: colors.bg }]}
-        contentContainerStyle={{ paddingBottom: 200 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Order Item Section - Shopee Style */}
         <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
@@ -602,7 +602,7 @@ export default function CheckoutScreen({
             </Text>
           </View>
 
-          <View style={styles.priceRow}>
+          <View style={[styles.priceRow, { borderBottomColor: colors.border, borderBottomWidth: 1, paddingVertical: 12 }]}>
             <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
             <Text style={[styles.totalPrice, { color: Colors.sky }]}>
               ₱{total.toLocaleString()}
@@ -664,14 +664,14 @@ export default function CheckoutScreen({
         </Pressable>
       )}
 
-      {/* Footer Button */}
+      {/* Footer */}
       <View
         style={[
           styles.footer,
           {
             backgroundColor: colors.containerBg,
             borderTopColor: colors.border,
-            paddingBottom: insets.bottom + 12,
+            paddingBottom: insets.bottom + 8,
           },
         ]}
       >
@@ -705,13 +705,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 12,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginLeft: -10,
+    marginRight: 12,
   },
   backBtn: {
     width: 40,
@@ -733,11 +735,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    maxWidth: 600,
-    marginHorizontal: 'auto',
-    alignSelf: 'center',
-    width: '100%',
+    paddingHorizontal: 8,
+    gap: 16,
   },
   emptyContainer: {
     flex: 1,
@@ -752,7 +751,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 12,
     marginHorizontal: 'auto',
-    maxWidth: 600,
+    maxWidth: 900,
     width: '100%',
   },
   sectionTitle: {
@@ -951,7 +950,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingVertical: 10,
     borderTopWidth: 1,
   },
   placeOrderBtn: {
