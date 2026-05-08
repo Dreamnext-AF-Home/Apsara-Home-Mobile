@@ -7,7 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import * as Notifications from 'expo-notifications';
-import OneSignal from 'react-native-onesignal';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -22,13 +21,12 @@ export default function SettingsScreen({ onBack, isDarkMode, setIsDarkMode }: Se
   useEffect(() => {
     const getToken = async () => {
       try {
-        // Get OneSignal User ID
-        const userId = await OneSignal.getOnesignalId();
-        setDeviceToken(userId || 'Loading...');
-        console.log('✅ OneSignal User ID:', userId);
-      } catch (error) {
-        console.log('⚠️ Error getting OneSignal ID:', error);
-        setDeviceToken('Error getting ID');
+        const pushToken = await Notifications.getExpoPushTokenAsync();
+        setDeviceToken(pushToken.data);
+        console.log('✅ Push Token:', pushToken.data);
+      } catch (error: any) {
+        console.log('⚠️ Firebase not available - using development mode');
+        setDeviceToken('DEV_MODE_NO_FIREBASE');
       }
     };
     getToken();
