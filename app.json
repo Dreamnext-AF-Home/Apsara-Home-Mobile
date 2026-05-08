@@ -26,7 +26,8 @@
         "color": "#0ea5e9"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.afhome.mobile"
+      "package": "com.afhome.mobile",
+      "googleServicesFile": "./android/google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,7 +37,14 @@
       "expo-font",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/af_home_logo.png",
+          "color": "#0ea5e9",
+          "sounds": []
+        }
+      ]
     ],
     "extra": {
       "eas": {
