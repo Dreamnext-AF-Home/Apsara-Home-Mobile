@@ -40,6 +40,7 @@ interface ProfileScreenProps {
   onShowProfileDetails?: (show: boolean) => void;
   onShowReferralNetwork?: (show: boolean) => void;
   isDarkMode?: boolean;
+  onPurchaseItemClick?: (status: 'pending' | 'processing' | 'shipped' | 'delivered') => void;
 }
 
 const REFERRAL_STATS = [
@@ -49,11 +50,11 @@ const REFERRAL_STATS = [
 ];
 
 const PURCHASE_ITEMS = [
-  { icon: 'time-outline' as const, label: 'Pending', key: 'pending' },
-  { icon: 'hourglass-outline' as const, label: 'Processing', key: 'processing' },
-  { icon: 'cube-outline' as const, label: 'To Ship', key: 'shipped' },
-  { icon: 'car-outline' as const, label: 'To Receive', key: 'shipped' },
-  { icon: 'checkmark-circle-outline' as const, label: 'Delivered', key: 'delivered' },
+  { icon: 'time-outline' as const, label: 'Pending', key: 'pending' as const },
+  { icon: 'hourglass-outline' as const, label: 'Processing', key: 'processing' as const },
+  { icon: 'cube-outline' as const, label: 'To Ship', key: 'shipped' as const },
+  { icon: 'car-outline' as const, label: 'To Receive', key: 'shipped' as const },
+  { icon: 'checkmark-circle-outline' as const, label: 'Delivered', key: 'delivered' as const },
 ];
 
 const SOCIAL_ITEMS = [
@@ -68,7 +69,7 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, isDarkMode = false }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, isDarkMode = false, onPurchaseItemClick }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
 
   const colors = {
@@ -107,12 +108,8 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
     });
   };
 
-  const handlePurchaseItemClick = (label: string) => {
-    Toast.show({
-      type: 'info',
-      text1: label,
-      text2: 'Purchase history for ' + label,
-    });
+  const handlePurchaseItemClick = (label: string, key: 'pending' | 'processing' | 'shipped' | 'delivered') => {
+    onPurchaseItemClick?.(key);
   };
 
 
@@ -326,7 +323,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 key={item.label}
                 style={styles.purchaseItem}
                 activeOpacity={0.7}
-                onPress={() => handlePurchaseItemClick(item.label)}
+                onPress={() => handlePurchaseItemClick(item.label, item.key)}
               >
                 <View style={[styles.purchaseIconContainer, { backgroundColor: colors.purchaseIconBg }]}>
                   <Ionicons name={item.icon} size={24} color={Colors.sky} />
