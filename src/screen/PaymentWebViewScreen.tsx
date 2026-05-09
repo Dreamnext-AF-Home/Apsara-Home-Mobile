@@ -6,12 +6,14 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import { Colors } from '../constants/colors';
+import Toast from 'react-native-toast-message';
 
 interface PaymentWebViewScreenProps {
   checkoutUrl: string;
@@ -28,16 +30,41 @@ export default function PaymentWebViewScreen({
 }: PaymentWebViewScreenProps) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
+  const webViewRef = React.useRef<WebView>(null);
 
-  const handleNavigationStateChange = (navState: any) => {
-    console.log('[PaymentWebViewScreen] Navigation state changed:', navState.url);
+  const handleNavigationStateChange = async (navState: any) => {
+    const url = navState.url;
+    console.log('[PaymentWebViewScreen] Navigation state changed:', url);
+
     // Check if user has returned to success page
-    if (navState.url.includes('success') || navState.url.includes('payment_success')) {
+    if (url.includes('success') || url.includes('payment_success')) {
       console.log('[PaymentWebViewScreen] Success detected, calling onPaymentSuccess');
       setLoading(false);
       onPaymentSuccess?.();
+      return;
     }
   };
+
+  const handleShouldStartLoadWithRequest = (event: any) => {
+    const { url } = event;
+    console.log('[PaymentWebViewScreen] Trying to navigate to:', url);
+
+    // List of deep link schemes that should be opened externally
+    const deepLinkSchemes = ['gcash://', 'maya://', 'gcashios://', 'mayaios://', 'paymaya://', 'tel:', 'sms:', 'mailto:'];
+    const isDeepLink = deepLinkSchemes.some(scheme => url.toLowerCase().startsWith(scheme));
+
+    if (isDeepLink) {
+      console.log('[PaymentWebViewScreen] Attempting to open deep link:', url);
+      Linking.openURL(url).catch(error => {
+        console.log('[PaymentWebViewScreen] Could not open app, payment gateway will show QR code');
+      });
+      return false; // Don't navigate in WebView - let native side handle it
+    }
+
+    // Allow normal web navigation
+    return true;
+  };
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? '#0f172a' : '#ffffff' }]}>
@@ -67,6 +94,7 @@ export default function PaymentWebViewScreen({
       )}
 
       <WebView
+        ref={webViewRef}
         source={{ uri: checkoutUrl }}
         onNavigationStateChange={handleNavigationStateChange}
         onLoadEnd={() => setLoading(false)}
@@ -77,6 +105,11 @@ export default function PaymentWebViewScreen({
             <ActivityIndicator size="large" color={Colors.sky} />
           </View>
         )}
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+        originWhitelist={['*']}
+        scalesPageToFit={true}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
       />
     </SafeAreaView>
   );
