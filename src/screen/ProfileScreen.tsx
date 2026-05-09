@@ -40,7 +40,7 @@ interface ProfileScreenProps {
   onShowProfileDetails?: (show: boolean) => void;
   onShowReferralNetwork?: (show: boolean) => void;
   isDarkMode?: boolean;
-  onPurchaseItemClick?: (status: 'pending' | 'processing' | 'shipped' | 'delivered') => void;
+  onPurchaseItemClick?: (status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered') => void;
 }
 
 const REFERRAL_STATS = [
@@ -51,6 +51,7 @@ const REFERRAL_STATS = [
 
 const PURCHASE_ITEMS = [
   { icon: 'time-outline' as const, label: 'Pending', key: 'pending' as const },
+  { icon: 'checkmark' as const, label: 'Paid', key: 'paid' as const },
   { icon: 'hourglass-outline' as const, label: 'Processing', key: 'processing' as const },
   { icon: 'cube-outline' as const, label: 'To Ship', key: 'shipped' as const },
   { icon: 'car-outline' as const, label: 'To Receive', key: 'shipped' as const },
@@ -108,7 +109,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
     });
   };
 
-  const handlePurchaseItemClick = (label: string, key: 'pending' | 'processing' | 'shipped' | 'delivered') => {
+  const handlePurchaseItemClick = (label: string, key: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered') => {
     onPurchaseItemClick?.(key);
   };
 
@@ -300,12 +301,15 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
           <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
             <Text style={[styles.purchasesTitle, { color: colors.text }]}>My Purchases</Text>
-            <TouchableOpacity style={styles.purchasesViewAll}>
+            <TouchableOpacity
+              style={styles.purchasesViewAll}
+              onPress={() => handlePurchaseItemClick('View Purchase History', 'delivered')}
+            >
               <View style={styles.purchasesViewAllContainer}>
                 <Text style={[styles.purchasesViewAllText, { color: colors.textSec }]}>View Purchase History</Text>
-                {orderCounts?.all !== undefined && (
+                {orderCounts?.delivered !== undefined && (
                   <View style={styles.countBadge}>
-                    <Text style={styles.countBadgeText}>{orderCounts.all}</Text>
+                    <Text style={styles.countBadgeText}>{orderCounts.delivered}</Text>
                   </View>
                 )}
               </View>
