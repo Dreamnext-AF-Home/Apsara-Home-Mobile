@@ -14,12 +14,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
+import { storageService } from '../../services/storageService';
 
 interface ChatBotIconProps {
   onPress?: () => void;
   position?: 'bottom-right' | 'bottom-left';
   visible?: boolean;
   isDarkMode?: boolean;
+}
+
+interface CollapsedTabStyle {
+  [key: string]: number | string;
 }
 
 interface ChatMessage {
@@ -49,6 +54,7 @@ const SUGGESTED_QUESTIONS = [
 
 export default function ChatBotIcon({ onPress, position = 'bottom-right', visible = true, isDarkMode = false }: ChatBotIconProps) {
   const [chatVisible, setChatVisible] = useState(false);
+  const [isIconHidden, setIsIconHidden] = useState(false);
   const [bubbleMessageIndex, setBubbleMessageIndex] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -65,8 +71,36 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
   const floatingAnim = useRef(new Animated.Value(0)).current;
   const headNodAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const hideSlideAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(0);
+
+  // Load saved icon hidden state on mount
+  useEffect(() => {
+    const loadIconState = async () => {
+      try {
+        const savedState = await storageService.getChatbotHidden();
+        setIsIconHidden(savedState);
+        // Instantly set animation value without animating on mount
+        hideSlideAnim.setValue(savedState ? 100 : 0);
+      } catch (error) {
+        console.error('Error loading chatbot state:', error);
+      }
+    };
+    loadIconState();
+  }, []);
+
+  // Save icon hidden state whenever it changes
+  useEffect(() => {
+    const saveIconState = async () => {
+      try {
+        await storageService.setChatbotHidden(isIconHidden);
+      } catch (error) {
+        console.error('Error saving chatbot state:', error);
+      }
+    };
+    saveIconState();
+  }, [isIconHidden]);
 
   // Vertical Floating Animation
   useEffect(() => {
@@ -173,6 +207,25 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
 
   const closeChat = () => {
     setChatVisible(false);
+  };
+
+  const hideIcon = () => {
+    setIsIconHidden(true);
+    Animated.timing(hideSlideAnim, {
+      toValue: 100,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const showIcon = () => {
+    Animated.timing(hideSlideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsIconHidden(false);
+    });
   };
 
   useEffect(() => {
@@ -299,7 +352,7 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
   return (
     <View style={styles.chatBotContainer}>
       {/* Floating Message Bubble */}
-      {!chatVisible && (
+      {!chatVisible && !isIconHidden && (
         <View
           style={[
             styles.messageBubbleContainer,
@@ -333,16 +386,25 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
                 inputRange: [0, 0.25, 0.5, 0.75, 1],
                 outputRange: ['0deg', '-13deg', '12deg', '-10deg', '0deg'],
               })},
+              { translateX: hideSlideAnim.interpolate({
+                inputRange: [0, 100],
+                outputRange: [0, position === 'bottom-right' ? 100 : -100],
+              })},
             ],
             [position === 'bottom-right' ? 'right' : 'left']: 16,
+            opacity: hideSlideAnim.interpolate({
+              inputRange: [0, 100],
+              outputRange: [1, 0],
+            }),
           },
         ]}
+        pointerEvents={isIconHidden ? 'none' : 'auto'}
       >
-
         <TouchableOpacity
           style={[styles.chatButton, isDarkMode && styles.chatButtonDark]}
           onPress={openChat}
           activeOpacity={0.8}
+          onLongPress={hideIcon}
         >
           <Image
             source={require('../../../assets/sir.png')}
@@ -354,6 +416,47 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
               <Text style={styles.badgeText}>{messages.length - 1}</Text>
             </View>
           )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.hideButton}
+          onPress={hideIcon}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Hidden Icon Tab */}
+      <Animated.View
+        style={[
+          styles.collapsedTab,
+          {
+            [position === 'bottom-right' ? 'right' : 'left']: 0,
+            transform: [
+              { translateX: hideSlideAnim.interpolate({
+                inputRange: [0, 100],
+                outputRange: [position === 'bottom-right' ? 100 : -100, 0],
+              })},
+            ],
+            opacity: hideSlideAnim.interpolate({
+              inputRange: [0, 100],
+              outputRange: [0, 1],
+            }),
+          },
+          isDarkMode && styles.collapsedTabDark,
+        ]}
+        pointerEvents={isIconHidden ? 'auto' : 'none'}
+      >
+        <TouchableOpacity
+          style={styles.collapsedTabButton}
+          onPress={showIcon}
+          activeOpacity={0.7}
+        >
+          <Image
+            source={require('../../../assets/sir.png')}
+            style={styles.collapsedTabIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </Animated.View>
 
@@ -382,6 +485,13 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
                   <Text style={[styles.onlineStatus, isDarkMode && styles.onlineStatusDark]}>Online • Always here to help</Text>
                 </View>
               </View>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={hideIcon}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-down" size={24} color={Colors.textSecondary} />
+              </TouchableOpacity>
             </View>
 
             {/* Messages List */}
@@ -836,6 +946,59 @@ const styles = StyleSheet.create({
     backgroundColor: '#374151',
     color: '#f8fafc',
     borderColor: '#4b5563',
+  },
+  hideButton: {
+    position: 'absolute',
+    right: -12,
+    top: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  collapsedTab: {
+    position: 'absolute',
+    bottom: 24,
+    width: 48,
+    height: 48,
+    zIndex: 998,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.sky,
+    borderRightWidth: 0,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: -3, height: 3 },
+  },
+  collapsedTabDark: {
+    backgroundColor: '#374151',
+    borderColor: '#0284c7',
+  },
+  collapsedTabButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  collapsedTabIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  closeButton: {
+    padding: 8,
+    marginLeft: 8,
   },
 });
 
