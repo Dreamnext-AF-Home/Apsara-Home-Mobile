@@ -72,9 +72,12 @@ interface CheckoutScreenProps {
     name: string;
     phone?: string;
     email?: string;
+    referrer_username?: string;
+    referrer_name?: string;
   } | null;
   onBack?: () => void;
   onPlaceOrder?: (orderData: any) => Promise<void>;
+  onNavigateToOrderSuccess?: (orderData: any) => void;
   onShopNavigate?: (brandId: number, shopName: string) => void;
   isDarkMode?: boolean;
 }
@@ -85,6 +88,7 @@ export default function CheckoutScreen({
   user,
   onBack,
   onPlaceOrder,
+  onNavigateToOrderSuccess,
   onShopNavigate,
   isDarkMode = false,
 }: CheckoutScreenProps) {
@@ -236,32 +240,63 @@ export default function CheckoutScreen({
 
 
   const handlePlaceOrder = async () => {
+    console.log('[CheckoutScreen] Place order clicked');
+
+    if (!item || !user || !selectedAddress) {
+      console.log('[CheckoutScreen] Missing required fields:', {
+        hasItem: !!item,
+        hasUser: !!user,
+        hasAddress: !!selectedAddress,
+      });
+      Toast.show({
+        type: 'error',
+        text1: 'Missing Information',
+        text2: 'Please complete all required fields',
+      });
+      return;
+    }
+
+    console.log('[CheckoutScreen] All validation passed, setting loading to true');
     setLoading(true);
+
     try {
       const orderData = {
-        items: cartItems,
-        shippingAddress: shippingAddresses.find(a => a.isDefault),
-        shippingMethod: selectedShippingMethod,
-        paymentMethod: selectedPaymentMethod,
-        subtotal,
+        item,
+        user,
+        selectedAddress,
+        selectedPaymentMethod,
         shippingCost,
-        discount,
+        voucherDiscount,
+        selectedVoucher,
+        subtotal,
+        shopDiscount,
         total,
+        token,
       };
 
-      await onPlaceOrder?.(orderData);
-      Toast.show({
-        type: 'success',
-        text1: 'Order Placed!',
-        text2: 'Thank you for your purchase',
+      console.log('[CheckoutScreen] Order data prepared:', {
+        productName: item.product_name,
+        quantity: item.quantity,
+        total,
+        paymentMethod: selectedPaymentMethod,
       });
-    } catch (error) {
+
+      // Simulate processing delay so loading indicator is visible
+      console.log('[CheckoutScreen] Waiting 1 second for loading indicator...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log('[CheckoutScreen] Calling onNavigateToOrderSuccess callback');
+      const result = onNavigateToOrderSuccess?.(orderData);
+      console.log('[CheckoutScreen] Navigation callback result:', result);
+    } catch (error: any) {
+      console.error('[CheckoutScreen] Error occurred:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to place order',
+        text2: 'Failed to proceed to order summary',
       });
     } finally {
+      console.log('[CheckoutScreen] Setting loading to false');
       setLoading(false);
     }
   };
@@ -459,6 +494,27 @@ export default function CheckoutScreen({
           )}
           </View>
         </View>
+
+        {/* Referred By Section */}
+        {user?.referrer_username && (
+          <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
+            <View style={[styles.shippingHeaderRow, { borderBottomColor: colors.border, backgroundColor: colors.containerBg }]}>
+              <View style={styles.shippingHeaderInfo}>
+                <Ionicons name="person" size={16} color={Colors.sky} />
+                <Text style={[styles.shippingTitle, { color: colors.text }]}>Referred By</Text>
+              </View>
+            </View>
+
+            <View style={[styles.shippingContent, { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }]}>
+              <View style={[styles.referrerCard, { backgroundColor: colors.borderLight, borderColor: Colors.sky }]}>
+                <Ionicons name="person-circle" size={32} color={Colors.sky} />
+                <Text style={[styles.referrerUsername, { color: colors.text }]}>
+                  @{user.referrer_username}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Shipping Options Section */}
         <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
@@ -696,6 +752,18 @@ export default function CheckoutScreen({
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingContainer, { backgroundColor: colors.containerBg }]}>
+            <ActivityIndicator size="large" color={Colors.sky} />
+            <Text style={[styles.loadingText, { color: colors.text, marginTop: 16 }]}>
+              Processing your order...
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1193,5 +1261,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     marginLeft: 12,
+  },
+  referrerCard: {
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  referrerUsername: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContainer: {
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 200,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
