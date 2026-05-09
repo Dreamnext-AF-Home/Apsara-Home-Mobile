@@ -10,6 +10,7 @@ import { Colors } from '../constants/colors';
 import PrimaryButton from '../components/Button/PrimaryButton';
 import OutlineButton from '../components/Button/OutlineButton';
 import { referralService, ReferralTree } from '../services/referralService';
+import { getBadgeImageSource } from '../constants/tierConfig';
 import { accountService } from '../services/accountService';
 import { orderService } from '../services/orderService';
 import LevelProgress from '../components/LevelProgress/LevelProgress';
@@ -24,7 +25,7 @@ interface User {
   username?: string;
   avatar_url?: string;
   badge_name?: string;
-  badge_image?: string;
+  badge_image?: string | any;
   monthly_activation?: {
     remaining_pv: number;
   };
@@ -72,6 +73,7 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, closeReferralNetwork, isDarkMode = false, onPurchaseItemClick }: ProfileScreenProps) {
+  console.log('[ProfileScreen] User object received:', { name: user?.name, badge_name: user?.badge_name, badge_image: user?.badge_image, avatar_url: user?.avatar_url });
   const insets = useSafeAreaInsets();
 
   const colors = {
@@ -244,14 +246,8 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                   <>
                     <View style={styles.usernameDot} />
                     <View style={styles.userBadge}>
-                      {user.badge_image ? (
-                        <Image source={{ uri: user.badge_image }} style={styles.badgeImageSmall} />
-                      ) : (
-                        <>
-                          <Ionicons name="shield-checkmark" size={10} color={Colors.white} />
-                          <Text style={styles.userBadgeText}>{user.badge_name}</Text>
-                        </>
-                      )}
+                      <Ionicons name="shield-checkmark" size={10} color={Colors.white} />
+                      <Text style={styles.userBadgeText}>{user.badge_name}</Text>
                     </View>
                   </>
                 )}
