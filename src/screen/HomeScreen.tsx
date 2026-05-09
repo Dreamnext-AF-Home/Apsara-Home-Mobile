@@ -11,6 +11,7 @@ import axios from 'axios';
 import { Colors } from '../constants/colors';
 import { authService, BrandItem, CategoryItem } from '../services/authService';
 import { productService } from '../services/productService';
+import { getBadgeImageSource } from '../constants/tierConfig';
 import type { ProductCard } from '../services/productService';
 import { API_CONFIG } from '../config/api';
 import ItemCard from '../components/Items/ItemCard';
@@ -31,6 +32,8 @@ interface HomeScreenProps {
   user?: {
     name?: string;
     avatar_url?: string;
+    badge_name?: string;
+    badge_image?: string | any;
     monthly_activation?: {
       remaining_pv: number;
     };
@@ -298,6 +301,7 @@ function HomeScreen({
   onShopByBrandPress = () => {},
 }: HomeScreenProps) {
   console.log('📱 HomeScreen MOUNTED - Categories:', categories.length, 'Brands:', brands.length, 'Rooms:', roomTypes.length);
+  console.log('[HomeScreen] User object on mount:', { name: user?.name, badge_name: user?.badge_name, badge_image: user?.badge_image, avatar_url: user?.avatar_url, fullUser: JSON.stringify(user) });
 
   const colors = {
     bg: isDarkMode ? '#0f172a' : '#f8fbff',
@@ -507,6 +511,65 @@ function HomeScreen({
         />
       }
     >
+      {/* Ranking Badge */}
+      {user?.badge_name && (
+        <View style={[styles.rankingBadgeSection, { borderBottomColor: colors.border }]}>
+          {(() => {
+            console.log('[HomeScreen] Badge Debug:', {
+              badge_name: user?.badge_name,
+              badge_image: user?.badge_image,
+              hasImage: !!user?.badge_image,
+              imageType: typeof user?.badge_image,
+              user: user,
+            });
+            return null;
+          })()}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
+            <View style={styles.rankingBadgeWrapper}>
+              {user.badge_image ? (() => {
+                const badgeSource = getBadgeImageSource(user.badge_image);
+                return badgeSource ? (
+                  <Image
+                    source={badgeSource}
+                    style={styles.rankingBadgeImage}
+                    onLoad={() => console.log('[HomeScreen] Badge image loaded:', user.badge_image)}
+                    onError={(e) => console.log('[HomeScreen] Badge image error:', e, user.badge_image)}
+                  />
+                ) : (
+                  <>
+                    {console.log('[HomeScreen] No badge source found, showing icon instead')}
+                    <Ionicons name="shield-checkmark" size={24} color={Colors.white} />
+                  </>
+                );
+              })() : (
+                <>
+                  {console.log('[HomeScreen] No badge_image, showing icon instead')}
+                  <Ionicons name="shield-checkmark" size={24} color={Colors.white} />
+                </>
+              )}
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <View style={styles.rankingTextContainer}>
+                <Text style={[styles.rankingBadgeName, { color: colors.text }]}>{user.badge_name}</Text>
+                <Text style={[styles.rankingBadgeSubtext, { color: colors.textSec }]}>You are already {user.badge_name.toLowerCase()}</Text>
+              </View>
+            </View>
+
+            <LinearGradient
+              colors={isDarkMode ? ['rgba(59, 130, 246, 0.2)', 'rgba(59, 130, 246, 0.1)'] : ['rgba(14, 165, 233, 0.15)', 'rgba(14, 165, 233, 0.05)']}
+              style={[styles.marketingCard, { borderColor: colors.border }]}
+            >
+              <Ionicons name="arrow-up" size={14} color={Colors.sky} />
+              <View style={styles.marketingContent}>
+                <Text style={[styles.marketingTitle, { color: colors.text }]}>Keep going</Text>
+                <Text style={[styles.marketingSubtitle, { color: colors.textSec }]}>Refer = Earn more</Text>
+              </View>
+            </LinearGradient>
+          </View>
+        </View>
+      )}
+
       <View style={[styles.statsBar, { backgroundColor: colors.statsBg, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={[styles.statsItem, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.7}>
           <View style={styles.statsMain}>
@@ -851,6 +914,45 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.sky,
   },
   section: { gap: 0, paddingHorizontal: 4 },
+  rankingBadgeSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    marginHorizontal: -8,
+    marginBottom: 0,
+    borderBottomWidth: 0.5,
+    gap: 12,
+  },
+  rankingBadgeWrapper: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  rankingBadgeImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    resizeMode: 'contain' as any,
+  },
+  rankingTextContainer: {
+    flex: 1,
+    gap: 2,
+  },
+  rankingBadgeName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  rankingBadgeSubtext: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
   statsBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1218,6 +1320,31 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  marketingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    minWidth: 110,
+    flexShrink: 0,
+  },
+  marketingContent: {
+    flex: 1,
+    gap: 2,
+  },
+  marketingTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  marketingSubtitle: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
 
 });
