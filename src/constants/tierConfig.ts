@@ -85,3 +85,35 @@ export const getTierColor = (tier: string): string => {
   }
   return '#38bdf8';
 };
+
+export const getBadgeImage = (rank: number | null | undefined): string | undefined => {
+  if (!rank) return undefined;
+
+  const badgeMap: Record<number, string> = {
+    1: 'homeStarter',
+    2: 'homeBuilder',
+    3: 'homeStylist',
+    4: 'lifestyleConsultant',
+    5: 'lifestyleElite',
+  };
+
+  const badgeName = badgeMap[rank];
+  if (!badgeName) return undefined;
+
+  // Return a reference that can be resolved at render time
+  return `badge_${badgeName}`;
+};
+
+export const getBadgeImageSource = (badgeReference: string | undefined): any => {
+  if (!badgeReference) return undefined;
+
+  const sourceMap: Record<string, any> = {
+    'badge_homeStarter': require('../../assets/Badge/homeStarter.png'),
+    'badge_homeBuilder': require('../../assets/Badge/homeBuilder.png'),
+    'badge_homeStylist': require('../../assets/Badge/homeStylist.png'),
+    'badge_lifestyleConsultant': require('../../assets/Badge/lifestyleConsultant.png'),
+    'badge_lifestyleElite': require('../../assets/Badge/lifestyleElite.png'),
+  };
+
+  return sourceMap[badgeReference] || undefined;
+};
