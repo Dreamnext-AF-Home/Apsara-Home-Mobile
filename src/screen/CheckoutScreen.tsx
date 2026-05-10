@@ -456,7 +456,7 @@ export default function CheckoutScreen({
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Order Item Section - Shopee Style */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
           {/* Shop Header */}
           {item.brand_name && (
             <TouchableOpacity
@@ -517,7 +517,7 @@ export default function CheckoutScreen({
         </View>
 
         {/* Shipping Address Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
           <View style={[styles.shippingHeaderRow, { borderBottomColor: colors.border, backgroundColor: colors.containerBg }]}>
             <View style={styles.shippingHeaderInfo}>
               <Ionicons name="location" size={16} color={Colors.sky} />
@@ -593,7 +593,7 @@ export default function CheckoutScreen({
 
         {/* Referred By Section */}
         {user?.referrer_username && (
-          <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
+          <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
             <View style={[styles.shippingHeaderRow, { borderBottomColor: colors.border, backgroundColor: colors.containerBg }]}>
               <View style={styles.shippingHeaderInfo}>
                 <Ionicons name="person" size={16} color={Colors.sky} />
@@ -613,7 +613,7 @@ export default function CheckoutScreen({
         )}
 
         {/* Shipping Options Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
           <View style={[styles.shippingHeaderRow, { borderBottomColor: colors.border, backgroundColor: colors.containerBg }]}>
             <View style={styles.shippingHeaderInfo}>
               <Ionicons name="layers" size={16} color={Colors.sky} />
@@ -653,7 +653,7 @@ export default function CheckoutScreen({
         </View>
 
         {/* Payment Method Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border, borderWidth: 1 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Payment Method</Text>
             {!selectedPaymentMethod && (
@@ -689,7 +689,7 @@ export default function CheckoutScreen({
         </View>
 
         {/* Voucher Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border, borderWidth: 1 }]}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Vouchers</Text>
           <View style={styles.voucherList}>
             {vouchers.map((voucher) => (
@@ -717,7 +717,7 @@ export default function CheckoutScreen({
         </View>
 
         {/* Price Summary Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border, borderWidth: 1 }]}>
           <Text style={[styles.paymentDetailsLabel, { color: colors.text }]}>Payment Details</Text>
 
           <View style={[styles.priceRow, { borderBottomColor: colors.borderLight }]}>
