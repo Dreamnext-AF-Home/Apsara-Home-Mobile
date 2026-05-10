@@ -832,26 +832,34 @@ export default function CheckoutScreen({
           },
         ]}
       >
-        <TouchableOpacity
-          style={[
-            styles.placeOrderBtn,
-            {
-              backgroundColor: Colors.sky,
-              opacity: loading ? 0.6 : 1,
-            },
-          ]}
-          onPress={handlePlaceOrder}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <>
-              <Ionicons name="bag-check" size={18} color={Colors.white} />
-              <Text style={styles.placeOrderBtnText}>Place Order</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        <View style={styles.footerContent}>
+          <View style={styles.footerPrice}>
+            <Text style={[styles.footerPriceLabel, { color: colors.textSec }]}>Total</Text>
+            <Text style={[styles.footerPriceValue, { color: Colors.sky }]}>
+              ₱{total.toLocaleString()}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.placeOrderBtn,
+              {
+                backgroundColor: Colors.sky,
+                opacity: loading ? 0.6 : 1,
+              },
+            ]}
+            onPress={handlePlaceOrder}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <>
+                <Ionicons name="bag-check" size={18} color={Colors.white} />
+                <Text style={styles.placeOrderBtnText}>Place Order</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Loading Overlay */}
@@ -1122,6 +1130,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
   },
+  footerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  footerPrice: {
+    flex: 1,
+  },
+  footerPriceLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  footerPriceValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
   placeOrderBtn: {
     height: 48,
     borderRadius: 10,
@@ -1129,6 +1155,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    paddingHorizontal: 16,
   },
   placeOrderBtnText: {
     fontSize: 14,
