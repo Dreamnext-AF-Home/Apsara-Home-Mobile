@@ -10,6 +10,7 @@ import {
   Image,
   RefreshControl,
   BackHandler,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,6 +110,8 @@ export default function PurchasesScreen({
   const [timeLeft, setTimeLeft] = useState<Record<number, string>>({});
   const [paymentLoading, setPaymentLoading] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<any>(initialStatus);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const colors = {
     bg: isDarkMode ? '#0f172a' : '#f0f9ff',
@@ -383,7 +386,14 @@ export default function PurchasesScreen({
             data={orders}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item: order }) => (
-              <View style={[styles.orderCard, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.orderCard, { backgroundColor: colors.containerBg, borderColor: colors.border }]}
+                onPress={() => {
+                  setSelectedOrder(order);
+                  setShowDetailModal(true);
+                }}
+                activeOpacity={0.7}
+              >
                 {/* Order Header */}
                 <View style={[styles.orderHeader, { borderBottomColor: colors.border }]}>
                   <View>
@@ -523,7 +533,7 @@ export default function PurchasesScreen({
                     </View>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
             scrollEnabled={true}
             showsVerticalScrollIndicator={false}
@@ -538,6 +548,127 @@ export default function PurchasesScreen({
           />
         )}
       </View>
+
+      {/* Order Details Modal */}
+      <Modal
+        visible={showDetailModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: colors.bg }]}>
+          {/* Modal Header */}
+          <View style={[styles.modalHeader, { backgroundColor: isDarkMode ? '#1f2937' : Colors.white, borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => setShowDetailModal(false)} style={styles.modalCloseBtn}>
+              <Ionicons name="chevron-back-outline" size={24} color={isDarkMode ? '#e5e7eb' : Colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: isDarkMode ? '#f8fafc' : Colors.text }]}>Order Details</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          {selectedOrder && (
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {/* Order Number & Status */}
+              <View style={[styles.detailCard, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSec }]}>Order Number</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>#{selectedOrder.order_number}</Text>
+                </View>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSec }]}>Order Date</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    {new Date(selectedOrder.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSec }]}>Status</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: `${STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG].color}20` }]}>
+                    <Ionicons
+                      name={STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG].icon as any}
+                      size={14}
+                      color={STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG].color}
+                    />
+                    <Text style={[styles.statusText, { color: STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG].color }]}>
+                      {STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG].label}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Order Items */}
+              <View style={[styles.detailCard, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Items Ordered</Text>
+                {selectedOrder.items.map((item, index) => (
+                  <View key={`${item.product_id}-${index}`}>
+                    <View style={styles.detailItemRow}>
+                      {item.image && (
+                        <Image
+                          source={{ uri: item.image }}
+                          style={styles.detailItemImage}
+                          resizeMode="contain"
+                        />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={2}>{item.name}</Text>
+                        <Text style={[styles.itemQty, { color: colors.textSec }]}>Qty: {item.quantity}</Text>
+                        {(item.selected_color || item.selected_size || item.selected_type) && (
+                          <Text style={[styles.itemVariant, { color: colors.textSec }]}>
+                            {[item.selected_color, item.selected_size, item.selected_type].filter(Boolean).join(', ')}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[styles.itemPrice, { color: Colors.sky }]}>₱{(item.price * item.quantity).toLocaleString()}</Text>
+                    </View>
+                    {index < selectedOrder.items.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                  </View>
+                ))}
+              </View>
+
+              {/* Order Summary */}
+              <View style={[styles.detailCard, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Order Summary</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.textSec }]}>Subtotal</Text>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>
+                    ₱{(selectedOrder.total_amount - selectedOrder.shipping_fee).toLocaleString()}
+                  </Text>
+                </View>
+                {selectedOrder.shipping_fee > 0 && (
+                  <View style={styles.summaryRow}>
+                    <Text style={[styles.summaryLabel, { color: colors.textSec }]}>Shipping Fee</Text>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>₱{selectedOrder.shipping_fee.toLocaleString()}</Text>
+                  </View>
+                )}
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.text, fontWeight: '700' }]}>Total Amount</Text>
+                  <Text style={[styles.totalAmount, { color: Colors.sky }]}>₱{selectedOrder.total_amount.toLocaleString()}</Text>
+                </View>
+              </View>
+
+              {/* Payment & Delivery Info */}
+              <View style={[styles.detailCard, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Payment & Delivery</Text>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.textSec }]}>Payment Method</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedOrder.payment_method}</Text>
+                </View>
+                {selectedOrder.tracking_number && (
+                  <>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailLabel, { color: colors.textSec }]}>Tracking Number</Text>
+                      <Text style={[styles.detailValue, { color: Colors.sky }]}>{selectedOrder.tracking_number}</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -780,5 +911,91 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Colors.text,
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalCloseBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    gap: 12,
+    paddingBottom: 30,
+  },
+  detailCard: {
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    marginVertical: 8,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  detailItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  detailItemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  summaryValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  totalAmount: {
+    fontSize: 16,
+    fontWeight: '800',
   },
 });
