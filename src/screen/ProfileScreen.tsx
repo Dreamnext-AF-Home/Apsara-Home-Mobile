@@ -57,7 +57,7 @@ const PURCHASE_ITEMS = [
   { icon: 'checkmark' as const, label: 'Paid', key: 'paid' as const },
   { icon: 'hourglass-outline' as const, label: 'Processing', key: 'processing' as const },
   { icon: 'cube-outline' as const, label: 'To Ship', key: 'shipped' as const },
-  { icon: 'car-outline' as const, label: 'To Receive', key: 'shipped' as const },
+  { icon: 'car-outline' as const, label: 'To Receive', key: 'to_receive' as const },
   { icon: 'checkmark-circle-outline' as const, label: 'Delivered', key: 'delivered' as const },
 ];
 
@@ -114,8 +114,13 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
     });
   };
 
-  const handlePurchaseItemClick = (label: string, key: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered') => {
+  const handlePurchaseItemClick = (label: string, key: 'pending' | 'paid' | 'processing' | 'shipped' | 'to_receive' | 'delivered') => {
     onPurchaseItemClick?.(key);
+  };
+
+  const getPurchaseCount = (key: 'pending' | 'paid' | 'processing' | 'shipped' | 'to_receive' | 'delivered') => {
+    if (!orderCounts) return 0;
+    return Number(orderCounts?.[key] ?? 0);
   };
 
 
@@ -168,7 +173,13 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
     if (!token) return;
     try {
       const data = await orderService.getOrderCounts(token);
-      setOrderCounts(data);
+      console.log('[ProfileScreen] orderCounts payload:', JSON.stringify(data));
+      setOrderCounts({
+        ...data,
+        to_receive: Number(data?.to_receive ?? data?.out_for_delivery ?? data?.outfordelivery ?? data?.toReceive ?? 0),
+        delivered: Number(data?.delivered ?? 0),
+        shipped: Number(data?.shipped ?? data?.to_ship ?? data?.toship ?? 0),
+      });
     } catch (error: any) {
       console.error('Error fetching order counts:', error);
     }
@@ -331,12 +342,12 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 activeOpacity={0.7}
                 onPress={() => handlePurchaseItemClick(item.label, item.key)}
               >
-                <View style={[styles.purchaseIconContainer, { backgroundColor: colors.purchaseIconBg }]}>
+                  <View style={[styles.purchaseIconContainer, { backgroundColor: colors.purchaseIconBg }]}>
                   <Ionicons name={item.icon} size={24} color={Colors.sky} />
-                  {item.key && orderCounts?.[item.key] !== undefined && orderCounts[item.key] > 0 && (
+                  {item.key && getPurchaseCount(item.key) > 0 && (
                     <View style={[styles.itemCountBadge, { borderColor: isDarkMode ? colors.containerBg : Colors.white }]}>
                       <Text style={styles.itemCountBadgeText}>
-                        {orderCounts[item.key] > 99 ? '99+' : orderCounts[item.key]}
+                        {getPurchaseCount(item.key) > 99 ? '99+' : getPurchaseCount(item.key)}
                       </Text>
                     </View>
                   )}
@@ -941,6 +952,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
   },
