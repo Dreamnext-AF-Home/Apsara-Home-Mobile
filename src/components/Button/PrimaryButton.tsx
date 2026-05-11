@@ -19,6 +19,7 @@ interface ButtonProps {
   textStyle?: TextStyle;
   icon?: string;
   iconPosition?: 'left' | 'right';
+  size?: 'small' | 'large';
 }
 
 export default function Button({
@@ -30,6 +31,7 @@ export default function Button({
   textStyle,
   icon,
   iconPosition = 'left',
+  size = 'large',
 }: ButtonProps) {
   return (
     <Pressable
@@ -37,6 +39,7 @@ export default function Button({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.base,
+        size === 'small' && styles.small,
         pressed && styles.pressed,
         (disabled || loading) && styles.disabled,
         style,
@@ -47,11 +50,11 @@ export default function Button({
       ) : (
         <View style={styles.content}>
           {icon && iconPosition === 'left' && (
-            <Ionicons name={icon as any} size={20} color="#ffffff" style={styles.iconLeft} />
+            <Ionicons name={icon as any} size={size === 'small' ? 16 : 20} color="#ffffff" style={styles.iconLeft} />
           )}
-          <Text style={[styles.label, textStyle]}>{title}</Text>
+          <Text style={[styles.label, size === 'small' && styles.smallLabel, textStyle]}>{title}</Text>
           {icon && iconPosition === 'right' && (
-            <Ionicons name={icon as any} size={20} color="#ffffff" style={styles.iconRight} />
+            <Ionicons name={icon as any} size={size === 'small' ? 16 : 20} color="#ffffff" style={styles.iconRight} />
           )}
         </View>
       )}
@@ -67,6 +70,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  small: {
+    height: 40,
+    paddingHorizontal: 16,
   },
   pressed: {
     backgroundColor: '#0284c7',
@@ -84,6 +91,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
     letterSpacing: 0.3,
+  },
+  smallLabel: {
+    fontSize: 13,
   },
   iconLeft: {
     marginRight: 8,

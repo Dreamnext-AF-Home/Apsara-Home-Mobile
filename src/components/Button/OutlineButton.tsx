@@ -20,6 +20,7 @@ interface OutlineButtonProps {
   icon?: string;
   iconPosition?: 'left' | 'right';
   color?: string;
+  size?: 'small' | 'large';
 }
 
 export default function OutlineButton({
@@ -32,6 +33,7 @@ export default function OutlineButton({
   icon,
   iconPosition = 'left',
   color = '#0ea5e9',
+  size = 'large',
 }: OutlineButtonProps) {
   return (
     <Pressable
@@ -39,6 +41,7 @@ export default function OutlineButton({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.base,
+        size === 'small' && styles.small,
         { borderColor: color },
         pressed && styles.pressed,
         (disabled || loading) && styles.disabled,
@@ -50,11 +53,11 @@ export default function OutlineButton({
       ) : (
         <View style={styles.content}>
           {icon && iconPosition === 'left' && (
-            <Ionicons name={icon as any} size={18} color={color} style={styles.iconLeft} />
+            <Ionicons name={icon as any} size={size === 'small' ? 14 : 18} color={color} style={styles.iconLeft} />
           )}
-          <Text style={[styles.label, { color }, textStyle]}>{title}</Text>
+          <Text style={[styles.label, size === 'small' && styles.smallLabel, { color }, textStyle]}>{title}</Text>
           {icon && iconPosition === 'right' && (
-            <Ionicons name={icon as any} size={18} color={color} style={styles.iconRight} />
+            <Ionicons name={icon as any} size={size === 'small' ? 14 : 18} color={color} style={styles.iconRight} />
           )}
         </View>
       )}
@@ -72,6 +75,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
+  small: {
+    height: 40,
+    paddingHorizontal: 16,
+  },
   pressed: {
     opacity: 0.7,
   },
@@ -87,6 +94,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  smallLabel: {
+    fontSize: 12,
   },
   iconLeft: {
     marginRight: 8,
