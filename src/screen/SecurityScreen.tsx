@@ -194,11 +194,11 @@ export default function SecurityScreen({ onBack, isDarkMode, token }: SecuritySc
           colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
-          style={[styles.header, { paddingTop: insets.top, borderBottomColor: colors.border }]}
+          style={[styles.header, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1f2937' : Colors.white, borderBottomColor: colors.border }]}
         >
           <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#f8fafc' : Colors.text} />
+            <Ionicons name="chevron-back-outline" size={24} color={isDarkMode ? '#e5e7eb' : Colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]}>Security</Text>
           <View style={{ width: 40 }} />
@@ -372,13 +372,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginLeft: -10,
+    marginRight: 12,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 20,
