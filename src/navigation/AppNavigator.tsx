@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View, Text, Image, TouchableOpacity, Pressable,
   StyleSheet, Modal, PanResponder, Animated, BackHandler, Clipboard, Linking, AppState,
 } from 'react-native';
+import type { AppStateStatus } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -229,6 +230,17 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const { authService } = require('../services/authService');
   const { productService } = require('../services/productService');
 
+  const refreshNotificationCount = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await orderService.getNotifications(token);
+      setNotificationUnreadCount(data.unread_count || 0);
+      setNotificationTotalCount(data.total || data.notifications?.length || 0);
+    } catch (error) {
+      console.error('Error refreshing notification count:', error);
+    }
+  }, [token]);
+
   // Initialize cache and preload data on mount
   useEffect(() => {
     const init = async () => {
@@ -270,6 +282,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
 
   // Setup push notifications
   useEffect(() => {
+    let isMounted = true;
+    let notificationSubscription: any;
+    let responseSubscription: any;
+
     const setupNotifications = async () => {
       try {
         if (!Device.isDevice) {
@@ -290,7 +306,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
         }
 
         const pushToken = await Notifications.getExpoPushTokenAsync({ projectId });
-        setDeviceToken(pushToken.data);
+        if (isMounted) setDeviceToken(pushToken.data);
         console.log('📱 DEVICE TOKEN:', pushToken.data);
 
         // Set notification handler
@@ -305,7 +321,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
         });
 
         // Listen for incoming notifications (when app is in foreground)
-        const notificationSubscription = Notifications.addNotificationReceivedListener((notification: any) => {
+        notificationSubscription = Notifications.addNotificationReceivedListener((notification: any) => {
           console.log('🔔 Notification Received:', notification);
           Toast.show({
             type: 'info',
@@ -313,34 +329,25 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             text2: notification.request.content.body || '',
           });
 
-          // Update notification count in real-time
-          if (token) {
-            orderService.getNotifications(token)
-              .then(data => {
-                console.log('🔔 Updated notification count:', data.unread_count);
-                setNotificationUnreadCount(data.unread_count || 0);
-                setNotificationTotalCount(data.total || data.notifications?.length || 0);
-              })
-              .catch(error => console.error('Error updating notification count:', error));
-          }
+          refreshNotificationCount();
         });
 
         // Listen for notification responses (when user taps notification)
-        const responseSubscription = Notifications.addNotificationResponseListener((response: any) => {
+        responseSubscription = Notifications.addNotificationResponseListener((response: any) => {
           console.log('📱 Notification Tapped:', response.notification);
         });
-
-        return () => {
-          notificationSubscription.remove();
-          responseSubscription.remove();
-        };
       } catch (error) {
         console.log('Notification setup error:', error);
       }
     };
 
     setupNotifications();
-  }, []);
+    return () => {
+      isMounted = false;
+      notificationSubscription?.remove?.();
+      responseSubscription?.remove?.();
+    };
+  }, [refreshNotificationCount]);
 
   // Handle deep linking for payment redirects
   useEffect(() => {
@@ -482,21 +489,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       .then(cartRes => setCartCount(extractCount(cartRes.data)))
       .catch(() => {});
 
-    // Fetch notifications
-    const fetchNotificationCount = () => {
-      orderService.getNotifications(token)
-        .then(data => {
-          setNotificationUnreadCount(data.unread_count || 0);
-          setNotificationTotalCount(data.total || data.notifications?.length || 0);
-        })
-        .catch(() => {});
-    };
-
-    // Initial fetch
-    fetchNotificationCount();
-
-    // Poll notification count only every 30 seconds when app is active
-    const notificationPollInterval = setInterval(fetchNotificationCount, 30000);
+    // Initial notification fetch only - real-time updates come from push notifications
+    refreshNotificationCount();
 
     // Fetch home screen data ONCE when token becomes available
     if (!homeInitialFetchRef.current) {
@@ -509,11 +503,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       wishlistInitialFetchRef.current = true;
       fetchWishlistData();
     }
-
-    return () => {
-      clearInterval(notificationPollInterval);
-    };
-  }, [token]);
+  }, [refreshNotificationCount]);
 
   const fetchHomeData = async () => {
     if (!token) return;
@@ -690,20 +680,15 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   // Update notification count when app comes to foreground
   useEffect(() => {
     const handleAppStateChange = (state: AppStateStatus) => {
-      if (state === 'active' && token) {
-        console.log('🔔 App came to foreground, refreshing notification count');
-        orderService.getNotifications(token)
-          .then(data => {
-            setNotificationUnreadCount(data.unread_count || 0);
-            setNotificationTotalCount(data.total || data.notifications?.length || 0);
-          })
-          .catch(error => console.error('Error refreshing notification count:', error));
+      if (state === 'active') {
+        console.log('???? App came to foreground, refreshing notification count');
+        refreshNotificationCount();
       }
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [token]);
+  }, [token, refreshNotificationCount]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -2031,3 +2016,5 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
 });
+
+
