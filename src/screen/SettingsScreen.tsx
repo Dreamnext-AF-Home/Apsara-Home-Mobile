@@ -29,18 +29,20 @@ export default function SettingsScreen({ onBack, isDarkMode, setIsDarkMode, onNa
   };
 
   useEffect(() => {
-    Animated.timing(slideAnim, {
+    Animated.spring(slideAnim, {
       toValue: 0,
-      duration: 400,
+      friction: 8,
+      tension: 40,
       useNativeDriver: true,
     }).start();
   }, [slideAnim]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 100,
-        duration: 300,
+        friction: 8,
+        tension: 40,
         useNativeDriver: true,
       }).start(() => onBack());
       return true;
