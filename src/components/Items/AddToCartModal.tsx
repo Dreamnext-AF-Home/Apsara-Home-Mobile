@@ -207,7 +207,7 @@ export default function AddToCartModal({
         </View>
 
         {/* Header */}
-        <View style={[styles.shopeeModalHeader, { backgroundColor: colors.bg, borderBottomColor: colors.borderLight }]}>
+        <View style={[styles.shopeeModalHeader, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
           <View style={{ width: 28 }} />
           <Text style={[styles.shopeeModalHeaderText, { color: colors.text }]}>Save to Cart</Text>
           <View style={{ width: 28 }} />
@@ -317,11 +317,11 @@ export default function AddToCartModal({
             </LinearGradient>
 
           {/* Divider */}
-          <View style={[styles.shopeeDivider, { backgroundColor: colors.borderLight }]} />
+          <View style={[styles.shopeeDivider, { backgroundColor: colors.border }]} />
 
           {/* Variant Selection */}
           {(product.variants?.length ?? 0) > 0 && (
-            <View style={[styles.shopeeSection, { paddingHorizontal: 16, backgroundColor: colors.bg, borderBottomColor: colors.borderLight }]}>
+            <View style={[styles.shopeeSection, { paddingHorizontal: 16, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
               <View style={styles.shopeeSectionHeader}>
                 <Text style={[styles.shopeeSectionTitle, { color: colors.text }]}>Variant</Text>
                 <Text style={styles.shopeeSectionRequired}>Required</Text>
@@ -369,7 +369,7 @@ export default function AddToCartModal({
           )}
 
           {/* Quantity Selection */}
-          <View style={[styles.shopeeSection, { paddingHorizontal: 16, backgroundColor: colors.bg, borderBottomColor: colors.borderLight }]}>
+          <View style={[styles.shopeeSection, { paddingHorizontal: 16, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
             <View style={styles.shopeeSectionHeader}>
               <Text style={[styles.shopeeSectionTitle, { color: colors.text }]}>Quantity</Text>
             </View>
@@ -416,7 +416,7 @@ export default function AddToCartModal({
           {/* Price Summary */}
           <View style={[styles.shopeePriceSummary, { paddingHorizontal: 16, backgroundColor: colors.bg }]}>
             {/* Subtotal */}
-            <View style={[styles.shopeePriceSummaryRow, { borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 8, marginTop: 8 }]}>
+            <View style={[styles.shopeePriceSummaryRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 8 }]}>
               <Text style={[styles.shopeePriceSummaryLabel, { color: colors.textSec }]}>Subtotal</Text>
               <Text style={[styles.shopeePriceSummaryValue, { color: colors.text }]}>
                 ₱{(
@@ -435,7 +435,7 @@ export default function AddToCartModal({
         </ScrollView>
 
         {/* Bottom Buttons */}
-        <View style={[styles.shopeeCheckoutFooterGradient, { backgroundColor: colors.bg, borderTopColor: colors.borderLight, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }]}>
+        <View style={[styles.shopeeCheckoutFooterGradient, { backgroundColor: colors.bg, borderTopColor: colors.border, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }]}>
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.checkoutBtn, loading && { opacity: 0.6 }]}
