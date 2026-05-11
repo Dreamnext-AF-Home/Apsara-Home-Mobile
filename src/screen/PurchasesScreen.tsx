@@ -35,6 +35,7 @@ interface OrderItem {
 interface Order {
   id: number;
   order_number: string;
+  mobile_order_id: string;
   status: 'pending' | 'paid' | 'processing' | 'shipped' | 'to_receive' | 'delivered';
   created_at: string;
   total_amount: number;
@@ -49,6 +50,7 @@ interface PurchasesScreenProps {
   token?: string | null;
   status?: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered';
   isDarkMode?: boolean;
+  initialOrderId?: string;
   onBack?: () => void;
   onProceedToPayment?: (checkoutUrl: string) => void;
   onProductPress?: (productId: number) => void;
@@ -99,6 +101,7 @@ export default function PurchasesScreen({
   token,
   status: initialStatus = 'pending',
   isDarkMode = false,
+  initialOrderId,
   onBack,
   onProceedToPayment,
   onProductPress,
@@ -171,6 +174,28 @@ export default function PurchasesScreen({
   useEffect(() => {
     fetchOrders();
   }, [token, selectedStatus]);
+
+  useEffect(() => {
+    if (initialOrderId && orders.length > 0) {
+      console.log('[PurchasesScreen] Looking for order with initialOrderId:', initialOrderId);
+      console.log('[PurchasesScreen] Available orders:', orders.map(o => ({ id: o.id, mobile_order_id: o.mobile_order_id, order_number: o.order_number, status: o.status })));
+
+      const order = orders.find(o => o.mobile_order_id === initialOrderId);
+      console.log('[PurchasesScreen] Found order:', order);
+
+      if (order) {
+        setSelectedOrder(order);
+        setShowDetailModal(true);
+      } else {
+        console.log('[PurchasesScreen] Order not found with mobile_order_id, trying order_number');
+        const orderByNumber = orders.find(o => o.order_number === initialOrderId);
+        if (orderByNumber) {
+          setSelectedOrder(orderByNumber);
+          setShowDetailModal(true);
+        }
+      }
+    }
+  }, [initialOrderId, orders]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
