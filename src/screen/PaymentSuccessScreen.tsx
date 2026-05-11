@@ -84,7 +84,7 @@ export default function PaymentSuccessScreen({
         contentContainerStyle={{ flexGrow: 1 }}
       >
         {/* Success Section */}
-        <View style={[styles.successSection, { backgroundColor: colors.containerBg, marginTop: 16 }]}>
+        <View style={[styles.successSection, { backgroundColor: colors.containerBg, marginTop: 16, borderColor: colors.border }]}>
           <View style={[styles.successIconContainer, { backgroundColor: `${Colors.forest}15` }]}>
             <Ionicons name="checkmark-circle" size={80} color={Colors.forest} />
           </View>
@@ -97,7 +97,7 @@ export default function PaymentSuccessScreen({
         {orderData && (
           <>
             {/* Order Number & Reference */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <View style={[styles.refBox, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
                 <View style={styles.refRow}>
                   <View>
@@ -127,7 +127,7 @@ export default function PaymentSuccessScreen({
             </View>
 
             {/* Product Details */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Order Details</Text>
 
               <View style={[styles.productCard, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
@@ -149,7 +149,7 @@ export default function PaymentSuccessScreen({
 
             {/* Delivery Address */}
             {orderData.delivery_address && (
-              <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+              <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
                 <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Delivery Address</Text>
 
                 <View style={[styles.addressCard, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
@@ -162,7 +162,7 @@ export default function PaymentSuccessScreen({
             )}
 
             {/* Payment Summary */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Payment Summary</Text>
 
               <View>
@@ -197,7 +197,7 @@ export default function PaymentSuccessScreen({
             </View>
 
             {/* Customer Info */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Customer Information</Text>
 
               <View style={styles.customerInfoBox}>
@@ -244,7 +244,7 @@ export default function PaymentSuccessScreen({
             </View>
 
             {/* Info Box */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <View style={[styles.infoBox, { backgroundColor: `${Colors.sky}10`, borderColor: Colors.sky }]}>
                 <Ionicons name="checkmark-circle" size={20} color={Colors.sky} />
                 <Text style={[styles.infoBoxText, { color: colors.text, marginLeft: 8 }]}>
@@ -254,7 +254,7 @@ export default function PaymentSuccessScreen({
             </View>
 
             {/* Next Steps */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Next Steps</Text>
 
               <View style={styles.timelineContainer}>
@@ -301,7 +301,7 @@ export default function PaymentSuccessScreen({
             </View>
 
             {/* Order Support */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Order Support</Text>
 
               <View style={[styles.faqBox, { backgroundColor: colors.borderLight, marginTop: 0 }]}>
@@ -324,7 +324,7 @@ export default function PaymentSuccessScreen({
             </View>
 
             {/* Refund Policy */}
-            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+            <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
               <View style={[styles.policyBox, { backgroundColor: `${Colors.forest}10`, borderColor: Colors.forest }]}>
                 <Ionicons name="shield-checkmark" size={20} color={Colors.forest} />
                 <View style={{ marginLeft: 12, flex: 1 }}>
@@ -396,6 +396,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   successIconContainer: {
     width: 100,
@@ -419,6 +421,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   sectionTitle: {
     fontSize: 13,
