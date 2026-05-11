@@ -32,6 +32,8 @@ export interface NotificationItem {
   is_read: boolean;
   amount?: number;
   product_image?: string;
+  mobile_order_id?: string;
+  order_id?: string;
 }
 
 export interface Notifications {
