@@ -84,7 +84,7 @@ export default function SettingsScreen({ onBack, isDarkMode, setIsDarkMode, onNa
       <ScrollView style={[styles.scroll, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Appearance Section */}
         <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
-          <View style={[styles.settingRow, { borderBottomColor: colors.borderLight }]}>
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
             <View style={[styles.settingIcon, { backgroundColor: colors.cardBg }]}>
               <Ionicons name="moon-outline" size={20} color={Colors.sky} />
             </View>
@@ -130,6 +130,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginLeft: -10,
+    marginRight: 12,
   },
   backButton: {
     width: 40,
