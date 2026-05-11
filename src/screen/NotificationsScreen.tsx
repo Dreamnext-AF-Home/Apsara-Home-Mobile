@@ -16,7 +16,7 @@ import { ChatBotIcon } from '../components/ChatBot';
 interface NotificationsScreenProps {
   token?: string | null;
   isDarkMode?: boolean;
-  onNavigateToPurchases?: (status: string) => void;
+  onNavigateToPurchases?: (status: string, orderId?: string) => void;
 }
 
 export default function NotificationsScreen({ token, onBack, isDarkMode = false, onNavigateToPurchases }: NotificationsScreenProps) {
@@ -108,16 +108,22 @@ export default function NotificationsScreen({ token, onBack, isDarkMode = false,
     return notifications.notifications;
   };
 
-  const handleNotificationPress = (href?: string) => {
+  const handleNotificationPress = (href?: string, orderId?: string) => {
     if (!href) return;
 
-    // Parse deep link format: purchases://status
-    const deepLinkRegex = /^purchases:\/\/(.+)$/;
+    console.log('[NotificationsScreen] Notification pressed:', { href, orderId });
+
+    // Parse deep link format: purchases://status or purchases://status/mobile-order-id
+    const deepLinkRegex = /^purchases:\/\/([^\/]+)(?:\/(.+))?$/;
     const match = href.match(deepLinkRegex);
+
+    console.log('[NotificationsScreen] Deep link match:', match);
 
     if (match && match[1]) {
       const status = match[1];
-      onNavigateToPurchases?.(status);
+      const parsedOrderId = match[2] || orderId;
+      console.log('[NotificationsScreen] Calling onNavigateToPurchases with:', { status, parsedOrderId });
+      onNavigateToPurchases?.(status, parsedOrderId);
     }
   };
 
@@ -211,7 +217,7 @@ export default function NotificationsScreen({ token, onBack, isDarkMode = false,
                   },
                   index !== notifications.notifications.length - 1 && styles.notificationItemBorder,
                 ]}
-                onPress={() => handleNotificationPress(item.href)}
+                onPress={() => handleNotificationPress(item.href, item.order_id)}
                 activeOpacity={0.7}
               >
                 {item.product_image ? (
