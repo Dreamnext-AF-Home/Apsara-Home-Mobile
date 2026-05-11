@@ -137,60 +137,58 @@ export default function NotificationsScreen({ token, onBack, isDarkMode = false,
           </View>
         </View>
 
-        <View style={[styles.filterSection, { backgroundColor: colors.containerBg, borderBottomColor: colors.border }]}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterType === 'all' && { backgroundColor: Colors.sky, borderColor: Colors.sky },
-              filterType !== 'all' && { borderColor: colors.border },
-            ]}
-            onPress={() => setFilterType('all')}
+        <View style={[styles.filterBar, { backgroundColor: colors.containerBg, borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterContent}
+            scrollEventThrottle={16}
           >
-            <Text
+            <TouchableOpacity
               style={[
-                styles.filterButtonText,
-                filterType === 'all' ? { color: Colors.white } : { color: colors.text },
+                styles.filterButton,
+                filterType === 'all' && [styles.filterButtonActive, { backgroundColor: Colors.sky }]
               ]}
+              onPress={() => setFilterType('all')}
             >
-              All
-            </Text>
-          </TouchableOpacity>
+              <Text style={[
+                styles.filterButtonText,
+                filterType === 'all' && { color: Colors.white, fontWeight: '700' }
+              ]}>
+                All
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterType === 'unread' && { backgroundColor: Colors.sky, borderColor: Colors.sky },
-              filterType !== 'unread' && { borderColor: colors.border },
-            ]}
-            onPress={() => setFilterType('unread')}
-          >
-            <Text
+            <TouchableOpacity
               style={[
-                styles.filterButtonText,
-                filterType === 'unread' ? { color: Colors.white } : { color: colors.text },
+                styles.filterButton,
+                filterType === 'unread' && [styles.filterButtonActive, { backgroundColor: Colors.sky }]
               ]}
+              onPress={() => setFilterType('unread')}
             >
-              Unread
-            </Text>
-          </TouchableOpacity>
+              <Text style={[
+                styles.filterButtonText,
+                filterType === 'unread' && { color: Colors.white, fontWeight: '700' }
+              ]}>
+                Unread
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterType === 'read' && { backgroundColor: Colors.sky, borderColor: Colors.sky },
-              filterType !== 'read' && { borderColor: colors.border },
-            ]}
-            onPress={() => setFilterType('read')}
-          >
-            <Text
+            <TouchableOpacity
               style={[
-                styles.filterButtonText,
-                filterType === 'read' ? { color: Colors.white } : { color: colors.text },
+                styles.filterButton,
+                filterType === 'read' && [styles.filterButtonActive, { backgroundColor: Colors.sky }]
               ]}
+              onPress={() => setFilterType('read')}
             >
-              Read
-            </Text>
-          </TouchableOpacity>
+              <Text style={[
+                styles.filterButtonText,
+                filterType === 'read' && { color: Colors.white, fontWeight: '700' }
+              ]}>
+                Read
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
 
       {loading ? (
@@ -290,22 +288,31 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  filterSection: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  filterBar: {
+    borderTopWidth: 1,
     borderBottomWidth: 1,
-    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  filterContent: {
+    paddingHorizontal: 4,
     gap: 8,
   },
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
     borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  filterButtonActive: {
+    borderColor: Colors.sky,
   },
   filterButtonText: {
     fontSize: 13,
     fontWeight: '600',
+    color: Colors.text,
   },
   titleRow: {
     flexDirection: 'row',
