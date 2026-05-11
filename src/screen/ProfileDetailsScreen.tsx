@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { authService } from '../services/authService';
+import { TIER_REQUIREMENTS } from '../constants/tierConfig';
 import Toast from 'react-native-toast-message';
 
 interface ProfileDetailsScreenProps {
@@ -325,6 +326,36 @@ export default function ProfileDetailsScreen({
                 {renderInfoRow('Badge', userProfile.badge_name || 'None', 'shield-checkmark')}
               </>
             ))}
+
+            {/* Badge Journey */}
+            {renderSection('Badge Journey', (
+              <View style={styles.badgeJourneyList}>
+                {Object.values(TIER_REQUIREMENTS).map((tier) => {
+                  const isAchieved = Number(userProfile.rank || 0) >= tier.rank;
+                  return (
+                    <View key={tier.rank} style={[styles.badgeJourneyItem, { borderColor: '#e5e7eb' }]}>
+                      <View style={[styles.badgeJourneyRank, { backgroundColor: tier.color }]}>
+                        <Text style={styles.badgeJourneyRankText}>R{tier.rank}</Text>
+                      </View>
+                      <View style={styles.badgeJourneyInfo}>
+                        <Text style={styles.badgeJourneyTitle}>{tier.tier}</Text>
+                        <Text style={styles.badgeJourneyMeta}>
+                          PV: {tier.pv ?? '-'} | Referrals: {tier.referrals ?? '-'}
+                        </Text>
+                        <Text style={styles.badgeJourneyMeta}>
+                          Members: {tier.active_members ?? '-'} | Builders: {tier.active_builders ?? '-'} | Leaders: {tier.active_leaders ?? '-'}
+                        </Text>
+                      </View>
+                      <View style={[styles.badgeJourneyState, { backgroundColor: isAchieved ? '#dcfce7' : '#f1f5f9' }]}>
+                        <Text style={[styles.badgeJourneyStateText, { color: isAchieved ? '#166534' : '#475569' }]}>
+                          {isAchieved ? 'Achieved' : 'Locked'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
           </ScrollView>
         ) : (
           <View style={styles.emptyContainer}>
@@ -611,6 +642,53 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  badgeJourneyList: {
+    gap: 10,
+  },
+  badgeJourneyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    gap: 10,
+    backgroundColor: '#f8fafc',
+  },
+  badgeJourneyRank: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeJourneyRankText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.white,
+  },
+  badgeJourneyInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  badgeJourneyTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  badgeJourneyMeta: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  badgeJourneyState: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  badgeJourneyStateText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   loadingContainer: {
     flex: 1,
