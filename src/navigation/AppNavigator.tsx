@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View, Text, Image, TouchableOpacity, Pressable,
-  StyleSheet, Modal, PanResponder, Animated, BackHandler, Clipboard, Linking,
+  StyleSheet, Modal, PanResponder, Animated, BackHandler, Clipboard, Linking, AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -200,6 +200,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [showPurchases, setShowPurchases] = useState(false);
   const [purchasesStatus, setPurchasesStatus] = useState<'pending' | 'paid' | 'processing' | 'shipped' | 'delivered'>('pending');
+  const [purchasesInitialOrderId, setPurchasesInitialOrderId] = useState<string | undefined>(undefined);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showPaymentCancel, setShowPaymentCancel] = useState(false);
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
@@ -311,6 +312,17 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             text1: notification.request.content.title || 'Notification',
             text2: notification.request.content.body || '',
           });
+
+          // Update notification count in real-time
+          if (token) {
+            orderService.getNotifications(token)
+              .then(data => {
+                console.log('🔔 Updated notification count:', data.unread_count);
+                setNotificationUnreadCount(data.unread_count || 0);
+                setNotificationTotalCount(data.total || data.notifications?.length || 0);
+              })
+              .catch(error => console.error('Error updating notification count:', error));
+          }
         });
 
         // Listen for notification responses (when user taps notification)
@@ -471,12 +483,20 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       .catch(() => {});
 
     // Fetch notifications
-    orderService.getNotifications(token)
-      .then(data => {
-        setNotificationUnreadCount(data.unread_count || 0);
-        setNotificationTotalCount(data.total || data.notifications?.length || 0);
-      })
-      .catch(() => {});
+    const fetchNotificationCount = () => {
+      orderService.getNotifications(token)
+        .then(data => {
+          setNotificationUnreadCount(data.unread_count || 0);
+          setNotificationTotalCount(data.total || data.notifications?.length || 0);
+        })
+        .catch(() => {});
+    };
+
+    // Initial fetch
+    fetchNotificationCount();
+
+    // Poll notification count only every 30 seconds when app is active
+    const notificationPollInterval = setInterval(fetchNotificationCount, 30000);
 
     // Fetch home screen data ONCE when token becomes available
     if (!homeInitialFetchRef.current) {
@@ -489,6 +509,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
       wishlistInitialFetchRef.current = true;
       fetchWishlistData();
     }
+
+    return () => {
+      clearInterval(notificationPollInterval);
+    };
   }, [token]);
 
   const fetchHomeData = async () => {
@@ -662,6 +686,24 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
     });
     return () => sub.remove();
   }, [selectedProductId, searchVisible, searchQuery]);
+
+  // Update notification count when app comes to foreground
+  useEffect(() => {
+    const handleAppStateChange = (state: AppStateStatus) => {
+      if (state === 'active' && token) {
+        console.log('🔔 App came to foreground, refreshing notification count');
+        orderService.getNotifications(token)
+          .then(data => {
+            setNotificationUnreadCount(data.unread_count || 0);
+            setNotificationTotalCount(data.total || data.notifications?.length || 0);
+          })
+          .catch(error => console.error('Error refreshing notification count:', error));
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [token]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -851,8 +893,9 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               <NotificationsScreen
                 token={token}
                 isDarkMode={isDarkMode}
-                onNavigateToPurchases={(status) => {
+                onNavigateToPurchases={(status, orderId) => {
                   setPurchasesStatus(status as 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered');
+                  setPurchasesInitialOrderId(orderId);
                   setShowPurchases(true);
                 }}
               />
@@ -1574,7 +1617,11 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             token={token}
             status={purchasesStatus}
             isDarkMode={isDarkMode}
-            onBack={() => setShowPurchases(false)}
+            initialOrderId={purchasesInitialOrderId}
+            onBack={() => {
+              setShowPurchases(false);
+              setPurchasesInitialOrderId(undefined);
+            }}
             onProductPress={(productId) => {
               setShowPurchases(false);
               setPreviousTab(activeTabRef.current);
