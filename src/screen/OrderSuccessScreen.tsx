@@ -138,7 +138,7 @@ export default function OrderSuccessScreen({
         colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1f2937' : Colors.white }]}
+        style={[styles.header, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1f2937' : Colors.white, borderBottomColor: colors.border, borderBottomWidth: 1 }]}
       >
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backBtn}>
@@ -159,7 +159,7 @@ export default function OrderSuccessScreen({
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Success Icon Section */}
-        <View style={[styles.successSection, { backgroundColor: colors.containerBg, marginTop: 16 }]}>
+        <View style={[styles.successSection, { backgroundColor: colors.containerBg, marginTop: 16, borderColor: colors.border }]}>
           <View style={[styles.successIconContainer, { backgroundColor: `${Colors.forest}15` }]}>
             <Ionicons name="checkmark-circle" size={64} color={Colors.forest} />
           </View>
@@ -170,7 +170,7 @@ export default function OrderSuccessScreen({
         </View>
 
         {/* Product Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Product Details</Text>
 
           <View style={[styles.productCard, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
@@ -207,7 +207,7 @@ export default function OrderSuccessScreen({
         </View>
 
         {/* Shipping Address Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Delivery Address</Text>
 
           <View style={[styles.addressCard, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
@@ -229,7 +229,7 @@ export default function OrderSuccessScreen({
         </View>
 
         {/* Payment Method Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Payment Method</Text>
 
           <View style={[styles.paymentMethodCard, { backgroundColor: colors.borderLight, borderColor: colors.border }]}>
@@ -243,7 +243,7 @@ export default function OrderSuccessScreen({
         </View>
 
         {/* Order Summary Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12 }]}>
+        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Order Summary</Text>
 
           <View style={[styles.priceRow, { borderBottomColor: colors.borderLight }]}>
@@ -388,6 +388,8 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   successIconContainer: {
     width: 80,
@@ -410,6 +412,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     marginHorizontal: 0,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   sectionTitle: {
     fontSize: 13,
