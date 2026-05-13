@@ -7,10 +7,6 @@ import OneSignal from 'react-native-onesignal';
 LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component']);
 import Toast from 'react-native-toast-message';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-// Initialize OneSignal
-OneSignal.initialize('b4c95a1a-c525-447d-80bb-2c8dc63f4531');
-OneSignal.Notifications.requestPermission(true);
 import LoginScreen from './src/screen/LoginScreen';
 import SignupScreen from './src/screen/SignupScreen';
 import OtpScreen from './src/screen/OtpScreen';
@@ -56,6 +52,10 @@ export default function App() {
 
   // Register OneSignal push token when authenticated
   useOneSignalTokenRegistration(authToken, authUser?.id || null);
+
+  useEffect(() => {
+    OneSignal.initialize('b4c95a1a-c525-447d-80bb-2c8dc63f4531');
+  }, []);
 
   useEffect(() => {
     checkStoredAuth();
