@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, LogBox, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import OneSignal from 'react-native-onesignal';
 
 // Suppress the "Text strings must be rendered within a <Text> component" error
 LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component']);
@@ -14,6 +13,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingScreen from './src/screen/OnboardingScreen';
 import { storageService, StoredUser } from './src/services/storageService';
 import LoadingScreen from './src/screen/LoadingScreen';
+import { useFirebaseMessaging } from './src/hooks/useFirebaseMessaging';
 
 type AuthScreen = 'login' | 'signup' | 'otp';
 
@@ -49,58 +49,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasOnboarded, setHasOnboarded] = useState(false);
 
-  // Initialize OneSignal (once on app start)
-  useEffect(() => {
-    try {
-      console.log('[App] Initializing OneSignal...');
-      OneSignal.initialize('b4c95a1a-c525-447d-80bb-2c8dc63f4531');
-      OneSignal.Notifications.requestPermission(true);
-
-      // Foreground notification handler
-      OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
-        console.log('[App] 📬 Foreground notification:', event);
-        event.notification.display();
-      });
-
-      // Notification click handler
-      OneSignal.Notifications.addEventListener('click', (event) => {
-        console.log('[App] 👆 Notification clicked:', event);
-      });
-
-      // Subscription change listener
-      OneSignal.User.pushSubscription.addEventListener('change', (event) => {
-        console.log('[App] 📱 Subscription changed:', event.current);
-      });
-
-      console.log('[App] ✅ OneSignal initialized successfully');
-    } catch (error) {
-      console.error('[App] OneSignal initialization error:', error);
-    }
-  }, []);
-
-  // Login to OneSignal when user authenticates
-  useEffect(() => {
-    if (authUser?.id) {
-      try {
-        console.log('[App] 🔐 Logging in to OneSignal with user ID:', authUser.id);
-        OneSignal.login(authUser.id.toString());
-      } catch (error) {
-        console.error('[App] OneSignal login error:', error);
-      }
-    }
-  }, [authUser?.id]);
-
-  // Logout from OneSignal when user logs out
-  useEffect(() => {
-    if (!authenticated && !isLoading) {
-      try {
-        console.log('[App] 🚪 Logging out from OneSignal');
-        OneSignal.logout();
-      } catch (error) {
-        console.error('[App] OneSignal logout error:', error);
-      }
-    }
-  }, [authenticated, isLoading]);
+  // Initialize FCM and register device when authenticated
+  useFirebaseMessaging(authToken, authUser?.id || null);
 
   useEffect(() => {
     checkStoredAuth();
