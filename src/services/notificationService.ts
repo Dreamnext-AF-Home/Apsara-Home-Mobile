@@ -1,5 +1,8 @@
 import * as Notifications from 'expo-notifications';
 
+// Track processed notifications to prevent duplicate handling
+const processedNotificationIds = new Set<string>();
+
 export class NotificationService {
   /**
    * Setup notification listeners with proper navigation
@@ -17,6 +20,17 @@ export class NotificationService {
     // Handle notification when user TAPS on it
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('👆 Notification tapped:', response.notification);
+
+      const notificationId = response.notification.request.identifier;
+
+      // Skip if already processed
+      if (processedNotificationIds.has(notificationId)) {
+        console.log('⏭️ Notification already processed, skipping:', notificationId);
+        return;
+      }
+
+      // Mark as processed
+      processedNotificationIds.add(notificationId);
 
       const content = response.notification.request.content;
       const data = {
@@ -124,13 +138,26 @@ export class NotificationService {
 
   /**
    * Handle notification when app is opened from closed state
+   * Note: Not currently used - we rely on addNotificationResponseReceivedListener
+   * which handles actual user taps and doesn't cause repeat triggers
    */
   static async handleInitialNotification(navigation: any) {
     try {
       const notification = await Notifications.getLastNotificationResponseAsync();
 
       if (notification) {
-        console.log('📲 App opened from notification');
+        const notificationId = notification.notification.request.identifier;
+
+        // Skip if we've already processed this notification
+        if (processedNotificationIds.has(notificationId)) {
+          console.log('⏭️ Notification already processed, skipping:', notificationId);
+          return;
+        }
+
+        // Mark this notification as processed
+        processedNotificationIds.add(notificationId);
+
+        console.log('📲 App opened from notification:', notificationId);
         const data = notification.notification.request.content.data;
         this.handleNotificationPress(data, navigation);
       }

@@ -239,6 +239,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
 
   // Navigation ref for notification handling
   const navigationRef = useRef<any>(null);
+  const initialNotificationHandledRef = useRef(false);
 
   const { authService } = require('../services/authService');
   const { productService } = require('../services/productService');
@@ -368,10 +369,9 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           navigationRef.current
         );
 
-        // Handle notification when app was opened from closed state
-        if (isMounted) {
-          await NotificationService.handleInitialNotification(navigationRef.current);
-        }
+        // Note: We don't call handleInitialNotification() because getLastNotificationResponseAsync()
+        // keeps returning old notifications even if not tapped. The addNotificationResponseReceivedListener
+        // below handles actual user taps which is what we need.
       } catch (error) {
         console.log('Notification setup error:', error);
       }
