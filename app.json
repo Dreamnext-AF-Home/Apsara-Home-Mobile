@@ -26,12 +26,12 @@
             "package": "com.afhome.mobile",
             "googleServicesFile": "./google-services.json",
             "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon1.png",
-                "backgroundColor": "#ffffff"
+                "foregroundImage": "./assets/adaptive-icon2.png",
+                "backgroundColor": "#13a1d4"
             },
             "notification": {
                 "icon": "./assets/af_home_logo.png",
-                "color": "#0ea5e9"
+                "color": "#13a1d4"
             },
             "predictiveBackGestureEnabled": false
         },
