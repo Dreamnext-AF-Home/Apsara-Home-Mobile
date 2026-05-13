@@ -14,8 +14,8 @@ export const useOneSignalTokenRegistration = (token: string | null, userId: stri
 
     const registerOneSignalToken = async () => {
       try {
-        // Wait a bit for OneSignal native module to be fully ready
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait longer for OneSignal native module to be fully ready in native builds
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Set the customer ID for targeting
         OneSignal.User.addAlias('customer_id', userId.toString());

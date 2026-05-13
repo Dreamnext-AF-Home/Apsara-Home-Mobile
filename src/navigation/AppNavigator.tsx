@@ -332,8 +332,8 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
 
     const setupNotifications = async () => {
       try {
-        // Wait a bit for OneSignal to be fully initialized
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for OneSignal to be fully initialized
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Request notification permissions
         OneSignal.Notifications.requestPermission(true);

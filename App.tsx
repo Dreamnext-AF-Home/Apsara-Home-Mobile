@@ -52,17 +52,26 @@ export default function App() {
   const [oneSignalReady, setOneSignalReady] = useState(false);
 
   useEffect(() => {
-    try {
-      if (OneSignal && typeof OneSignal.initialize === 'function') {
-        OneSignal.initialize('b4c95a1a-c525-447d-80bb-2c8dc63f4531');
-        console.log('[App] OneSignal initialized successfully');
-        setOneSignalReady(true);
-      } else {
-        console.warn('[App] OneSignal not available or initialize is not a function', OneSignal);
+    const initializeOneSignal = async () => {
+      try {
+        // Wait longer for native module to be ready
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        if (OneSignal && typeof OneSignal.initialize === 'function') {
+          OneSignal.initialize('b4c95a1a-c525-447d-80bb-2c8dc63f4531');
+          console.log('[App] OneSignal initialized successfully');
+          setOneSignalReady(true);
+        } else {
+          console.warn('[App] OneSignal not available');
+          setOneSignalReady(true); // Continue anyway
+        }
+      } catch (error) {
+        console.error('[App] Failed to initialize OneSignal:', error);
+        setOneSignalReady(true); // Continue anyway
       }
-    } catch (error) {
-      console.error('[App] Failed to initialize OneSignal:', error);
-    }
+    };
+
+    initializeOneSignal();
   }, []);
 
   // Register OneSignal push token when authenticated AND OneSignal is ready
