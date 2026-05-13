@@ -4,6 +4,14 @@ import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 import * as SecureStore from 'expo-secure-store';
 
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const useDeviceRegistration = (token: string | null, userId: string | number | null) => {
   const [registrationAttempted, setRegistrationAttempted] = useState(false);
 
@@ -19,10 +27,8 @@ export const useDeviceRegistration = (token: string | null, userId: string | num
         // Get or create a device ID
         let deviceId = await SecureStore.getItemAsync('device_id');
         if (!deviceId) {
-          // Generate a simple device ID: timestamp + random string
-          const timestamp = Date.now().toString(36);
-          const random = Math.random().toString(36).substring(2, 15);
-          deviceId = `device_${timestamp}_${random}`;
+          // Generate a valid UUID v4 for OneSignal
+          deviceId = generateUUID();
           await SecureStore.setItemAsync('device_id', deviceId);
           console.log('[useDeviceRegistration] Created new device ID:', deviceId);
         }
