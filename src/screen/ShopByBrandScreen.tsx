@@ -13,6 +13,8 @@ import {
   BackHandler,
   TextInput,
   ImageBackground,
+  Modal,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,6 +91,7 @@ export default function ShopByBrandScreen({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'home' | 'products' | 'categories'>('products');
+  const [showMenu, setShowMenu] = useState(false);
   const perPage = 20;
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
@@ -351,6 +354,27 @@ export default function ShopByBrandScreen({
     );
   };
 
+  const handleShareBrand = async () => {
+    setShowMenu(false);
+    try {
+      await Share.share({
+        message: `Check out ${brand?.name || 'this brand'} on our app!`,
+        title: brand?.name || 'Brand',
+      });
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+  };
+
+  const handleReportBrand = () => {
+    setShowMenu(false);
+    Toast.show({
+      type: 'info',
+      text1: 'Report Brand',
+      text2: 'Thank you for your report. We will review it shortly.',
+    });
+  };
+
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       onBack();
@@ -409,10 +433,45 @@ export default function ShopByBrandScreen({
             )}
           </View>
 
-          <TouchableOpacity style={styles.filterIconButton} activeOpacity={0.7}>
-            <Ionicons name="options-outline" size={20} color={Colors.white} />
+          <TouchableOpacity
+            style={styles.filterIconButton}
+            onPress={() => setShowMenu(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
+
+        {/* Menu Modal */}
+        <Modal
+          visible={showMenu}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowMenu(false)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setShowMenu(false)}
+          >
+            <View style={[styles.menuContainer, { top: insets.top + 60 }]}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleShareBrand}
+              >
+                <Ionicons name="share-social" size={18} color={Colors.sky} style={styles.menuIcon} />
+                <Text style={styles.menuText}>Share Brand</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleReportBrand}
+              >
+                <Ionicons name="flag" size={18} color="#ef4444" style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: '#ef4444' }]}>Report Brand</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
 
         {/* Bottom Row: Brand Info and Follow Button */}
         <View style={styles.headerContent}>
@@ -922,5 +981,39 @@ const styles = StyleSheet.create({
   pageNumber: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  menuContainer: {
+    position: 'absolute',
+    right: 12,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
   },
 });
