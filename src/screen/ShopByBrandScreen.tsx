@@ -769,15 +769,18 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     paddingHorizontal: 0,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingVertical: 0,
+    paddingBottom: 0,
+    marginHorizontal: 0,
+    marginTop: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderTopWidth: 0,
   },
   tabItem: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -792,7 +795,7 @@ const styles = StyleSheet.create({
   tabIndicator: {
     width: '80%',
     height: 2.5,
-    marginTop: 10,
+    marginTop: 6,
     borderRadius: 1.5,
   },
   masonryGrid: {
