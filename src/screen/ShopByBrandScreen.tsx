@@ -381,7 +381,7 @@ export default function ShopByBrandScreen({
     <View style={[styles.container, { backgroundColor: themeColors.containerBg }]}>
       {/* Custom Header with Brand Info */}
       <ImageBackground
-        source={{ uri: 'https://img.freepik.com/premium-photo/wildlife-tracks-document-animal-tracks-snow-inviting-viewers-guess-what-wildlife-might-be-nearby_997534-75869.jpg?semt=ais_hybrid&w=740&q=80' }}
+        source={{ uri: 'https://mms.img.susercontent.com/ph-11134210-81ztm-mlh54hxutfya0b@resize_bs700x700' }}
         style={[styles.customHeader, { paddingTop: insets.top }]}
       >
         <View style={styles.headerOverlay} />
