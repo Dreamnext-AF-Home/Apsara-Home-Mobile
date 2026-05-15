@@ -11,15 +11,12 @@ import {
   ScrollView,
   Image,
   Modal,
-  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import * as AuthSession from 'expo-auth-session';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import Toast from 'react-native-toast-message';
 import { Colors } from '../constants/colors';
 import Button from '../components/Button/PrimaryButton';
@@ -175,42 +172,6 @@ export default function LoginScreen({
     }
   }
 
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'afhome', path: 'redirect' });
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    redirectUri,
-  });
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      if (!id_token) {
-        Toast.show({ type: 'error', text1: 'Google login failed', text2: 'No ID token received.' });
-      }
-    }
-  }, [response]);
-
-  async function handleGoogleLogin() {
-    setLoading(true);
-    try {
-      if (!request) return;
-      await promptAsync();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handlePasskeyLogin() {
-    setLoading(true);
-    try {
-      Toast.show({ type: 'info', text1: 'Passkey not yet implemented' });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <View style={styles.root}>
@@ -221,16 +182,14 @@ export default function LoginScreen({
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.card}>
-              <Image
-                source={require('../../assets/af_home_logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
               <View style={styles.tabs}>
                 <Pressable style={[styles.tab, styles.tabActive]}>
                   <Text style={[styles.tabText, styles.tabTextActive]}>Sign In</Text>
                 </Pressable>
-                <Pressable style={styles.tab} onPress={onGoToSignup}>
+                <Pressable style={styles.tab} onPress={() => {
+                  console.log('[LoginScreen] Sign Up pressed, calling onGoToSignup');
+                  onGoToSignup?.();
+                }}>
                   <Text style={styles.tabText}>Sign Up</Text>
                 </Pressable>
               </View>
@@ -251,29 +210,6 @@ export default function LoginScreen({
                 </View>
               </View>
               <Button title="Sign in" onPress={handleSignIn} loading={loading} style={styles.signInBtn} />
-              <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerLabel}>Or continue with</Text><View style={styles.dividerLine} /></View>
-              <View style={styles.socialRow}>
-                <TouchableOpacity style={styles.socialBtn} activeOpacity={0.75} onPress={handleGoogleLogin} disabled={loading}>
-                  <Ionicons name="logo-google" size={24} color={Colors.text} style={styles.googleIcon} />
-                  <Text style={styles.socialBtnText}>Google</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.socialBtn} activeOpacity={0.75} onPress={handlePasskeyLogin} disabled={loading}>
-                  <Ionicons name="key-outline" size={18} color={Colors.text} />
-                  <Text style={styles.socialBtnText}>Passkey</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Reset Onboarding Button - Development Only */}
-              {onResetOnboarding && (
-                <TouchableOpacity 
-                  style={styles.resetBtn} 
-                  onPress={onResetOnboarding}
-                  disabled={loading}
-                >
-                  <Text style={styles.resetBtnText}>Reset Onboarding</Text>
-                </TouchableOpacity>
-              )}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -328,7 +264,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   card: { width: '100%', maxWidth: 420, backgroundColor: Colors.white, borderRadius: 24, padding: 28, borderWidth: 1.5, borderColor: Colors.inputBorder, overflow: 'hidden' },
-  logo: { width: 160, height: 48, alignSelf: 'center', marginBottom: 16 },
+  logo: { width: 220, height: 70, alignSelf: 'center', marginBottom: 24 },
   tabs: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 12, padding: 4, marginBottom: 20 },
   tab: { flex: 1, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   tabActive: { backgroundColor: '#0ea5e9' },
@@ -344,15 +280,6 @@ const styles = StyleSheet.create({
   passwordRow: { flexDirection: 'row', alignItems: 'center', height: 48, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 10, paddingLeft: 14, paddingRight: 12 },
   passwordInput: { flex: 1, fontSize: 15, color: Colors.text },
   signInBtn: { borderRadius: 10 },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 22, gap: 10 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.inputBorder },
-  dividerLabel: { fontSize: 13, color: Colors.textSecondary },
-  socialRow: { flexDirection: 'row', gap: 12 },
-  socialBtn: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 10, backgroundColor: Colors.white },
-  googleIcon: { width: 18, height: 18, marginBottom: 0 },
-  socialBtnText: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  resetBtn: { marginTop: 16, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 },
-  resetBtnText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.white, borderRadius: 20, padding: 28, width: '100%', maxWidth: 340, alignItems: 'center' },
   modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 8 },

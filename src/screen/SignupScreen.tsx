@@ -10,8 +10,10 @@ import {
   Platform,
   ScrollView,
   Modal,
+  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -151,11 +153,6 @@ export default function SignupScreen({ onGoToLogin, onContinueToOtp }: SignupScr
           <View style={styles.scroll}>
             <View style={styles.card}>
               <View style={styles.header}>
-                <Image
-                  source={require('../../assets/af_home_logo.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
                 <View style={styles.tabs}>
                   <Pressable style={styles.tab} onPress={onGoToLogin}>
                     <Text style={styles.tabText}>Sign In</Text>
