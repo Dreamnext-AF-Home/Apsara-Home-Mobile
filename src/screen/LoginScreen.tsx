@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -111,7 +112,7 @@ export default function LoginScreen({
     }
   }
 
-  const player = useVideoPlayer(require('../../assets/login/home-login.mp4'), p => {
+  const player = useVideoPlayer(require('../../assets/login/afhome.mp4'), p => {
     p.loop = true;
     p.muted = true;
     p.play();
@@ -271,25 +272,31 @@ export default function LoginScreen({
       <StatusBar style="light" />
       <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
       <View style={styles.overlay} />
-      <SafeAreaView style={styles.safe}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <View style={styles.card}>
-              <Pressable style={styles.backButton} onPress={onGoToIndex}>
-                <Ionicons name="arrow-back" size={24} color={Colors.text} />
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.8)']}
+          locations={[0, 0.5, 1]}
+          style={styles.gradient}
+          pointerEvents="none"
+        />
+        <SafeAreaView style={styles.contentSection}>
+          <View style={styles.card}>
+            <Pressable style={styles.backButton} onPress={onGoToIndex}>
+              <Ionicons name="arrow-back" size={24} color={Colors.white} />
+            </Pressable>
+            <View style={styles.tabs}>
+              <Pressable style={[styles.tab, styles.tabActive]}>
+                <Text style={[styles.tabText, styles.tabTextActive]}>Sign In</Text>
               </Pressable>
-              <View style={styles.tabs}>
-                <Pressable style={[styles.tab, styles.tabActive]}>
-                  <Text style={[styles.tabText, styles.tabTextActive]}>Sign In</Text>
-                </Pressable>
-                <Pressable style={styles.tab} onPress={() => {
-                  console.log('[LoginScreen] Sign Up pressed, calling onGoToSignup');
-                  onGoToSignup?.();
-                }}>
-                  <Text style={styles.tabText}>Sign Up</Text>
-                </Pressable>
-              </View>
+              <Pressable style={styles.tab} onPress={() => {
+                console.log('[LoginScreen] Sign Up pressed, calling onGoToSignup');
+                onGoToSignup?.();
+              }}>
+                <Text style={styles.tabText}>Sign Up</Text>
+              </Pressable>
+            </View>
 
+            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               {showRememberedUserUI && savedUser ? (
                 <>
                   <Text style={styles.heading}>Welcome back!</Text>
@@ -348,10 +355,10 @@ export default function LoginScreen({
                   <Button title="Sign in" onPress={handleSignIn} loading={loading} style={styles.signInBtn} />
                 </>
               )}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </ScrollView>
+          </View>
+        </SafeAreaView>
+      </View>
 
       <Modal visible={authStep === '2fa'} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -397,39 +404,62 @@ export default function LoginScreen({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
-  safe: { flex: 1 },
-  flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  card: { width: '100%', maxWidth: 420, backgroundColor: Colors.white, borderRadius: 24, padding: 28, borderWidth: 1.5, borderColor: Colors.inputBorder, overflow: 'hidden' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  spacer: { flex: 1 },
+  gradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  contentSection: {
+    paddingHorizontal: 16,
+    gap: 16,
+    zIndex: 2,
+    width: '100%',
+  },
+  card: {
+    flexShrink: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  scrollContent: {
+    paddingBottom: 12,
+  },
   backButton: { alignSelf: 'flex-start', padding: 8, marginBottom: 12 },
   logo: { width: 220, height: 70, alignSelf: 'center', marginBottom: 24 },
-  tabs: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 12, padding: 4, marginBottom: 20 },
+  tabs: { flexDirection: 'row', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)', borderRadius: 12, padding: 4, marginBottom: 20 },
   tab: { flex: 1, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  tabActive: { backgroundColor: '#0ea5e9' },
-  tabText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  tabActive: { backgroundColor: Colors.sky },
+  tabText: { fontSize: 14, fontWeight: '600', color: 'rgba(255, 255, 255, 0.7)' },
   tabTextActive: { color: Colors.white },
-  heading: { fontSize: 22, fontWeight: '800', color: Colors.text, marginBottom: 4 },
-  subheading: { fontSize: 13, color: Colors.textSecondary, marginBottom: 18 },
+  heading: { fontSize: 22, fontWeight: '800', color: Colors.white, marginBottom: 4 },
+  subheading: { fontSize: 13, color: 'rgba(255, 255, 255, 0.9)', marginBottom: 18 },
   fieldGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: Colors.text, marginBottom: 6 },
-  input: { height: 48, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 10, paddingHorizontal: 14, fontSize: 15, color: Colors.text },
+  label: { fontSize: 13, fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: 6 },
+  input: { height: 48, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 10, paddingHorizontal: 14, fontSize: 15, color: Colors.white },
   inputError: { borderColor: Colors.error },
-  errorText: { fontSize: 12, color: Colors.error, marginTop: 5, marginLeft: 2 },
-  passwordRow: { flexDirection: 'row', alignItems: 'center', height: 48, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 10, paddingLeft: 14, paddingRight: 12 },
-  passwordInput: { flex: 1, fontSize: 15, color: Colors.text },
+  errorText: { fontSize: 12, color: '#ff6b6b', marginTop: 5, marginLeft: 2 },
+  passwordRow: { flexDirection: 'row', alignItems: 'center', height: 48, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 10, paddingLeft: 14, paddingRight: 12 },
+  passwordInput: { flex: 1, fontSize: 15, color: Colors.white },
   signInBtn: { borderRadius: 10 },
-  profileSection: { alignItems: 'center', marginBottom: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.inputBorder },
+  profileSection: { alignItems: 'center', marginBottom: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.2)' },
   profilePicture: { width: 80, height: 80, borderRadius: 40, marginBottom: 12 },
   profilePictureDefault: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.sky, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   profilePictureDefaultText: { fontSize: 32, fontWeight: '800', color: Colors.white },
-  profileName: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  profileEmail: { fontSize: 12, color: Colors.textSecondary },
+  profileName: { fontSize: 18, fontWeight: '700', color: Colors.white, marginBottom: 4 },
+  profileEmail: { fontSize: 12, color: 'rgba(255, 255, 255, 0.7)' },
   rememberMeRow: { marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  checkbox: { width: 18, height: 18, borderWidth: 1.5, borderColor: Colors.inputBorder, borderRadius: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.white },
+  checkbox: { width: 18, height: 18, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.3)', borderRadius: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
   checkboxChecked: { backgroundColor: Colors.sky, borderColor: Colors.sky },
-  rememberMeText: { fontSize: 13, color: Colors.text, fontWeight: '500' },
+  rememberMeText: { fontSize: 13, color: 'rgba(255, 255, 255, 0.9)', fontWeight: '500' },
   notYouButton: { marginTop: 16, paddingVertical: 12, alignItems: 'center' },
   notYouText: { fontSize: 13, color: Colors.sky, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
