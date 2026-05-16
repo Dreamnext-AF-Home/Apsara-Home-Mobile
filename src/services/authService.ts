@@ -265,41 +265,79 @@ export const authService = {
     }
   },
 
-  async googleLogin(idToken: string): Promise<LoginResponse> {
+  async googleLogin(idToken: string, fcmToken?: string): Promise<LoginResponse> {
     try {
-      const response = await api.post('/auth/google/login', { id_token: idToken });
-      
+      console.log('[AuthService] Sending Google ID token to backend (Mobile)');
+      const response = await api.post('/auth/mobile/google-login', {
+        id_token: idToken,
+        fcm_token: fcmToken || null,
+      });
+
       const data = response.data;
       if (!data) {
         throw { message: 'Invalid response from server' } as AuthError;
       }
-      
+
       // Handle error responses
-      if (data.error) {
-        throw { message: data.error } as AuthError;
+      if (data.error || !data.success) {
+        throw { message: data.error || data.message || 'Login failed' } as AuthError;
       }
-      
-      // Validate user data
-      if (!data.user) {
+
+      if (data.message && data.message.toLowerCase().includes('invalid')) {
+        throw { message: data.message } as AuthError;
+      }
+
+      // Handle mobile endpoint response format
+      if (data.data) {
+        const { token, user } = data.data;
+        if (!user || !token) {
+          throw { message: 'Google login failed - no user data received' } as AuthError;
+        }
+        console.log('[AuthService] Google login successful (Mobile)');
+        return {
+          user,
+          token,
+          message: data.message || 'Login successful',
+        };
+      }
+
+      // Handle legacy response format
+      if (!data.user || !data.token) {
         throw { message: 'Google login failed - no user data received' } as AuthError;
       }
-      
+
+      console.log('[AuthService] Google login successful');
       return data;
     } catch (error: any) {
-      if (error.type) {
+      // If already an AuthError, re-throw
+      if (error.type || (error.message && !error.response)) {
         throw error;
       }
-      
+
       const status = error.response?.status;
-      const message = error.response?.data?.error 
-        || error.response?.data?.message 
-        || error.message 
-        || 'Google login failed';
-      
+      const serverMessage = error.response?.data?.error
+        || error.response?.data?.message
+        || error.message;
+
+      let message = serverMessage || 'Google login failed';
+
       if (status === 400) {
-        throw { message: 'Invalid Google token - please try again', status } as AuthError;
+        message = 'Invalid Google token - please try again';
+      } else if (status === 401) {
+        message = 'This Google account is not connected to any account. Please connect it with your existing account first.';
+      } else if (status === 404) {
+        message = 'This Google account is not found. Please connect it with your existing account.';
+      } else if (status >= 500) {
+        // Check if it's an account not found error from backend
+        if (serverMessage?.toLowerCase().includes('not found')
+            || serverMessage?.toLowerCase().includes('not registered')
+            || serverMessage?.toLowerCase().includes('does not exist')) {
+          message = 'This Google account is not connected. Please connect it with your existing account first.';
+        } else {
+          message = 'Server error - please try again later';
+        }
       }
-      
+
       throw { message, status, details: error.response?.data } as AuthError;
     }
   },
