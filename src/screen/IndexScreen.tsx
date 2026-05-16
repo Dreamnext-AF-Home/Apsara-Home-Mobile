@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,25 @@ import {
   Pressable,
   Image,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { Colors } from '../constants/colors';
+import GoogleSignInService from '../services/googleSignInService';
+import { getFCMToken } from '../utils/fcmUtils';
 
 export default function IndexScreen({
   onGoToLogin,
   onGoToSignup,
+  onAuthenticated,
 }: {
   onGoToLogin?: () => void;
   onGoToSignup?: () => void;
+  onAuthenticated?: (user?: { id: string; email: string; name: string; avatar_url?: string }, token?: string) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -31,18 +38,97 @@ export default function IndexScreen({
     p.play();
   });
 
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const initializeGoogleSignIn = async () => {
+      try {
+        const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
+        if (!googleClientId) {
+          console.error('[IndexScreen] Google Client ID not configured in .env');
+          return;
+        }
+
+        // Configure Google Sign-In with Web Client ID
+        await GoogleSignInService.initialize({
+          webClientId: googleClientId,
+        });
+        console.log('[IndexScreen] Google Sign-In initialized successfully');
+      } catch (error) {
+        console.error('[IndexScreen] Failed to initialize Google Sign-In:', error);
+      }
+    };
+
+    initializeGoogleSignIn();
+  }, []);
+
   React.useEffect(() => {
     if (player) {
       player.play();
     }
   }, [player]);
 
+  // Ensure video keeps playing when Alert appears
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      if (player && !player.playing) {
+        player.play();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [player]);
+
   const handleGoogleLogin = async () => {
+    if (loading) return;
+
     setLoading(true);
     try {
-      console.log('Google login pressed');
-    } catch (error) {
-      console.error('Google login error:', error);
+      console.log('[IndexScreen] Starting Google login flow');
+
+      // Get FCM token for push notifications (optional)
+      const fcmToken = await getFCMToken();
+      console.log('[IndexScreen] FCM token obtained:', fcmToken ? 'Yes' : 'No');
+
+      // Perform Google login with FCM token
+      const response = await GoogleSignInService.handleGoogleLogin(fcmToken || undefined);
+
+      console.log('[IndexScreen] Google login successful:', response.user?.email);
+
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: 'Login Successful',
+        text2: `Welcome, ${response.user?.name || 'User'}!`,
+        duration: 2000,
+      });
+
+      // Trigger the authenticated callback to navigate to authenticated screens
+      setTimeout(() => {
+        onAuthenticated?.(response.user, response.token);
+      }, 700);
+    } catch (error: any) {
+      // Handle specific error types
+      const errorMessage = error.message || 'Failed to sign in with Google. Please try again.';
+
+      if (error.code === 'SIGN_IN_CANCELLED') {
+        // Don't show alert for cancellation
+        return;
+      }
+
+      // Show error using Alert instead of Toast for better readability
+      Alert.alert(
+        'Login Error',
+        errorMessage,
+        [
+          {
+            text: 'OK',
+            onPress: () => {},
+          },
+        ],
+      );
+
+      return;
     } finally {
       setLoading(false);
     }
@@ -107,11 +193,21 @@ export default function IndexScreen({
             </Pressable>
 
             <Pressable
-              style={styles.googleButton}
+              style={[styles.googleButton, loading && styles.disabledButton]}
               onPress={handleGoogleLogin}
               disabled={loading}
             >
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              {loading ? (
+                <>
+                  <ActivityIndicator color={Colors.white} style={styles.buttonLoader} />
+                  <Text style={styles.googleButtonText}>Signing in...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={18} color={Colors.white} />
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </>
+              )}
             </Pressable>
           </View>
 
@@ -255,6 +351,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   googleButton: {
+    flexDirection: 'row',
     paddingVertical: 14,
     paddingHorizontal: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -263,6 +360,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  buttonLoader: {
+    marginRight: 4,
   },
   googleButtonText: {
     fontSize: 16,
