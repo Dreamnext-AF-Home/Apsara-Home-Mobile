@@ -227,6 +227,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
   const [paymentConfirmationData, setPaymentConfirmationData] = useState<any>(null);
   const [showSecurity, setShowSecurity] = useState(false);
+  const [linkedAccountsRefreshTrigger, setLinkedAccountsRefreshTrigger] = useState(0);
   const [showAboutUs, setShowAboutUs] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
@@ -1043,6 +1044,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                 setPurchasesStatus(normalizePurchaseStatus(status));
                 setShowPurchases(true);
               }}
+              linkedAccountsRefreshTrigger={linkedAccountsRefreshTrigger}
             />
           ) : activeTab === 'shop' ? (
             selectedBrandId && selectedBrand ? (
@@ -1667,6 +1669,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
             isDarkMode={isDarkMode}
             token={token}
             onBack={() => setShowSecurity(false)}
+            onGoogleLinked={() => setLinkedAccountsRefreshTrigger(prev => prev + 1)}
           />
         </View>
       )}
