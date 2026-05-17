@@ -126,19 +126,27 @@ export default function IndexScreen({
         }
       );
 
-      console.log('[IndexScreen] Biometric login successful:', response.data?.user?.email);
+      const user = response.data?.user ?? response.data?.data?.user;
+      const token = response.data?.token ?? response.data?.data?.token;
+
+      console.log('[IndexScreen] Biometric login successful:', {
+        email: user?.email,
+        name: user?.name,
+        hasToken: !!token,
+        rawResponseKeys: Object.keys(response.data ?? {}),
+      });
 
       // Show success toast
       Toast.show({
         type: 'success',
         text1: 'Login Successful',
-        text2: `Welcome, ${response.data?.user?.name || 'User'}!`,
+        text2: `Welcome, ${user?.name || user?.email || 'User'}!`,
         duration: 2000,
       });
 
       // Trigger the authenticated callback
       setTimeout(() => {
-        onAuthenticated?.(response.data?.user, response.data?.token);
+        onAuthenticated?.(user, token);
       }, 700);
     } catch (error: any) {
       console.error('[IndexScreen] Biometric login failed:', error);
@@ -261,6 +269,28 @@ export default function IndexScreen({
 
           {/* Login Buttons */}
           <View style={styles.buttonSection}>
+            {/* Top section */}
+            <Pressable
+              style={styles.loginButton}
+              onPress={onGoToLogin}
+              disabled={loading}
+            >
+              <Ionicons name="mail-outline" size={18} color={Colors.white} />
+              <Text style={styles.loginButtonText}>Login with Email/Username</Text>
+            </Pressable>
+
+            {/* Line separator */}
+            <View style={styles.separatorRow}>
+              <View style={styles.separatorLine} />
+              <View style={styles.separatorOrContainer}>
+                <Text style={styles.separatorOrText}>or</Text>
+              </View>
+              <View style={styles.separatorLine} />
+
+            </View>
+
+
+            {/* Bottom section */}
             {biometricAvailable && (
               <Pressable
                 style={[styles.biometricButton, loading && styles.disabledButton]}
@@ -280,15 +310,6 @@ export default function IndexScreen({
                 )}
               </Pressable>
             )}
-
-            <Pressable
-              style={styles.loginButton}
-              onPress={onGoToLogin}
-              disabled={loading}
-            >
-              <Ionicons name="mail-outline" size={18} color={Colors.white} />
-              <Text style={styles.loginButtonText}>Login with Email/Username</Text>
-            </Pressable>
 
             <Pressable
               style={[styles.googleButton, loading && styles.disabledButton]}
@@ -474,6 +495,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
+
+
   disabledButton: {
     opacity: 0.6,
   },
@@ -592,5 +615,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: Colors.white,
+  },
+
+  separatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 6,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  separatorOrContainer: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  separatorOrText: {
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'lowercase',
   },
 });
