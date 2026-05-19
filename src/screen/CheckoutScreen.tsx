@@ -67,8 +67,14 @@ interface UserAddress {
   full_address: string;
 }
 
+interface BrandItem {
+  id: number;
+  name: string;
+}
+
 interface CheckoutScreenProps {
   item?: CheckoutItem;
+  items?: any[];
   token?: string | null;
   user?: {
     name: string;
@@ -82,11 +88,13 @@ interface CheckoutScreenProps {
   onNavigateToOrderSuccess?: (orderData: any) => void;
   onShopNavigate?: (brandId: number, shopName: string) => void;
   onNavigateToShippingAddress?: (addresses: UserAddress[], selectedAddress: UserAddress | null, onSelect: (address: UserAddress) => void) => void;
+  brands?: BrandItem[];
   isDarkMode?: boolean;
 }
 
 export default function CheckoutScreen({
   item,
+  items,
   token,
   user,
   onBack,
@@ -94,6 +102,7 @@ export default function CheckoutScreen({
   onNavigateToOrderSuccess,
   onShopNavigate,
   onNavigateToShippingAddress,
+  brands = [],
   isDarkMode = false,
 }: CheckoutScreenProps) {
   const insets = useSafeAreaInsets();
@@ -233,12 +242,30 @@ export default function CheckoutScreen({
     return () => backHandler.remove();
   }, [onBack]);
 
-  // Calculate totals
-  const subtotal = item && item.product_price_srp ? item.product_price_srp * item.quantity : 0;
-  const memberTotal = item ? item.product_price_member * item.quantity : 0;
+  // Group items by brand
+  const groupItemsByBrand = (itemsToGroup: CheckoutItem[]) => {
+    const grouped: { [key: string]: CheckoutItem[] } = {};
+    itemsToGroup.forEach(item => {
+      const brand = item.brand_name || 'Unknown Brand';
+      if (!grouped[brand]) {
+        grouped[brand] = [];
+      }
+      grouped[brand].push(item);
+    });
+    return grouped;
+  };
+
+  // Calculate totals - handle both single item and multiple items
+  const checkoutItems = items && items.length > 0 ? items : (item ? [item] : []);
+  const groupedItems = groupItemsByBrand(checkoutItems);
+  const subtotal = checkoutItems.reduce((sum, i) => {
+    const srpPrice = i.product_price_srp || i.product_price_member;
+    return sum + (srpPrice * (i.quantity || 1));
+  }, 0);
+  const memberTotal = checkoutItems.reduce((sum, i) => sum + (i.product_price_member * (i.quantity || 1)), 0);
   const shippingCost = shippingMethods.length > 0 ? shippingMethods[0].fee : 0;
   const selectedShippingMethod = shippingMethods.length > 0 ? shippingMethods[0] : null;
-  const shopDiscount = item && item.product_price_srp ? (item.product_price_srp - item.product_price_member) * item.quantity : 0;
+  const shopDiscount = subtotal - memberTotal;
   const total = memberTotal - voucherDiscount + shippingCost;
 
 
@@ -254,9 +281,9 @@ export default function CheckoutScreen({
       return;
     }
 
-    if (!item || !user || !selectedAddress || !token) {
+    if (!user || !selectedAddress || !token || checkoutItems.length === 0) {
       console.log('[CheckoutScreen] Missing required fields:', {
-        hasItem: !!item,
+        hasItems: checkoutItems.length > 0,
         hasUser: !!user,
         hasAddress: !!selectedAddress,
         hasToken: !!token,
@@ -277,9 +304,10 @@ export default function CheckoutScreen({
       const platformName = Platform.OS === 'ios' ? 'ios' : 'android';
 
       // REQUIRED FIELDS
+      const totalQuantity = checkoutItems.reduce((sum, i) => sum + (i.quantity || 1), 0);
       const paymentPayload: any = {
         amount: Math.round(total * 100) / 100,
-        description: `${item.product_name} (${item.quantity} item${item.quantity > 1 ? 's' : ''})`,
+        description: `Order - ${checkoutItems.length} item${checkoutItems.length > 1 ? 's' : ''} (${totalQuantity} total)`,
         payment_method: selectedPaymentMethod,
         platform: platformName,
         app_version: appVersion,
@@ -301,25 +329,42 @@ export default function CheckoutScreen({
         };
       }
 
-      // Order details (optional)
-      paymentPayload.order = {
-        product_name: item.product_name,
-        product_id: item.product_id,
-        product_sku: `SKU-${item.product_id}`,
-        product_image: item.variant_image || item.product_image,
-        quantity: item.quantity,
+      // Order details (optional) - handle both single and multiple items
+      if (checkoutItems.length === 1) {
+        // Single item - use old format for backward compatibility
+        const singleItem = checkoutItems[0];
+        paymentPayload.order = {
+          product_name: singleItem.product_name,
+          product_id: singleItem.product_id,
+          product_sku: `SKU-${singleItem.product_id}`,
+          product_image: singleItem.variant_image || singleItem.product_image,
+          quantity: singleItem.quantity,
+          subtotal: Math.round(memberTotal * 100) / 100,
+          handling_fee: Math.round(shippingCost * 100) / 100,
+        };
+        if (singleItem.variant_color) paymentPayload.order.selected_color = singleItem.variant_color;
+        if (singleItem.variant_size) paymentPayload.order.selected_size = singleItem.variant_size;
+      } else {
+        // Multiple items
+        paymentPayload.order = {
+          items: checkoutItems.map(i => ({
+            product_name: i.product_name,
+            product_id: i.product_id,
+            product_sku: `SKU-${i.product_id}`,
+            product_image: i.variant_image || i.product_image,
+            quantity: i.quantity,
+            variant_color: i.variant_color,
+            variant_size: i.variant_size,
+          })),
+          subtotal: Math.round(memberTotal * 100) / 100,
+          handling_fee: Math.round(shippingCost * 100) / 100,
+        };
+      }
+
+      console.log('[CheckoutScreen] Order object:', {
+        items: checkoutItems.length,
+        quantity: totalQuantity,
         subtotal: Math.round(memberTotal * 100) / 100,
-        handling_fee: Math.round(shippingCost * 100) / 100,
-      };
-
-      // Add optional variant fields if available
-      if (item.variant_color) paymentPayload.order.selected_color = item.variant_color;
-      if (item.variant_size) paymentPayload.order.selected_size = item.variant_size;
-
-      console.log('[CheckoutScreen] Order object with quantity:', {
-        product: paymentPayload.order.product_name,
-        quantity: paymentPayload.order.quantity,
-        subtotal: paymentPayload.order.subtotal,
       });
 
       // Voucher (optional)
@@ -350,7 +395,8 @@ export default function CheckoutScreen({
 
       if (response.data?.checkout_url) {
         const orderData = {
-          item,
+          item: checkoutItems.length === 1 ? checkoutItems[0] : undefined,
+          items: checkoutItems,
           user,
           selectedAddress,
           selectedPaymentMethod,
@@ -398,7 +444,7 @@ export default function CheckoutScreen({
     }
   };
 
-  if (!item) {
+  if (checkoutItems.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg }]}>
         <LinearGradient
@@ -434,8 +480,12 @@ export default function CheckoutScreen({
         style={[styles.header, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1f2937' : Colors.white, borderBottomColor: isDarkMode ? '#374151' : '#e5e7eb' }]}
       >
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <Ionicons name="chevron-back-outline" size={24} color={isDarkMode ? '#e5e7eb' : Colors.text} />
+          <TouchableOpacity
+            style={[styles.backBtn, isDarkMode ? { backgroundColor: '#374151', borderColor: '#4b5563' } : { backgroundColor: '#f1f5f9', borderColor: '#e5e7eb' }]}
+            onPress={onBack}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back-outline" size={20} color={isDarkMode ? '#e5e7eb' : Colors.text} />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={[styles.headerGreeting, { color: isDarkMode ? '#f8fafc' : Colors.text }]}>
@@ -456,19 +506,25 @@ export default function CheckoutScreen({
         style={[styles.content, { backgroundColor: colors.bg }]}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Order Item Section - Shopee Style */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
-          {/* Shop Header */}
-          {item.brand_name && (
+        {/* Order Item Section - Grouped by Brand */}
+        {Object.entries(groupedItems).map(([brandName, brandItems]) => (
+          <View key={brandName} style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
+            {/* Shop Header */}
             <TouchableOpacity
               style={[styles.shopHeader, { borderBottomColor: colors.border, backgroundColor: colors.containerBg }]}
-              onPress={() => onShopNavigate?.(item.brand_id || 0, item.brand_name || '')}
+              onPress={() => {
+                if (onShopNavigate) {
+                  const brand = brands.find(b => b.name === brandName);
+                  const brandId = brand?.id || (brandItems[0].brand_id || 0);
+                  onShopNavigate(brandId, brandName);
+                }
+              }}
               activeOpacity={0.7}
             >
               <View style={styles.shopInfo}>
                 <Ionicons name="storefront" size={16} color={Colors.sky} />
                 <Text style={[styles.shopName, { color: colors.text }]} numberOfLines={1}>
-                  {item.brand_name}
+                  {brandName}
                 </Text>
               </View>
               <View style={styles.viewBrandContainer}>
@@ -476,46 +532,48 @@ export default function CheckoutScreen({
                 <Ionicons name="chevron-forward" size={16} color={Colors.sky} />
               </View>
             </TouchableOpacity>
-          )}
 
-          {/* Product Card */}
-          <View style={[styles.itemCard, { borderColor: colors.border, backgroundColor: colors.borderLight, marginHorizontal: 12, marginTop: 8, marginBottom: 8 }]}>
-            <Image
-              source={{ uri: item.variant_image || item.product_image }}
-              style={styles.itemImage}
-              resizeMode="contain"
-            />
-            <View style={styles.itemDetails}>
-              <View>
-                <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={2}>
-                  {item.product_name}
-                </Text>
-                {(item.variant_color || item.variant_size) && (
-                  <Text style={[styles.itemVariantInfo, { color: colors.textSec }]}>
-                    {item.variant_color && `${item.variant_color}`}
-                    {item.variant_color && item.variant_size && ', '}
-                    {item.variant_size && `${item.variant_size}`}
-                  </Text>
-                )}
-              </View>
-              <View style={styles.itemFooter}>
-                <View style={styles.itemPriceContainer}>
-                  <Text style={[styles.itemPrice, { color: Colors.sky }]}>
-                    ₱{item.product_price_member.toLocaleString()}
-                  </Text>
-                  {item.product_price_srp && item.product_price_srp > item.product_price_member && (
-                    <Text style={[styles.itemPriceSrp, { color: colors.textSec }]}>
-                      ₱{item.product_price_srp.toLocaleString()}
+            {/* Product Cards for this Brand */}
+            {brandItems.map((checkoutItem, itemIndex) => (
+              <View key={itemIndex} style={[styles.itemCard, { borderColor: colors.border, backgroundColor: colors.borderLight, marginHorizontal: 12, marginTop: itemIndex === 0 ? 8 : 8, marginBottom: 8 }]}>
+                <Image
+                  source={{ uri: checkoutItem.variant_image || checkoutItem.product_image }}
+                  style={styles.itemImage}
+                  resizeMode="contain"
+                />
+                <View style={styles.itemDetails}>
+                  <View>
+                    <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={2}>
+                      {checkoutItem.product_name}
                     </Text>
-                  )}
+                    {(checkoutItem.variant_color || checkoutItem.variant_size) && (
+                      <Text style={[styles.itemVariantInfo, { color: colors.textSec }]}>
+                        {checkoutItem.variant_color && `${checkoutItem.variant_color}`}
+                        {checkoutItem.variant_color && checkoutItem.variant_size && ', '}
+                        {checkoutItem.variant_size && `${checkoutItem.variant_size}`}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.itemFooter}>
+                    <View style={styles.itemPriceContainer}>
+                      <Text style={[styles.itemPrice, { color: Colors.sky }]}>
+                        ₱{checkoutItem.product_price_member.toLocaleString()}
+                      </Text>
+                      {checkoutItem.product_price_srp && checkoutItem.product_price_srp > checkoutItem.product_price_member && (
+                        <Text style={[styles.itemPriceSrp, { color: colors.textSec }]}>
+                          ₱{checkoutItem.product_price_srp.toLocaleString()}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={[styles.itemQty, { color: colors.textSec }]}>
+                      x{checkoutItem.quantity}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[styles.itemQty, { color: colors.textSec }]}>
-                  x{item.quantity}
-                </Text>
               </View>
-            </View>
+            ))}
           </View>
-        </View>
+        ))}
 
         {/* Shipping Address Section */}
         <View style={[styles.section, { backgroundColor: colors.containerBg, marginTop: 12, padding: 0, borderColor: colors.border, borderWidth: 1 }]}>
@@ -724,14 +782,14 @@ export default function CheckoutScreen({
           <View style={[styles.priceRow, { borderBottomColor: colors.borderLight }]}>
             <Text style={[styles.priceLabel, { color: colors.textSec }]}>Quantity</Text>
             <Text style={[styles.priceValue, { color: colors.text }]}>
-              x{item?.quantity || 0}
+              x{checkoutItems.reduce((sum, i) => sum + (i.quantity || 1), 0)}
             </Text>
           </View>
 
           <View style={[styles.priceRow, { borderBottomColor: colors.borderLight }]}>
             <Text style={[styles.priceLabel, { color: colors.textSec }]}>Subtotal</Text>
             <Text style={[styles.priceValue, { color: colors.text }]}>
-              ₱{(item && item.product_price_srp ? item.product_price_srp * item.quantity : 0).toLocaleString()}
+              ₱{subtotal.toLocaleString()}
             </Text>
           </View>
 
@@ -831,7 +889,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
@@ -839,14 +897,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginLeft: -10,
-    marginRight: 12,
+    marginLeft: 0,
+    marginRight: 0,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
   },
   headerInfo: {
     flex: 1,
