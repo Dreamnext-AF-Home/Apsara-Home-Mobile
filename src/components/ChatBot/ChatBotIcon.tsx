@@ -12,6 +12,7 @@ import {
   Image,
   PanResponder,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { storageService } from '../../services/storageService';
@@ -53,6 +54,7 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function ChatBotIcon({ onPress, position = 'bottom-right', visible = true, isDarkMode = false }: ChatBotIconProps) {
+  const insets = useSafeAreaInsets();
   const [chatVisible, setChatVisible] = useState(false);
   const [isIconHidden, setIsIconHidden] = useState(false);
   const [bubbleMessageIndex, setBubbleMessageIndex] = useState(0);
@@ -538,7 +540,7 @@ export default function ChatBotIcon({ onPress, position = 'bottom-right', visibl
             )}
 
             {/* Input Area */}
-            <View style={[styles.inputContainer, isDarkMode && styles.inputContainerDark]}>
+            <View style={[styles.inputContainer, isDarkMode && styles.inputContainerDark, { paddingBottom: insets.bottom + 12 }]}>
               <TextInput
                 style={[styles.textInput, isDarkMode && styles.textInputDark]}
                 placeholder="Type your message..."
