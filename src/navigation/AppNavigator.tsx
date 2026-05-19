@@ -1070,6 +1070,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
           ) : activeTab === 'shop' ? (
             selectedBrandId != null && selectedBrand ? (
               <ShopByBrandScreen
+                key={selectedBrandId}
                 token={token}
                 user={enrichedUser}
                 cartCount={cartCount}
@@ -1461,6 +1462,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               setSelectedProductId(productId);
             }}
             onShopNavigate={(brandId, shopName) => {
+              console.log('[AppNavigator] CartScreen onShopNavigate:', { brandId, shopName, foundInHomeBrands: !!homeBrands.find(b => b.id === brandId) });
               setShowCart(false);
               setShopSourceIsCart(true);
               const brand = homeBrands.find(b => b.id === brandId) || {
