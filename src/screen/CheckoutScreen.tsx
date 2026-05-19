@@ -23,6 +23,12 @@ import Toast from 'react-native-toast-message';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+const getBrandLogo = (brandName: string, brands: BrandItem[]): string | null => {
+  const brand = brands.find(b => b.name === brandName);
+  if (!brand) return null;
+  return brand.logo || (brand as any).brand_image || (brand as any).image || null;
+};
+
 interface CheckoutItem {
   product_id: number;
   product_name: string;
@@ -504,7 +510,7 @@ export default function CheckoutScreen({
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={[styles.content, { backgroundColor: colors.bg }]}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
         {/* Order Item Section - Grouped by Brand */}
         {Object.entries(groupedItems).map(([brandName, brandItems]) => (
@@ -514,23 +520,39 @@ export default function CheckoutScreen({
               style={[styles.shopHeader, { borderBottomColor: colors.border, backgroundColor: colors.containerBg }]}
               onPress={() => {
                 if (onShopNavigate) {
-                  const brand = brands.find(b => b.name === brandName);
-                  const brandId = brand?.id || (brandItems[0].brand_id || 0);
+                  // Try multiple sources for brand ID
+                  let brandId = (brandItems[0] as any)?.brand_id;
+                  if (!brandId) {
+                    const brand = brands.find(b => b.name === brandName);
+                    brandId = brand?.id;
+                  }
+                  if (!brandId) {
+                    brandId = 0;
+                  }
+                  console.log('[CheckoutScreen] Brand clicked:', { brandName, brandId, fromItem: (brandItems[0] as any)?.brand_id, fromBrandsArray: brands.find(b => b.name === brandName)?.id, availableBrands: brands.length });
                   onShopNavigate(brandId, brandName);
                 }
               }}
               activeOpacity={0.7}
             >
               <View style={styles.shopInfo}>
-                <Ionicons name="storefront" size={16} color={Colors.sky} />
+                {(() => {
+                  const logoUrl = getBrandLogo(brandName, brands);
+                  if (logoUrl) {
+                    return (
+                      <Image
+                        source={{ uri: logoUrl }}
+                        style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border }}
+                      />
+                    );
+                  }
+                  return <Ionicons name="storefront" size={16} color={Colors.sky} />;
+                })()}
                 <Text style={[styles.shopName, { color: colors.text }]} numberOfLines={1}>
                   {brandName}
                 </Text>
               </View>
-              <View style={styles.viewBrandContainer}>
-                <Text style={[styles.viewBrandText, { color: colors.textSec }]}>View Brand</Text>
-                <Ionicons name="chevron-forward" size={16} color={Colors.sky} />
-              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.sky} />
             </TouchableOpacity>
 
             {/* Product Cards for this Brand */}
