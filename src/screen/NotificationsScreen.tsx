@@ -29,6 +29,8 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
+  const [expandedNotificationId, setExpandedNotificationId] = useState<number | null>(null);
+  const [loadingUpdates, setLoadingUpdates] = useState<Record<number, boolean>>({});
 
   // Integrate with useNotifications for realtime updates
   useNotifications(userId || '', token || '', onNavigateToPurchases, () => {
@@ -78,6 +80,50 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
 
   const handleRefresh = () => {
     fetchNotifications(true);
+  };
+
+  const fetchNotificationUpdates = async (notificationId: number) => {
+    if (!token) return;
+    setLoadingUpdates(prev => ({ ...prev, [notificationId]: true }));
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL || 'https://api.afhomebiz.com'}/mobile/notifications/${notificationId}/updates`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        // Update the notification with fetched updates
+        setNotifications((prev: any) => {
+          if (!prev?.notifications) return prev;
+          const updated = prev.notifications.map((n: any) =>
+            n.id === notificationId ? { ...n, updates: data.updates } : n
+          );
+          return { ...prev, notifications: updated };
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching notification updates:', error);
+    } finally {
+      setLoadingUpdates(prev => ({ ...prev, [notificationId]: false }));
+    }
+  };
+
+  const toggleNotificationExpand = async (notificationId: number) => {
+    if (expandedNotificationId === notificationId) {
+      setExpandedNotificationId(null);
+    } else {
+      setExpandedNotificationId(notificationId);
+      // Fetch updates if not already loaded
+      const notification = notifications?.notifications.find((n: any) => n.id === notificationId);
+      if (notification && !notification.updates) {
+        await fetchNotificationUpdates(notificationId);
+      }
+    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -304,65 +350,115 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
           {notifications?.notifications && notifications.notifications.length > 0 ? (
             (() => {
               const filtered = getFilteredNotifications();
-              return filtered.length > 0 ? filtered.map((item: any, index: number) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.notificationItem,
-                  {
-                    borderBottomColor: colors.border,
-                    backgroundColor: !item.is_read ? colors.unreadBg : 'transparent',
-                  },
-                  index !== notifications.notifications.length - 1 && styles.notificationItemBorder,
-                ]}
-                onPress={() => handleNotificationPress(item)}
-                activeOpacity={0.7}
-              >
-                {item.product_image ? (
-                  <View style={[styles.notificationImageBox, { backgroundColor: colors.borderLight }]}>
-                    <Image
-                      source={{ uri: item.product_image }}
-                      style={styles.notificationImage}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ) : (
+              return filtered.length > 0 ? filtered.map((item: any, index: number) => {
+                const isExpanded = expandedNotificationId === item.id;
+                const isLoadingUpdates = loadingUpdates[item.id];
+
+                return (
                   <View
+                    key={item.id}
                     style={[
-                      styles.notificationIconBox,
-                      { backgroundColor: getSeverityColor(item.severity) },
+                      {
+                        borderBottomColor: colors.border,
+                        backgroundColor: !item.is_read ? colors.unreadBg : 'transparent',
+                      },
+                      index !== filtered.length - 1 && styles.notificationItemBorder,
                     ]}
                   >
-                    <Ionicons
-                      name={getSeverityIcon(item.severity)}
-                      size={24}
-                      color={Colors.white}
-                    />
-                  </View>
-                )}
-                <View style={styles.notificationContent}>
-                  <View style={styles.notificationHeaderRow}>
-                    <Text style={[styles.notificationTitle, { color: colors.text }]}>{item.title}</Text>
-                    <Text style={[styles.notificationTime, { color: colors.textSec }]}>{formatDate(item.created_at)}</Text>
-                  </View>
-                  {(() => {
-                    const badge = getStatusBadgeConfig(getNotificationStatus(item), isDarkMode);
-                    if (!badge) return null;
-                    return (
-                      <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                        <Text style={[styles.statusBadgeText, { color: badge.text }]}>{badge.label}</Text>
+                    <TouchableOpacity
+                      style={[styles.notificationItem]}
+                      onPress={() => handleNotificationPress(item)}
+                      activeOpacity={0.7}
+                    >
+                      {item.product_image ? (
+                        <View style={[styles.notificationImageBox, { backgroundColor: colors.borderLight }]}>
+                          <Image
+                            source={{ uri: item.product_image }}
+                            style={styles.notificationImage}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      ) : (
+                        <View
+                          style={[
+                            styles.notificationIconBox,
+                            { backgroundColor: getSeverityColor(item.severity) },
+                          ]}
+                        >
+                          <Ionicons
+                            name={getSeverityIcon(item.severity)}
+                            size={24}
+                            color={Colors.white}
+                          />
+                        </View>
+                      )}
+                      <View style={styles.notificationContent}>
+                        <View style={styles.notificationHeaderRow}>
+                          <Text style={[styles.notificationTitle, { color: colors.text }]}>{item.title}</Text>
+                          <Text style={[styles.notificationTime, { color: colors.textSec }]}>{formatDate(item.created_at)}</Text>
+                        </View>
+                        {(() => {
+                          const badge = getStatusBadgeConfig(getNotificationStatus(item), isDarkMode);
+                          if (!badge) return null;
+                          return (
+                            <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                              <Text style={[styles.statusBadgeText, { color: badge.text }]}>{badge.label}</Text>
+                            </View>
+                          );
+                        })()}
+                        <Text style={[styles.notificationDescription, { color: colors.textSec }]}>{item.message}</Text>
+                        {item.amount > 0 && (
+                          <Text style={[styles.notificationAmount, { color: colors.emptyIcon }]}>
+                            Amount: ₱{item.amount.toLocaleString()}
+                          </Text>
+                        )}
+                        {(item.updates || []).length > 0 && (
+                          <TouchableOpacity
+                            style={styles.updatesToggle}
+                            onPress={() => toggleNotificationExpand(item.id)}
+                          >
+                            <Text style={[styles.updatesToggleText, { color: Colors.sky }]}>
+                              View {(item.updates || []).length} update{(item.updates || []).length !== 1 ? 's' : ''} {isExpanded ? '▼' : '▶'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
-                    );
-                  })()}
-                  <Text style={[styles.notificationDescription, { color: colors.textSec }]}>{item.message}</Text>
-                  {item.amount > 0 && (
-                    <Text style={[styles.notificationAmount, { color: colors.emptyIcon }]}>
-                      Amount: ₱{item.amount.toLocaleString()}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-              )) : (
+                    </TouchableOpacity>
+
+                    {isExpanded && (
+                      <View style={[styles.updatesContainer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
+                        {isLoadingUpdates ? (
+                          <View style={styles.updatesLoading}>
+                            <ActivityIndicator size="small" color={Colors.sky} />
+                          </View>
+                        ) : (
+                          (item.updates || []).map((update: any, updateIndex: number) => (
+                            <View
+                              key={`${item.id}-update-${updateIndex}`}
+                              style={[
+                                styles.updateItem,
+                                { borderLeftColor: Colors.sky, borderBottomColor: colors.border },
+                                updateIndex === (item.updates || []).length - 1 && styles.updateItemLast,
+                              ]}
+                            >
+                              <View style={styles.updateTimelineIcon}>
+                                <View style={[styles.updateDot, { backgroundColor: Colors.sky }]} />
+                              </View>
+                              <View style={styles.updateContent}>
+                                <View style={styles.updateHeaderRow}>
+                                  <Text style={[styles.updateTitle, { color: colors.text }]}>{update.title}</Text>
+                                  <Text style={[styles.updateTime, { color: colors.textSec }]}>{formatDate(update.event_date || update.created_at)}</Text>
+                                </View>
+                                <Text style={[styles.updateMessage, { color: colors.textSec }]}>{update.message}</Text>
+                              </View>
+                            </View>
+                          ))
+                        )}
+                      </View>
+                    )}
+                  </View>
+                );
+              }) : (
                     <View style={styles.emptyContainer}>
                   <Ionicons name="checkmark-circle-outline" size={64} color={colors.emptyIcon} />
                   <Text style={[styles.emptyTitle, { color: colors.text }]}>All caught up!</Text>
@@ -469,9 +565,11 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'flex-start',
     borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   notificationItemBorder: {
     borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   notificationIconBox: {
     width: 48,
@@ -561,5 +659,83 @@ const styles = StyleSheet.create({
   emptyDescription: {
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  updatesToggle: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  updatesToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.sky,
+  },
+  updatesContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 0,
+  },
+  updatesLoading: {
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  updateItem: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.sky,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingLeft: 12,
+  },
+  updateItemLast: {
+    borderBottomWidth: 0,
+  },
+  updateTimelineIcon: {
+    width: 20,
+    height: 20,
+    marginTop: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: -20,
+  },
+  updateDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.sky,
+  },
+  updateContent: {
+    flex: 1,
+    gap: 4,
+  },
+  updateHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  updateTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+    flex: 1,
+  },
+  updateTime: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    flexShrink: 0,
+  },
+  updateMessage: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '400',
+    lineHeight: 16,
   },
 });
