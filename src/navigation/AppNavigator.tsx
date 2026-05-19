@@ -1022,6 +1022,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
                     console.error('Failed to update cart count:', error);
                   }
                 }}
+                onNavigateToCart={() => setShowCart(true)}
               />
             </>
           ) : activeTab === 'profile' ? (
