@@ -358,27 +358,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
         console.log('[AppNavigator] Found pending background deeplink:', deeplink);
         // Add a small delay to ensure navigation context is fully ready
         setTimeout(() => {
-          processDeeplink(deeplink);
-        }, 100);
-      }
-    };
-
-    const processDeeplink = (deeplink: string) => {
-      if (deeplink.includes('purchases://')) {
-        const parts = deeplink.replace('purchases://', '').split('/');
-        const status = parts[0];
-        const checkoutId = parts[1];
-
-        if (checkoutId) {
-          console.log('[AppNavigator] Processing pending purchases deeplink:', { status, checkoutId });
-          setPurchasesStatus(normalizePurchaseStatus(status));
-          setPurchasesInitialOrderId(checkoutId);
-          setShowPurchases(true);
-        } else {
-          console.warn('[AppNavigator] Invalid purchases deeplink format:', deeplink);
-        }
-      } else {
-        console.warn('[AppNavigator] Unknown deeplink format:', deeplink);
+          // Emit the deeplink through the Linking event listener
+          // This will trigger handleDeepLink which processes all deeplink types
+          Linking.emit('url', { url: deeplink });
+        }, 500);
       }
     };
 

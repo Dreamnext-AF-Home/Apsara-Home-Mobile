@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Platform, PermissionsAndroid, Linking } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getMessaging,
@@ -18,12 +18,6 @@ import { useNavigation } from '../context/NavigationContext';
 let backgroundHandlerRegistered = false;
 let foregroundHandlerRegistered = false;
 
-// Store deeplinks globally
-let lastStoredDeeplink: string | undefined = undefined;
-
-// Store pending deeplink from background notification for when app opens
-let pendingBackgroundDeeplink: string | undefined = undefined;
-
 const registerBackgroundMessageHandler = () => {
   if (backgroundHandlerRegistered) return;
   backgroundHandlerRegistered = true;
@@ -33,56 +27,12 @@ const registerBackgroundMessageHandler = () => {
     console.log('[useFirebaseMessaging] Background data payload:', remoteMessage.data);
 
     try {
-      const deeplink = remoteMessage.data?.href || remoteMessage.data?.deeplink || null;
-
-      console.log('[useFirebaseMessaging] Background parsed:', { deeplink });
-
-      // Store the deeplink globally for later retrieval if user taps notification
-      const finalDeeplink = deeplink || '/orders';
-      lastStoredDeeplink = finalDeeplink;
-
-      // Also store to persistent storage in case app gets killed before notification tap
-      try {
-        await AsyncStorage.setItem('pending_notification_deeplink', finalDeeplink);
-        console.log('[useFirebaseMessaging] Stored deeplink to persistent storage:', { deeplink: finalDeeplink });
-      } catch (storageError) {
-        console.error('[useFirebaseMessaging] Error storing deeplink to storage:', storageError);
-      }
-
-      console.log('[useFirebaseMessaging] Background: Stored deeplink for notification tap:', { deeplink: finalDeeplink });
-
-      // System will automatically display the notification from the notification payload
-      // No need to call notifee.displayNotification here
+      // Notification received - deeplink handling will be implemented manually
+      console.log('[useFirebaseMessaging] Background notification received');
     } catch (error) {
       console.error('[useFirebaseMessaging] Background message error:', error);
     }
   });
-};
-
-// Helper to get and clear pending background deeplink
-export const getPendingBackgroundDeeplink = async (): Promise<string | undefined> => {
-  // First check memory
-  if (pendingBackgroundDeeplink) {
-    const deeplink = pendingBackgroundDeeplink;
-    pendingBackgroundDeeplink = undefined;
-    console.log('[useFirebaseMessaging] Retrieved pending deeplink from memory:', { deeplink });
-    return deeplink;
-  }
-
-  // Then check persistent storage as fallback
-  try {
-    const storedDeeplink = await AsyncStorage.getItem('pending_notification_deeplink');
-    if (storedDeeplink) {
-      await AsyncStorage.removeItem('pending_notification_deeplink');
-      console.log('[useFirebaseMessaging] Retrieved pending deeplink from storage:', { storedDeeplink });
-      return storedDeeplink;
-    }
-  } catch (error) {
-    console.error('[useFirebaseMessaging] Error checking stored deeplink:', error);
-  }
-
-  console.log('[useFirebaseMessaging] No pending deeplink found');
-  return undefined;
 };
 
 export const useFirebaseMessaging = (token: string | null, userId: string | number | null) => {
@@ -191,13 +141,7 @@ export const useFirebaseMessaging = (token: string | null, userId: string | numb
         // Handle notification press (when user clicks the notification and app opens from background)
         const unsubscribeOnNotificationOpenedApp = onNotificationOpenedApp(messaging_, (remoteMessage) => {
           console.log('[useFirebaseMessaging] App opened from notification:', remoteMessage);
-          const deeplink = remoteMessage?.data?.href || remoteMessage?.data?.deeplink;
-          if (deeplink) {
-            console.log('[useFirebaseMessaging] Emitting deeplink event:', deeplink);
-            Linking.openURL(deeplink).catch(err => {
-              console.error('[useFirebaseMessaging] Failed to open deeplink:', err);
-            });
-          }
+          // Notification deeplink handling removed - will be implemented manually
         });
 
 
@@ -211,44 +155,15 @@ export const useFirebaseMessaging = (token: string | null, userId: string | numb
               hasData: !!notificationOpenedApp.data,
               data: notificationOpenedApp.data
             });
-            const deeplink = notificationOpenedApp?.data?.href || notificationOpenedApp?.data?.deeplink;
-            if (deeplink && typeof deeplink === 'string' && deeplink.trim()) {
-              console.log('[useFirebaseMessaging] Storing initial deeplink:', deeplink);
-              // Store in both memory and persistent storage for reliability
-              pendingBackgroundDeeplink = deeplink;
-              try {
-                await AsyncStorage.setItem('pending_notification_deeplink', deeplink);
-              } catch (e) {
-                console.error('[useFirebaseMessaging] Error storing deeplink:', e);
-              }
-
-              if (deeplink.startsWith('purchases://')) {
-                console.log('[useFirebaseMessaging] Stored initial purchases deeplink as pending');
-              } else {
-                // Only open external URLs through Linking
-                setTimeout(() => {
-                  Linking.openURL(deeplink).catch(err => console.error('[useFirebaseMessaging] Failed to open external URL:', err));
-                }, 1000);
-              }
-              initialNotificationProcessed = true;
-            }
+            // Notification deeplink handling removed - will be implemented manually
           }
         } catch (error) {
           console.error('[useFirebaseMessaging] Error getting initial notification from Firebase:', error);
         }
 
 
-        // Handle background notification opened (when app is in background)
-        const unsubscribeNotificationOpened = onNotificationOpenedApp(messaging_, (remoteMessage) => {
-          console.log('[useFirebaseMessaging] Notification opened from background:', remoteMessage);
-          const deeplink = remoteMessage?.data?.href || remoteMessage?.data?.deeplink;
-          if (deeplink) {
-            console.log('[useFirebaseMessaging] Emitting deeplink from background state:', deeplink);
-            Linking.openURL(deeplink).catch(err => {
-              console.error('[useFirebaseMessaging] Failed to open deeplink:', err);
-            });
-          }
-        });
+        // Note: onNotificationOpenedApp is already handled above, so we don't need duplicate handler
+        const unsubscribeNotificationOpened = () => {};
 
         return () => {
           unsubscribe();
