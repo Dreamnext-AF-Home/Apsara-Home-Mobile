@@ -820,7 +820,7 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   };
 
   const badgeCount: Partial<Record<TabKey, number>> = {
-    notification: notificationTotalCount,
+    notification: notificationUnreadCount,
     wishlist: wishlistCount,
   };
 
