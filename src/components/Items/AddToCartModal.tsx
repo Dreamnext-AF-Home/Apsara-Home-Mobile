@@ -118,9 +118,10 @@ export default function AddToCartModal({
   useEffect(() => {
     if (visible) {
       setIsClosing(false);
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 300,
+        friction: 8,
+        tension: 60,
         useNativeDriver: true,
       }).start();
     } else {

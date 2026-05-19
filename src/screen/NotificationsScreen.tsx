@@ -15,8 +15,6 @@ import { Colors } from '../constants/colors';
 import { orderService } from '../services/orderService';
 import { ChatBotIcon } from '../components/ChatBot';
 import { useNotifications } from '../hooks/useNotifications';
-import axios from 'axios';
-import { API_CONFIG } from '../config/api';
 
 interface NotificationsScreenProps {
   token?: string | null;
@@ -31,7 +29,6 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
-  const [sendingTestFcm, setSendingTestFcm] = useState(false);
 
   // Integrate with useNotifications for realtime updates
   useNotifications(userId || '', token || '', onNavigateToPurchases, () => {
@@ -81,30 +78,6 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
 
   const handleRefresh = () => {
     fetchNotifications(true);
-  };
-
-  const handleSendTestFcm = async () => {
-    if (!token || sendingTestFcm) return;
-    try {
-      setSendingTestFcm(true);
-      const response = await axios.post(
-        `${API_CONFIG.BASE_URL}/notifications/fcm/test`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      Alert.alert('FCM Test', response.data?.message || 'Test notification request sent.');
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Failed to send test notification.';
-      Alert.alert('FCM Test Error', message);
-    } finally {
-      setSendingTestFcm(false);
-    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -256,16 +229,6 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
               </View>
             )}
           </View>
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={handleSendTestFcm}
-            disabled={!token || sendingTestFcm}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.testButtonText}>
-              {sendingTestFcm ? 'Sending...' : 'Send Test FCM'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={[styles.filterBar, { backgroundColor: colors.containerBg, borderTopColor: colors.border, borderBottomColor: colors.border }]}>
@@ -468,19 +431,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  testButton: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: Colors.sky,
-  },
-  testButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.white,
   },
   title: {
     fontSize: 18,
