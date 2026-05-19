@@ -158,12 +158,6 @@ export default function OnboardingScreen({ onDone }: OnboardingScreenProps) {
           />
         )}
 
-        {/* Logo */}
-        <Image
-          source={require('../../assets/af_home_logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
 
         {/* Title */}
         <Text style={styles.title}>
@@ -422,10 +416,6 @@ const styles = StyleSheet.create({
   },
   titleAccentOverCircle: {
     fontStyle: 'italic',
-  },
-  logo: {
-    width: 170,
-    height: 46,
   },
   eyebrow: {
     fontSize: 15,
