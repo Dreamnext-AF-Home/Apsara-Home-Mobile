@@ -6,7 +6,9 @@ import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { Colors } from '../constants/colors';
+import { API_CONFIG } from '../config/api';
 import PrimaryButton from '../components/Button/PrimaryButton';
 import OutlineButton from '../components/Button/OutlineButton';
 import { referralService, ReferralTree } from '../services/referralService';
@@ -56,6 +58,7 @@ interface ProfileScreenProps {
   isDarkMode?: boolean;
   onPurchaseItemClick?: (status: 'pending' | 'paid' | 'processing' | 'shipped' | 'to_receive' | 'delivered' | 'cancelled' | 'return') => void;
   linkedAccountsRefreshTrigger?: number;
+  onSecuritySettingsPress?: () => void;
 }
 
 const REFERRAL_STATS = [
@@ -90,7 +93,7 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, closeReferralNetwork, isDarkMode = false, onPurchaseItemClick, linkedAccountsRefreshTrigger }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, closeReferralNetwork, isDarkMode = false, onPurchaseItemClick, linkedAccountsRefreshTrigger, onSecuritySettingsPress }: ProfileScreenProps) {
   console.log('[ProfileScreen] Component mounted/updated', {
     userEmail: user?.email,
     hasToken: !!token,
@@ -116,11 +119,13 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   const [showReferralNetwork, setShowReferralNetwork] = useState(false);
   const [loadingReferral, setLoadingReferral] = useState(false);
   const [googleLinked, setGoogleLinked] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [showLevelProgressDetails, setShowLevelProgressDetails] = useState(false);
   const [orderCounts, setOrderCounts] = useState<any>(null);
+  const [showSecurityBanner, setShowSecurityBanner] = useState(true);
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
   const firstName = user?.name?.split(' ')[0] ?? 'User';
@@ -185,6 +190,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
       fetchOrderCounts();
       fetchReferralTree();
       fetchLinkedAccounts();
+      fetchSecuritySettings();
     }
   }, [token]);
 
@@ -276,6 +282,18 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         message: error.message,
         stack: error.stack,
       });
+    }
+  };
+
+  const fetchSecuritySettings = async () => {
+    if (!token) return;
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.get(`${API_CONFIG.BASE_URL}/user/security-settings`, { headers });
+      const securityData = res?.data?.data;
+      setBiometricEnabled(securityData?.biometric_enabled ?? false);
+    } catch (error) {
+      console.log('Error fetching security settings:', error);
     }
   };
 
@@ -384,18 +402,38 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Google Account Link Banner */}
-        {!googleLinked && (
-          <View style={[styles.googleLinkBanner, { backgroundColor: isDarkMode ? '#1e3a8a' : '#dbeafe', borderColor: Colors.sky }]}>
-            <View style={styles.googleLinkContent}>
-              <Ionicons name="logo-google" size={20} color={Colors.sky} />
-              <View style={styles.googleLinkText}>
-                <Text style={[styles.googleLinkTitle, { color: isDarkMode ? '#e0e7ff' : '#1e40af' }]}>Google Account Not Linked</Text>
-                <Text style={[styles.googleLinkSubtitle, { color: isDarkMode ? '#bfdbfe' : '#1e3a8a' }]}>Link your Google account to enable quick login</Text>
+        {/* Security Settings Banner */}
+        {showSecurityBanner && (!biometricEnabled || !googleLinked) && (
+          <View style={[styles.securityBannerNew, { backgroundColor: isDarkMode ? '#1e3a8a' : '#dbeafe', borderColor: Colors.sky }]}>
+            {/* Close Button */}
+            <TouchableOpacity
+              style={styles.securityBannerCloseNew}
+              onPress={() => setShowSecurityBanner(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={18} color={Colors.sky} />
+            </TouchableOpacity>
+
+            {/* Main Content */}
+            <View style={styles.securityBannerMainContent}>
+              <View style={styles.securityBannerIconTitleWrap}>
+                <Ionicons name="shield-checkmark" size={20} color={Colors.sky} />
+                <Text style={[styles.securityBannerTitleNew, { color: isDarkMode ? '#e0e7ff' : '#1e40af' }]}>
+                  Secure Your Account
+                </Text>
               </View>
+              <Text style={[styles.securityBannerSubtitleNew, { color: isDarkMode ? '#bfdbfe' : '#1e3a8a' }]}>
+                Add biometric or link Google for faster login
+              </Text>
             </View>
-            <TouchableOpacity style={[styles.googleLinkBtn, { backgroundColor: Colors.sky }]}>
-              <Text style={styles.googleLinkBtnText}>Link Now</Text>
+
+            {/* Action Button */}
+            <TouchableOpacity
+              style={[styles.securityBannerActionBtn, { backgroundColor: Colors.sky }]}
+              onPress={onSecuritySettingsPress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.securityBannerActionBtnText}>Setup</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1429,6 +1467,59 @@ const styles = StyleSheet.create({
   googleLinkBtnText: {
     fontSize: 11,
     fontWeight: '600',
+    color: Colors.white,
+  },
+
+  // ── Security Banner ──
+  securityBannerNew: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  securityBannerCloseNew: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  securityBannerMainContent: {
+    flex: 1,
+    gap: 4,
+    marginRight: 24,
+  },
+  securityBannerIconTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  securityBannerTitleNew: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  securityBannerSubtitleNew: {
+    fontSize: 11,
+    fontWeight: '400',
+    lineHeight: 14,
+  },
+  securityBannerActionBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  securityBannerActionBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.white,
   },
 
