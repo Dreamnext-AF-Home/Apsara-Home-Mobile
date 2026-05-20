@@ -18,9 +18,10 @@ interface SecurityScreenProps {
   isDarkMode: boolean;
   token?: string | null;
   onGoogleLinked?: () => void;
+  onOpenHistory?: () => void;
 }
 
-export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLinked }: SecurityScreenProps) {
+export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLinked, onOpenHistory }: SecurityScreenProps) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(100)).current;
   const [currentPassword, setCurrentPassword] = useState('');
@@ -39,6 +40,9 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
   const [isScanning, setIsScanning] = useState(false);
   const [loadingQr, setLoadingQr] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [qrCode, setQrCode] = useState('');
 
   const colors = {
     bg: isDarkMode ? '#0f172a' : '#f0f9ff',
@@ -70,6 +74,7 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
   useEffect(() => {
     if (token) {
       fetchGoogleLinkedStatus();
+      fetchActiveSessions();
     }
   }, [token]);
 
@@ -100,6 +105,41 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
       }
     } catch (error) {
       console.error('[SecurityScreen] Error fetching Google linked status:', error);
+    }
+  };
+
+  const fetchActiveSessions = async () => {
+    if (!token) return;
+    try {
+      setLoadingSessions(true);
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.get(`${API_CONFIG.BASE_URL}/sessions`, { headers });
+      console.log('[SecurityScreen] Active sessions:', res.data);
+      setActiveSessions(res.data.data || res.data.sessions || []);
+    } catch (error) {
+      console.error('[SecurityScreen] Error fetching active sessions:', error);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const revokeLoginSession = async (tokenId: number) => {
+    if (!token) {
+      Alert.alert('Error', 'Authentication token missing');
+      return;
+    }
+
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.delete(`${API_CONFIG.BASE_URL}/sessions/${tokenId}`, { headers });
+
+      Alert.alert('Success', response.data?.message || 'Device logged out successfully');
+
+      // Refresh the sessions list
+      await fetchActiveSessions();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Failed to logout device';
+      Alert.alert('Error', errorMsg);
     }
   };
 
@@ -853,6 +893,94 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
           </View>
         </View>
 
+        {/* Active Sessions */}
+        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+          <View style={styles.sectionTitle}>
+            <Text style={[styles.sectionTitleText, { color: colors.text }]}>Active Sessions</Text>
+            <Text style={[styles.sectionTitleDescription, { color: colors.textSec }]}>Manage devices that are currently logged in to your account.</Text>
+          </View>
+
+          {loadingSessions ? (
+            <View style={{ padding: 16, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={Colors.sky} />
+            </View>
+          ) : activeSessions.length === 0 ? (
+            <Text style={[styles.emptyText, { color: colors.textSec, paddingHorizontal: 16, paddingVertical: 12 }]}>
+              No active sessions found.
+            </Text>
+          ) : (
+            activeSessions.map((session, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.sessionItem,
+                  {
+                    backgroundColor: colors.cardBg,
+                    borderColor: colors.border,
+                    borderTopWidth: index === 0 ? 1 : 0,
+                  }
+                ]}
+              >
+                <View style={styles.sessionItemLeft}>
+                  <View style={[styles.sessionIcon, { backgroundColor: session.is_current ? '#dcfce7' : '#dbeafe' }]}>
+                    <Ionicons
+                      name={session.platform === 'iOS' ? 'logo-apple' : session.platform === 'Android' ? 'logo-android' : 'desktop'}
+                      size={20}
+                      color={session.is_current ? '#22c55e' : Colors.sky}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sessionDevice, { color: colors.text }]}>
+                      {session.device || session.platform || 'Unknown Device'}
+                    </Text>
+                    <Text style={[styles.sessionBrowser, { color: colors.textSec }]}>
+                      {session.platform || 'Unknown'} • {session.browser || 'Unknown'}
+                    </Text>
+                    <Text style={[styles.sessionTime, { color: colors.textSec }]}>
+                      {session.is_current ? 'Current Session' : `Last active: ${new Date(session.last_active_at).toLocaleDateString()}`}
+                    </Text>
+                  </View>
+                </View>
+                {!session.is_current && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert(
+                        'Logout Device',
+                        'Are you sure you want to logout from this device?',
+                        [
+                          { text: 'Cancel', onPress: () => {} },
+                          {
+                            text: 'Logout',
+                            onPress: () => revokeLoginSession(session.token_id),
+                            style: 'destructive',
+                          },
+                        ]
+                      );
+                    }}
+                    style={[styles.sessionButton, { borderColor: '#ef4444' }]}
+                  >
+                    <Ionicons name="log-out" size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* Login History */}
+        <TouchableOpacity
+          onPress={onOpenHistory}
+          style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border, marginHorizontal: 0 }]}
+        >
+          <View style={styles.sectionTitle}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[styles.sectionTitleText, { color: colors.text }]}>Login History</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSec} />
+            </View>
+            <Text style={[styles.sectionTitleDescription, { color: colors.textSec }]}>View all login attempts and access from your account.</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Danger Zone */}
         <View style={[styles.section, styles.dangerSection, { backgroundColor: colors.containerBg, borderColor: '#fecaca' }]}>
           <View style={styles.sectionTitle}>
@@ -1159,5 +1287,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
+  },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  sessionItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  sessionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sessionDevice: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sessionBrowser: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  sessionTime: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  sessionButton: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
