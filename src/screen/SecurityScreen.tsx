@@ -18,31 +18,22 @@ interface SecurityScreenProps {
   onGoogleLinked?: () => void;
 }
 
-interface Passkey {
-  id: string;
-  name: string;
-  created_at?: string;
-}
-
 export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLinked }: SecurityScreenProps) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(100)).current;
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passKeyName, setPassKeyName] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
-  const [loadingPasskey, setLoadingPasskey] = useState(false);
-  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [googleLinked, setGoogleLinked] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [googleAccount, setGoogleAccount] = useState<any>(null);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [loadingBiometric, setLoadingBiometric] = useState(false);;
+  const [loadingBiometric, setLoadingBiometric] = useState(false);
 
   const colors = {
     bg: isDarkMode ? '#0f172a' : '#f0f9ff',
@@ -73,7 +64,6 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
 
   useEffect(() => {
     if (token) {
-      fetchPasskeys();
       fetchGoogleLinkedStatus();
     }
   }, [token]);
@@ -81,17 +71,6 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
   useEffect(() => {
     checkBiometricAvailability();
   }, []);
-
-  const fetchPasskeys = async () => {
-    if (!token) return;
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const res = await axios.get(`${API_CONFIG.BASE_URL}/auth/passkeys`, { headers });
-      setPasskeys(res.data?.data || []);
-    } catch (error) {
-      console.error('Error fetching passkeys:', error);
-    }
-  };
 
   const fetchGoogleLinkedStatus = async () => {
     if (!token) return;
@@ -179,26 +158,39 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
     }
   };
 
-  const handleAddPasskey = async () => {
-    if (!token) {
-      Alert.alert('Error', 'You must be logged in');
+  const handleVerifyQr = async () => {
+    if (!qrCode.trim()) {
+      Alert.alert('Error', 'Please paste the QR code value');
       return;
     }
 
-    setLoadingPasskey(true);
+    setLoadingQr(true);
     try {
-      const passkeyName = passKeyName || `Passkey ${passkeys.length + 1}`;
-      const encodedName = encodeURIComponent(passkeyName);
-      const webUrl = `${API_CONFIG.BASE_URL.replace('/api', '')}/auth/passkey-register?token=${token}&name=${encodedName}`;
+      if (!token) {
+        Alert.alert('Error', 'Authentication token missing');
+        return;
+      }
 
-      await Linking.openURL(webUrl);
+      const headers = { Authorization: `Bearer ${token}` };
+      const payload = { qr_data: qrCode.trim() };
 
-      setPassKeyName('');
-      setTimeout(() => fetchPasskeys(), 2000);
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}/auth/qr/verify`,
+        payload,
+        { headers }
+      );
+
+      setQrCode('');
+      if (response.data?.status === 'approved') {
+        Alert.alert('Success', 'QR code approved! The website will now auto-login.');
+      } else {
+        Alert.alert('Info', 'QR code verified. Website approval pending...');
+      }
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to open passkey registration. Please try again.');
+      const errorMsg = error.response?.data?.message || 'Failed to verify QR code';
+      Alert.alert('Error', errorMsg);
     } finally {
-      setLoadingPasskey(false);
+      setLoadingQr(false);
     }
   };
 
@@ -228,18 +220,6 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
     ]);
   };
 
-  const handleDeletePasskey = async (passkeyId: string) => {
-    if (!token) return;
-
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.delete(`${API_CONFIG.BASE_URL}/auth/passkeys/${passkeyId}`, { headers });
-      await fetchPasskeys();
-      Alert.alert('Success', 'Passkey deleted');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to delete passkey');
-    }
-  };
 
   const handleLinkGoogle = async () => {
     setLoadingGoogle(true);
@@ -508,6 +488,7 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
     ]);
   };
 
+
   return (
     <Animated.View
       style={[
@@ -605,58 +586,6 @@ export default function SecurityScreen({ onBack, isDarkMode, token, onGoogleLink
             <Ionicons name="lock-closed" size={16} color="#fff" style={{ marginRight: 8 }} />
             <Text style={styles.buttonText}>Update Password</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Passkeys Section */}
-        <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
-          <View style={styles.sectionTitle}>
-            <Text style={[styles.sectionTitleText, { color: colors.text }]}>Passkeys</Text>
-            <Text style={[styles.sectionTitleDescription, { color: colors.textSec }]}>Add a passkey to sign in with Face ID, fingerprint, or device PIN.</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.textSec }]}>Passkey name (optional, e.g. My iPhone)</Text>
-            <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.cardBg }]}>
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder="Enter a name..."
-                placeholderTextColor={colors.textSec}
-                value={passKeyName}
-                onChangeText={setPassKeyName}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity style={[styles.button, { backgroundColor: Colors.sky }]} onPress={handleAddPasskey} disabled={loadingPasskey}>
-            {loadingPasskey && <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />}
-            <Ionicons name="add" size={16} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.buttonText}>Add Passkey</Text>
-          </TouchableOpacity>
-
-          {passkeys.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textSec }]}>No passkeys registered yet.</Text>
-          ) : (
-            <View style={styles.passkeysList}>
-              {passkeys.map((passkey) => (
-                <View key={passkey.id} style={[styles.passkeyItem, { borderBottomColor: colors.border }]}>
-                  <View style={styles.passkeyInfo}>
-                    <Ionicons name="key" size={16} color={Colors.sky} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.passkeyName, { color: colors.text }]}>{passkey.name}</Text>
-                      {passkey.created_at && (
-                        <Text style={[styles.passkeyDate, { color: colors.textSec }]}>
-                          Added {new Date(passkey.created_at).toLocaleDateString()}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <TouchableOpacity onPress={() => handleDeletePasskey(passkey.id)}>
-                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
         </View>
 
         {/* Biometric Authentication */}
@@ -823,6 +752,12 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  qrInstructions: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -916,27 +851,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 16,
   },
-  passkeysList: {
-    paddingHorizontal: 16,
-    marginTop: 12,
-  },
-  passkeyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  passkeyInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  passkeyName: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
   dangerSection: {
     borderColor: '#fecaca',
     marginBottom: 32,
@@ -1015,6 +929,10 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '600',
+  },
+  passkeyDate: {
+    fontSize: 12,
+    marginTop: 2,
   },
   accountActionsContainer: {
     paddingHorizontal: 16,
