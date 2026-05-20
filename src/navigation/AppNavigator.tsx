@@ -38,6 +38,10 @@ import PaymentWebViewScreen from '../screen/PaymentWebViewScreen';
 import PurchasesScreen from '../screen/PurchasesScreen';
 import PaymentSuccessScreen from '../screen/PaymentSuccessScreen';
 import PaymentCancelScreen from '../screen/PaymentCancelScreen';
+import AFWalletOverviewScreen from '../screen/AFWalletOverviewScreen';
+import AFWalletVoucherScreen from '../screen/AFWalletVoucherScreen';
+import AFWalletRewardsScreen from '../screen/AFWalletRewardsScreen';
+import AFWalletNetworkScreen from '../screen/AFWalletNetworkScreen';
 import ShippingAddressSelectionScreen from '../screen/ShippingAddressSelectionScreen';
 import AboutUsScreen from '../screen/AboutUsScreen';
 import PrivacyPolicyScreen from '../screen/PrivacyPolicyScreen';
@@ -277,6 +281,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [shopSourceIsCart, setShopSourceIsCart] = useState(false);
   const [shopSourceIsCheckout, setShopSourceIsCheckout] = useState(false);
   const [checkoutSource, setCheckoutSource] = useState<'product' | 'cart'>('cart');
+  const [showAFWalletOverview, setShowAFWalletOverview] = useState(false);
+  const [showAFWalletVoucher, setShowAFWalletVoucher] = useState(false);
+  const [showAFWalletRewards, setShowAFWalletRewards] = useState(false);
+  const [showAFWalletNetwork, setShowAFWalletNetwork] = useState(false);
 
   // Home screen data - persists across navigation
   const [homeCategories, setHomeCategories] = useState<CategoryItem[]>([]);
@@ -1138,6 +1146,10 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               }}
               linkedAccountsRefreshTrigger={linkedAccountsRefreshTrigger}
               onSecuritySettingsPress={() => setShowSecurity(true)}
+              onShowAFWalletOverview={() => setShowAFWalletOverview(true)}
+              onShowAFWalletVoucher={() => setShowAFWalletVoucher(true)}
+              onShowAFWalletRewards={() => setShowAFWalletRewards(true)}
+              onShowAFWalletNetwork={() => setShowAFWalletNetwork(true)}
             />
           ) : activeTab === 'shop' ? (
             selectedBrandId != null && selectedBrand ? (
@@ -1975,6 +1987,42 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
               shippingAddressScreenData.onSelect(address);
               setShowShippingAddressScreen(false);
             }}
+          />
+        </View>
+      )}
+
+      {showAFWalletOverview && (
+        <View style={styles.cartScreenOverlay}>
+          <AFWalletOverviewScreen
+            isDarkMode={isDarkMode}
+            onClose={() => setShowAFWalletOverview(false)}
+          />
+        </View>
+      )}
+
+      {showAFWalletVoucher && (
+        <View style={styles.cartScreenOverlay}>
+          <AFWalletVoucherScreen
+            isDarkMode={isDarkMode}
+            onClose={() => setShowAFWalletVoucher(false)}
+          />
+        </View>
+      )}
+
+      {showAFWalletRewards && (
+        <View style={styles.cartScreenOverlay}>
+          <AFWalletRewardsScreen
+            isDarkMode={isDarkMode}
+            onClose={() => setShowAFWalletRewards(false)}
+          />
+        </View>
+      )}
+
+      {showAFWalletNetwork && (
+        <View style={styles.cartScreenOverlay}>
+          <AFWalletNetworkScreen
+            isDarkMode={isDarkMode}
+            onClose={() => setShowAFWalletNetwork(false)}
           />
         </View>
       )}
