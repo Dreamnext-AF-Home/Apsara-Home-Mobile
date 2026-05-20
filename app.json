@@ -11,6 +11,8 @@
       "urls": [
         "https://www.afhome.ph/*",
         "https://afhome.ph/*",
+        "apsarahome://product/*",
+        "apsarahome://products/*",
         "apsarahome://payment/success",
         "apsarahome://payment/cancel",
         "purchases://*",
