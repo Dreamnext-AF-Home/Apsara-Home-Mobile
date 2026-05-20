@@ -553,20 +553,40 @@ export default function ProductDetailScreen({
             ]}
             pointerEvents={showHeaderOnScroll ? 'auto' : 'none'}
           >
-            <AppHeader
-              user={user ? {
-                name: user.name || '',
-                username: user.username,
-                avatar_url: user.avatar_url,
-                badge_name: user.badge_name,
-                monthly_activation: user.monthly_activation,
-              } : undefined}
-              cartCount={cartCount}
-              onCartPress={() => console.log('Cart pressed')}
-              onSearchPress={onSearch}
-              onFilterPress={() => console.log('Filter pressed')}
-              isDarkMode={isDarkMode}
-            />
+            <View style={[styles.scrollHeader, { backgroundColor: colors.card, paddingTop: insets.top }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  try {
+                    if (onBack && typeof onBack === 'function') {
+                      onBack();
+                    }
+                  } catch (error) {
+                    console.error('Error in back navigation:', error);
+                  }
+                }}
+                style={styles.scrollHeaderBackBtn}
+              >
+                <Ionicons name="arrow-back" size={20} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={[styles.scrollHeaderTitle, { color: colors.text }]} numberOfLines={1}>
+                {product?.name || ''}
+              </Text>
+              <View style={styles.scrollHeaderActions}>
+                <TouchableOpacity
+                  onPress={toggleWishlist}
+                  disabled={wishlistLoading}
+                >
+                  <Ionicons
+                    name={isWishlisted ? 'heart' : 'heart-outline'}
+                    size={20}
+                    color={isWishlisted ? '#ef4444' : colors.text}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleShareProduct}>
+                  <Ionicons name="share-social-outline" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
           </Animated.View>
           <ScrollView
             ref={scrollRef}
@@ -752,11 +772,9 @@ export default function ProductDetailScreen({
                   </View>
                 )}
               </View>
-            </View>
 
-            {/* Badges Section */}
-            {(activeBadges.length > 0 || product.prodpv) && (
-              <View style={[styles.badgesCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              {/* Badges inline with price */}
+              {(activeBadges.length > 0 || product.prodpv) && (
                 <View style={styles.badgesRow}>
                   <LinearGradient
                     colors={[Colors.sky, Colors.skyDark]}
@@ -778,8 +796,8 @@ export default function ProductDetailScreen({
                     </LinearGradient>
                   ))}
                 </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
 
           {/* Product Name and Details */}
@@ -1727,6 +1745,32 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 100,
   },
+  scrollHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  scrollHeaderBackBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollHeaderTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    marginHorizontal: 12,
+  },
+  scrollHeaderActions: {
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'center',
+  },
   loadingWrap: {
     flex: 1,
     alignItems: 'center',
@@ -1932,10 +1976,11 @@ const styles = StyleSheet.create({
   },
   priceCard: {
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: '#e5e7eb',
+    padding: 16,
+    gap: 12,
   },
   priceRow: {
     flexDirection: 'row',
