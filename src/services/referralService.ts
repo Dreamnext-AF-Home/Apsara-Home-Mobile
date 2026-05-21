@@ -35,6 +35,13 @@ export interface ReferralTree {
   children: ReferralUser[];
 }
 
+export interface PublicProfile {
+  username: string;
+  name: string;
+  avatar_url?: string;
+  avatar_original_url?: string;
+}
+
 export const referralService = {
   async getReferralTree(token: string): Promise<ReferralTree> {
     try {
@@ -46,6 +53,19 @@ export const referralService = {
     } catch (error: any) {
       throw {
         message: error.response?.data?.message || 'Failed to load referral tree',
+        details: error.response?.data,
+        status: error.response?.status,
+      };
+    }
+  },
+
+  async getPublicProfile(username: string): Promise<PublicProfile> {
+    try {
+      const response = await api.get(`/public/profile/${encodeURIComponent(username)}`);
+      return response.data;
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || 'Failed to load referrer profile',
         details: error.response?.data,
         status: error.response?.status,
       };
