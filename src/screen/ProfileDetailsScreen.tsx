@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, BackHandler,
+  View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, BackHandler, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,9 @@ import { Colors } from '../constants/colors';
 import { authService } from '../services/authService';
 import { TIER_REQUIREMENTS } from '../constants/tierConfig';
 import Toast from 'react-native-toast-message';
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
+import { API_CONFIG } from '../config/api';
 
 interface ProfileDetailsScreenProps {
   token?: string | null;
@@ -28,6 +31,10 @@ export default function ProfileDetailsScreen({
   const insets = useSafeAreaInsets();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
 
   useEffect(() => {
     if (token) {
@@ -59,6 +66,115 @@ export default function ProfileDetailsScreen({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Toast.show({
+          type: 'error',
+          text1: 'Permission Denied',
+          text2: 'Please allow access to your photos',
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      if (!token) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'No authentication token',
+        });
+        return;
+      }
+
+      setUploadingAvatar(true);
+      const asset = result.assets[0];
+      const filename = asset.uri.split('/').pop() || 'avatar.jpg';
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        type: 'image/jpeg',
+        name: filename,
+      } as any);
+
+      const response = await axios.post(`${API_CONFIG.BASE_URL}/me/avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const newAvatarUrl = response.data?.avatar_url || response.data?.data?.avatar_url;
+
+      if (newAvatarUrl) {
+        setUserProfile((prev: any) => ({
+          ...prev,
+          avatar_url: newAvatarUrl,
+        }));
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Profile picture updated',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to upload avatar',
+        });
+      }
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.response?.data?.message || error.message || 'Failed to upload avatar',
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!token || !editedName.trim()) return;
+
+    try {
+      await axios.put(`${API_CONFIG.BASE_URL}/auth/me`, {
+        name: editedName.trim(),
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Name updated successfully',
+      });
+
+      setEditingName(false);
+      fetchUserProfile();
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.response?.data?.message || 'Failed to update name',
+      });
     }
   };
 
@@ -140,23 +256,76 @@ export default function ProfileDetailsScreen({
           showsVerticalScrollIndicator={false}
         >
             {/* Profile Header */}
-            <TouchableOpacity
+            <View
               style={styles.profileHeaderContainer}
-              onPress={onClose}
-              activeOpacity={0.7}
             >
               <View style={styles.profileHeader}>
-                <View style={styles.avatarLarge}>
-                  {userProfile.avatar_url ? (
-                    <Image source={{ uri: userProfile.avatar_url }} style={styles.avatarImage} />
-                  ) : (
-                    <Text style={styles.avatarInitial}>
-                      {userProfile.name?.charAt(0).toUpperCase() || '?'}
-                    </Text>
+                <TouchableOpacity
+                  style={styles.avatarContainer}
+                  onPress={handleAvatarUpload}
+                  disabled={uploadingAvatar}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.avatarLarge}>
+                    {userProfile.avatar_url ? (
+                      <Image source={{ uri: userProfile.avatar_url }} style={styles.avatarImage} />
+                    ) : (
+                      <Text style={styles.avatarInitial}>
+                        {userProfile.name?.charAt(0).toUpperCase() || '?'}
+                      </Text>
+                    )}
+                  </View>
+                  {uploadingAvatar && (
+                    <View style={styles.avatarLoadingOverlay}>
+                      <ActivityIndicator size="small" color={Colors.white} />
+                    </View>
                   )}
-                </View>
+                  <View style={styles.avatarEditIcon}>
+                    <Ionicons name="camera" size={14} color={Colors.white} />
+                  </View>
+                </TouchableOpacity>
+
                 <View style={styles.headerInfo}>
-                  <Text style={styles.nameText}>{userProfile.name}</Text>
+                  {editingName ? (
+                    <View style={styles.nameEditContainer}>
+                      <TextInput
+                        style={styles.nameInput}
+                        value={editedName}
+                        onChangeText={setEditedName}
+                        placeholder="Enter name"
+                        placeholderTextColor={Colors.textSecondary}
+                        autoFocus
+                      />
+                      <View style={styles.nameEditActions}>
+                        <TouchableOpacity
+                          style={styles.saveButton}
+                          onPress={handleSaveName}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="checkmark" size={16} color={Colors.white} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.cancelButton}
+                          onPress={() => setEditingName(false)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="close" size={16} color={Colors.text} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.nameContainer}
+                      onPress={() => {
+                        setEditedName(userProfile.name || '');
+                        setEditingName(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.nameText}>{userProfile.name}</Text>
+                      <Ionicons name="pencil" size={14} color={Colors.sky} />
+                    </TouchableOpacity>
+                  )}
                   <Text style={styles.usernameText}>@{userProfile.username}</Text>
 
                   {/* Badge and Rank Row */}
@@ -199,7 +368,7 @@ export default function ProfileDetailsScreen({
                   )}
                 </View>
               </View>
-            </TouchableOpacity>
+            </View>
 
             {/* Edit/Complete Profile Button */}
             {(() => {
@@ -462,7 +631,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   profileHeaderContainer: {
-    borderRadius: 20,
+    borderRadius: 14,
     marginBottom: 20,
     overflow: 'hidden',
     borderWidth: 1,
@@ -474,6 +643,11 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingVertical: 24,
     paddingHorizontal: 16,
+  },
+  avatarContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarLarge: {
     width: 100,
@@ -495,6 +669,28 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.sky,
   },
+  avatarLoadingOverlay: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.sky,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: Colors.white,
+  },
   headerInfo: {
     alignItems: 'center',
     gap: 8,
@@ -506,6 +702,50 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.text,
     textAlign: 'center',
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  nameEditContainer: {
+    width: '100%',
+    gap: 8,
+  },
+  nameInput: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.sky,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    textAlign: 'center',
+  },
+  nameEditActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#10b981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   usernameText: {
     fontSize: 15,
