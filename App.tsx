@@ -19,6 +19,7 @@ import { useFirebaseMessaging } from './src/hooks/useFirebaseMessaging';
 import ReferralScreen from './src/screen/ReferralScreen';
 import ReferralSignupScreen from './src/screen/ReferralSignupScreen';
 import ReferralOtpScreen from './src/screen/ReferralOtpScreen';
+import AFHomeAffiliateScreen from './src/screen/AFHomeAffiliateScreen';
 import { referralService } from './src/services/referralService';
 
 // Initialize notification channel on app start
@@ -110,6 +111,7 @@ export default function App() {
   const [showReferralScreenModal, setShowReferralScreenModal] = useState(false);
   const [referralOtpEmail, setReferralOtpEmail] = useState('');
   const [referralOtpToken, setReferralOtpToken] = useState('');
+  const [showAffiliateScreen, setShowAffiliateScreen] = useState(false);
 
   // Initialize FCM and register device when authenticated
   useFirebaseMessaging(authToken, authUser?.id || null);
@@ -238,6 +240,7 @@ export default function App() {
           onGoToLogin={() => setScreen('login')}
           onGoToSignup={() => setScreen('referral-signup')}
           onAuthenticated={(user, token) => goAuthenticated(user, token)}
+          onShowAffiliateScreen={() => setShowAffiliateScreen(true)}
         />
       );
     }
@@ -321,6 +324,13 @@ export default function App() {
         ) : (
           <>
             {renderAuth()}
+            {showAffiliateScreen && (
+              <Modal visible={showAffiliateScreen} transparent animationType="slide">
+                <AFHomeAffiliateScreen
+                  onClose={() => setShowAffiliateScreen(false)}
+                />
+              </Modal>
+            )}
             {showReferralScreenModal && referralCodeFromDeepLink && (
               <Modal visible={showReferralScreenModal} transparent animationType="slide">
                 <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
