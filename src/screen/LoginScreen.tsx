@@ -346,7 +346,11 @@ export default function LoginScreen({
       <StatusBar style="light" />
       <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
       <View style={styles.overlay} />
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? -100 : 0}
+      >
         <View style={styles.spacer} />
         <LinearGradient
           colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.8)', 'rgba(0, 0, 0, 1)']}
@@ -354,7 +358,7 @@ export default function LoginScreen({
           style={styles.gradient}
           pointerEvents="none"
         />
-        <SafeAreaView style={styles.contentSection} edges={['bottom']}>
+        <SafeAreaView style={styles.contentSection} edges={[]}>
           <View style={styles.headerRow}>
             <Pressable style={styles.backButton} onPress={onGoToIndex}>
               <Ionicons name="arrow-back" size={24} color={Colors.white} />
