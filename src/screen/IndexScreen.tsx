@@ -27,10 +27,12 @@ export default function IndexScreen({
   onGoToLogin,
   onGoToSignup,
   onAuthenticated,
+  onShowAffiliateScreen,
 }: {
   onGoToLogin?: () => void;
   onGoToSignup?: () => void;
   onAuthenticated?: (user?: any, token?: string) => void;
+  onShowAffiliateScreen?: () => void;
 }) {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -349,11 +351,11 @@ export default function IndexScreen({
           {/* Footer Text */}
           <View style={styles.footerSection}>
             <View style={styles.footerLinksRow}>
-              <TouchableOpacity style={styles.whatIsAfHomeSection} onPress={() => handleOpenUrl('https://example.com/about')}>
+              <TouchableOpacity style={styles.whatIsAfHomeSection} onPress={onShowAffiliateScreen}>
                 <Text style={styles.whatIsAfHomeText}>AF Home Affiliate Program</Text>
               </TouchableOpacity>
               <Text style={styles.footerBullet}>•</Text>
-              <TouchableOpacity style={styles.howToEarnSection} onPress={() => handleOpenUrl('https://example.com/how-to-earn')}>
+              <TouchableOpacity style={styles.howToEarnSection} onPress={onShowAffiliateScreen}>
                 <Text style={styles.howToEarnText}>How to Earn?</Text>
               </TouchableOpacity>
             </View>
