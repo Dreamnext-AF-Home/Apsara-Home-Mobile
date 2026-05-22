@@ -256,6 +256,8 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
         return { label: 'To Receive', bg: dark ? '#123348' : '#cffafe', text: dark ? '#67e8f9' : '#0e7490' };
       case 'delivered':
         return { label: 'Delivered', bg: dark ? '#1f3f21' : '#d1fae5', text: dark ? '#6ee7b7' : '#065f46' };
+      case 'cancelled':
+        return { label: 'Cancelled', bg: dark ? '#3f1f1f' : '#fee2e2', text: dark ? '#fca5a5' : '#991b1b' };
       default:
         return null;
     }
