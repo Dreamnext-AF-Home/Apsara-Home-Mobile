@@ -169,7 +169,6 @@ export const useNotifications = (userId: string | number, token: string, onNavig
 
       channel.bind('notification.count.updated', (data: { unread_count: number; updated_at: string }) => {
         if (isMounted) {
-          console.log('Notification count updated:', data);
           setUnreadCount(data.unread_count);
         }
       });
