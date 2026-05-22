@@ -80,6 +80,8 @@ export interface ProductCard {
   pv: number;
   brandName: string;
   variantCount: number;
+  categoryId?: number;
+  brandId?: number;
   badges: {
     musthave: boolean;
     bestseller: boolean;
@@ -98,6 +100,8 @@ export function toProductCard(p: Product): ProductCard {
     pv: p.prodpv,
     brandName: p.brand,
     variantCount: p.variants?.length ?? 0,
+    categoryId: p.catid,
+    brandId: p.brandType,
     badges: {
       musthave: p.musthave,
       bestseller: p.bestseller,
