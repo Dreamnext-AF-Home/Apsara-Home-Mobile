@@ -42,5 +42,5 @@ yarn-error.*
 /.idea
 .env
 .env.example
-
+my-key.keystore
 .claude
