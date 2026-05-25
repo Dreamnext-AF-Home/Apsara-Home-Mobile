@@ -41,7 +41,7 @@ export default function NotificationsScreen({ token, userId, isDarkMode = false,
   });
 
   const colors = {
-    bg: isDarkMode ? '#0f172a' : '#f0f9ff',
+    bg: isDarkMode ? '#0f172a' : '#f5f5f5',
     containerBg: isDarkMode ? '#1f2937' : Colors.white,
     text: isDarkMode ? '#f8fafc' : Colors.text,
     textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
