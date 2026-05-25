@@ -82,7 +82,7 @@ function ShopScreen({
   });
 
   const colors = {
-    bg: isDarkMode ? '#0f172a' : Colors.white,
+    bg: isDarkMode ? '#0f172a' : '#f5f5f5',
     text: isDarkMode ? '#f8fafc' : Colors.text,
     textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
     border: isDarkMode ? '#334155' : '#e5e7eb',
