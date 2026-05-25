@@ -681,7 +681,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     paddingHorizontal: 8,
-    paddingVertical: 16,
+    paddingTop: 0,
+    paddingBottom: 16,
   },
   masonryColumn: {
     flex: 1,
