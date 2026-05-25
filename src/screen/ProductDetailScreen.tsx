@@ -562,7 +562,7 @@ export default function ProductDetailScreen({
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.containerBg }]}>
+    <View style={styles.root}>
       {console.log('🎯 [ProductDetailScreen] Starting main render...')}
       {loading ? (
         <View style={styles.loadingWrap}>
@@ -623,14 +623,14 @@ export default function ProductDetailScreen({
             scrollEventThrottle={16}
           >
           {/* Image Gallery */}
-          <View style={[styles.galleryWrap, { backgroundColor: Colors.white, borderBottomColor: colors.divider }]}>
+          <View style={[styles.galleryWrap, { backgroundColor: isDarkMode ? '#0f172a' : '#f5f5f5', borderBottomColor: colors.divider }]}>
             <ScrollView
               ref={galleryScrollRef}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               scrollEventThrottle={16}
-              style={{ backgroundColor: Colors.white }}
+              style={{ backgroundColor: isDarkMode ? '#0f172a' : '#f5f5f5' }}
               onMomentumScrollEnd={e => {
                 const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
                 setActiveImage(index);
@@ -661,44 +661,20 @@ export default function ProductDetailScreen({
                       setSelectedVariant(imagesWithVariants[i].variantId);
                     }
                   }}
-                  style={[styles.galleryImageContainer, { backgroundColor: Colors.white }]}
+                  style={[styles.galleryImageContainer, { backgroundColor: isDarkMode ? '#0f172a' : '#f5f5f5' }]}
                 >
                   <Image source={{ uri: img }} style={styles.galleryImage} resizeMode="contain" />
                 </TouchableOpacity>
               )) : (
-                <View style={[styles.galleryImageContainer, styles.galleryFallback, { backgroundColor: Colors.white }]}>
+                <View style={[styles.galleryImageContainer, styles.galleryFallback, { backgroundColor: isDarkMode ? '#0f172a' : '#f5f5f5' }]}>
                   <Ionicons name="image-outline" size={48} color="#d1d5db" />
                 </View>
               )}
             </ScrollView>
-            {/* Navigation Dots */}
+            {/* Page Counter */}
             {images.length > 0 && (
-              <View style={styles.galleryDotsContainer}>
-                {images.map((_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => {
-                      setActiveImage(i);
-                      setImageViewerIndex(i);
-                      setShowImageViewer(true);
-                      galleryScrollRef.current?.scrollTo({
-                        x: i * SCREEN_WIDTH,
-                        animated: true,
-                      });
-                      // Auto-select variant based on image index
-                      if (imagesWithVariants.length > i && imagesWithVariants[i].variantId !== null) {
-                        setSelectedVariant(imagesWithVariants[i].variantId);
-                      }
-                    }}
-                    style={[
-                      styles.galleryDot,
-                      i === activeImage
-                        ? styles.galleryDotActive
-                        : { borderColor: 'rgba(0, 0, 0, 0.5)' }
-                    ]}
-                    activeOpacity={0.7}
-                  />
-                ))}
+              <View style={styles.galleryPageCounter}>
+                <Text style={styles.galleryPageCounterText}>{activeImage + 1}/{images.length}</Text>
               </View>
             )}
             {/* Back Button */}
@@ -770,105 +746,79 @@ export default function ProductDetailScreen({
             </View>
                       </View>
 
-          {/* Price and Badges Section */}
-          <View style={[styles.priceAndBadgesSection, { backgroundColor: colors.card }]}>
-            {/* Price Card */}
-            <View style={[styles.priceCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-              <View style={styles.priceRow}>
-                <View style={styles.priceContent}>
-                  <Text style={[styles.priceLabel, { color: colors.textSec }]}>Price</Text>
-                  <View style={styles.priceDisplayRow}>
-                    <Text style={[styles.currentPrice, { color: colors.text }]}>₱{(product.priceMember ?? 0).toLocaleString()}</Text>
-                    {hasDiscount && (
-                      <>
-                        <Text style={[styles.originalPrice, { color: colors.textSec }]}>₱{(product.priceSrp ?? 0).toLocaleString()}</Text>
-                        <View style={styles.discountBadgeSmall}>
-                          <Text style={styles.discountBadgeText}>{discountPct}% OFF</Text>
-                        </View>
-                      </>
-                    )}
+          {/* Price Section - Shopee Style (Price First, Large & Bold) */}
+          <View style={[styles.newPriceSection, { backgroundColor: colors.card }]}>
+            {/* Big Price Row */}
+            <View style={styles.bigPriceRow}>
+              <Text style={[styles.bigPrice, { color: Colors.sky }]}>₱{(product.priceMember ?? 0).toLocaleString()}</Text>
+              {hasDiscount && (
+                <>
+                  <Text style={[styles.strikethroughPrice, { color: colors.textSec }]}>₱{(product.priceSrp ?? 0).toLocaleString()}</Text>
+                  <View style={styles.discountBadgeNew}>
+                    <Text style={styles.discountBadgeTextNew}>{discountPct}% OFF</Text>
                   </View>
-                </View>
-                {product.soldCount > 0 && (
-                  <View style={[styles.soldInfoCard, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
-                    <Ionicons name="bag-check-outline" size={16} color={Colors.sky} />
-                    <View>
-                      <Text style={[styles.soldLabelSmall, { color: colors.textSec }]}>Sold</Text>
-                      <Text style={[styles.soldCountSmall, { color: colors.text }]}>{product.soldCount}</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              {/* Badges inline with price */}
-              {(activeBadges.length > 0 || product.prodpv) && (
-                <View style={styles.badgesRow}>
-                  <LinearGradient
-                    colors={[Colors.sky, Colors.skyDark]}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={styles.badge}
-                  >
-                    <Ionicons name="trending-up" size={10} color={Colors.white} />
-                    <Text style={styles.badgeLabel}>PV {product.prodpv}</Text>
-                  </LinearGradient>
-                  {activeBadges.map(b => (
-                    <LinearGradient
-                      key={b.key}
-                      colors={b.bg}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                      style={styles.badge}
-                    >
-                      <Ionicons name={b.icon} size={10} color={Colors.white} />
-                      <Text style={styles.badgeLabel}>{b.label}</Text>
-                    </LinearGradient>
-                  ))}
-                </View>
+                </>
               )}
             </View>
+
+            {/* Social Proof Row - Rating, Sold, PV */}
+            <View style={styles.socialProofRow}>
+              <View style={styles.ratingSmall}>
+                <Ionicons name="star" size={14} color="#fbbf24" />
+                <Text style={[styles.ratingText, { color: colors.text }]}>4.8</Text>
+              </View>
+              <Text style={[styles.socialProofDot, { color: colors.divider }]}>•</Text>
+              {product.soldCount > 0 && (
+                <>
+                  <Text style={[styles.soldCountCompact, { color: colors.textSec }]}>{product.soldCount} sold</Text>
+                  <Text style={[styles.socialProofDot, { color: colors.divider }]}>•</Text>
+                </>
+              )}
+              <Text style={[styles.pvText, { color: colors.textSec }]}>PV {product.prodpv}</Text>
+            </View>
+
+            {/* Badges - Horizontal Chips */}
+            {activeBadges.length > 0 && (
+              <View style={styles.badgeChipsRow}>
+                {activeBadges.map(b => (
+                  <View key={b.key} style={[styles.badgeChip, { backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(240, 249, 255, 0.8)' }]}>
+                    <Text style={[styles.badgeChipText, { color: Colors.sky }]}>{b.label}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
-          {/* Product Name and Details */}
-          <View style={[styles.nameSection, { backgroundColor: colors.card }]}>
-            <View style={[styles.nameCard, { backgroundColor: colors.card, borderBottomColor: colors.cardBorder, borderTopColor: colors.cardBorder }]}>
-              {/* Product Name and Rating Container */}
-              <View style={styles.nameAndRatingContainer}>
-                {/* Product Name */}
-                <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
 
-                {/* Rating and Sold Row */}
-                <View style={styles.ratingAndSoldRow}>
-                  <View style={[styles.ratingBadge, { backgroundColor: isDarkMode ? '#2d2a1a' : '#fffbeb' }]}>
-                    <Ionicons name="star" size={13} color="#fbbf24" />
-                    <Text style={[styles.ratingBadgeText, { color: colors.text }]}>4.8</Text>
-                    <Text style={[styles.reviewCountText, { color: colors.textSec }]}>(2.5K reviews)</Text>
-                  </View>
-                  {product.soldCount > 0 && (
-                    <>
-                      <View style={[styles.dividerDot, { backgroundColor: colors.divider }]} />
-                      <View style={styles.soldBadge}>
-                        <Ionicons name="bag-check-outline" size={13} color={colors.textSec} />
-                        <Text style={[styles.soldCountText, { color: colors.textSec }]}>{product.soldCount} sold</Text>
-                      </View>
-                    </>
-                  )}
-                </View>
-              </View>
+          {/* Product Name and Brand Section */}
+          <View style={[styles.newNameSection, { backgroundColor: colors.card }]}>
+            <Text style={[styles.productNameNew, { color: colors.text }]}>{product.name}</Text>
+            <View style={styles.brandSkuRow}>
+              <Text style={[styles.brandText, { color: colors.textSec }]}>
+                {product.brand}
+              </Text>
+              <Text style={[styles.skuText, { color: colors.textSec }]}> • SKU: {product.id}</Text>
+            </View>
+          </View>
 
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
 
-              {/* Trust Badge Row */}
-              <View style={[styles.trustBadgeRow, { paddingVertical: 12, paddingHorizontal: 12, backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb', borderTopColor: colors.divider, borderTopWidth: 1 }]}>
-                <View style={styles.trustBadgeItem}>
-                  <Ionicons name="shield-checkmark" size={14} color={Colors.sky} />
-                  <Text style={[styles.trustBadgeText, { color: colors.text }]}>Authentic</Text>
-                </View>
-                <View style={[styles.trustBadgeDivider, { backgroundColor: colors.divider }]} />
-                <View style={styles.trustBadgeItem}>
-                  <Ionicons name="arrow-undo" size={14} color={Colors.forest} />
-                  <Text style={[styles.trustBadgeText, { color: colors.text }]}>7-Day Return</Text>
-                </View>
+          {/* Delivery Information */}
+          <View style={[styles.deliverySection, { backgroundColor: colors.card }]}>
+            <View style={styles.deliveryRow}>
+              <Ionicons name="car-outline" size={20} color={Colors.sky} />
+              <View style={styles.deliveryInfo}>
+                <Text style={[styles.deliveryLabel, { color: colors.text }]}>Standard Delivery</Text>
+                <Text style={[styles.deliveryDetails, { color: colors.textSec }]}>Estimated 3-5 days</Text>
               </View>
             </View>
           </View>
+
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
 
           {/* Variants */}
           {(() => {
@@ -958,100 +908,21 @@ export default function ProductDetailScreen({
                 const variant = product.variants?.find(v => v.id === selectedVariant);
                 if (!variant) return null;
 
-                const variantDiscount = (variant.priceSrp ?? 0) - (variant.priceMember ?? 0);
-                const hasVariantDiscount = variantDiscount > 0;
+                const mainPrice = product.priceMember ?? product.priceSrp ?? 0;
+                const variantPrice = variant.priceMember ?? variant.priceSrp ?? 0;
+                const isDifferentPrice = variantPrice !== mainPrice;
 
                 return (
-                  <View style={[styles.variantDetailsCard, { backgroundColor: colors.card, borderTopColor: colors.divider, borderBottomColor: colors.divider }]}>
-                    {/* Header with price */}
-                    <View style={[styles.variantDetailsHeader, { borderBottomColor: colors.divider }]}>
-                      <View>
-                        <Text style={[styles.variantDetailsTitle, { color: colors.text }]}>
-                          {variant.color || variant.name || 'Selected Variant'}
-                        </Text>
-                        <Text style={[styles.variantDetailsSku, { color: colors.textSec }]}>SKU: {variant.sku}</Text>
-                      </View>
-                      <View style={styles.variantPriceContainer}>
-                        <Text style={[styles.variantPriceLarge, { color: colors.text }]}>
-                          ₱{(variant.priceMember ?? variant.priceSrp).toLocaleString()}
-                        </Text>
-                        {hasVariantDiscount && (
-                          <Text style={[styles.variantPriceOriginal, { color: colors.textSec }]}>
-                            ₱{(variant.priceSrp ?? 0).toLocaleString()}
-                          </Text>
-                        )}
-                      </View>
+                  isDifferentPrice && (
+                    <View style={[styles.variantCompactInfo, { backgroundColor: colors.card }]}>
+                      <Text style={[styles.variantCompactLabel, { color: colors.textSec }]}>
+                        {variant.color || variant.name || 'Selected Variant'} Price:
+                      </Text>
+                      <Text style={[styles.variantCompactPrice, { color: Colors.sky }]}>
+                        ₱{variantPrice.toLocaleString()}
+                      </Text>
                     </View>
-
-                    {/* Details Grid */}
-                    <View style={[styles.variantDetailsGrid, { gap: 8 }]}>
-                      <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
-                        <Ionicons name="cube-outline" size={16} color={Colors.sky} />
-                        <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>Stock</Text>
-                        <Text style={[
-                          styles.detailGridValue,
-                          { color: variant.qty > 0 ? (isDarkMode ? '#4ade80' : Colors.forest) : '#ef4444', fontWeight: '700' }
-                        ]}>
-                          {variant.qty}
-                        </Text>
-                      </View>
-
-                      {variant.size && (
-                        <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
-                          <Ionicons name="expand-outline" size={16} color={Colors.sky} />
-                          <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>Size</Text>
-                          <Text style={[styles.detailGridValue, { color: colors.text }]}>{variant.size}</Text>
-                        </View>
-                      )}
-
-                      <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
-                        <Ionicons name="star-outline" size={16} color={Colors.sky} />
-                        <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>PV</Text>
-                        <Text style={[styles.detailGridValue, { color: colors.text }]}>{variant.prodpv}</Text>
-                      </View>
-
-                      {hasVariantDiscount && (
-                        <View style={[styles.detailGridItem, { backgroundColor: isDarkMode ? '#111827' : '#f9fafb' }]}>
-                          <Ionicons name="pricetag-outline" size={16} color="#ef4444" />
-                          <Text style={[styles.detailGridLabel, { color: colors.textSec }]}>Save</Text>
-                          <Text style={[styles.detailGridValue, { color: '#ef4444' }]}>
-                            ₱{variantDiscount.toLocaleString()}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Additional Info */}
-                    <View style={[styles.variantAdditionalInfo, { backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb' }]}>
-                      {variant.style && (
-                        <View style={styles.infoPair}>
-                          <Text style={[styles.infoLabel, { color: colors.textSec }]}>Style:</Text>
-                          <Text style={[styles.infoValue, { color: colors.text }]}>{variant.style}</Text>
-                        </View>
-                      )}
-                      {(variant.width || variant.height || variant.dimension) && (
-                        <View style={styles.infoPair}>
-                          <Text style={[styles.infoLabel, { color: colors.textSec }]}>Dimensions:</Text>
-                          <Text style={[styles.infoValue, { color: colors.text }]}>
-                            {[
-                              variant.width && `W: ${variant.width}`,
-                              variant.height && `H: ${variant.height}`,
-                              variant.dimension && `D: ${variant.dimension}`
-                            ].filter(Boolean).join(' x ')}
-                          </Text>
-                        </View>
-                      )}
-                      <View style={styles.infoPair}>
-                        <Text style={[styles.infoLabel, { color: colors.textSec }]}>Status:</Text>
-                        <Text style={[
-                          styles.infoValue,
-                          { color: variant.qty > 0 ? (isDarkMode ? '#4ade80' : Colors.forest) : '#ef4444', fontWeight: '700' }
-                        ]}>
-                          {variant.qty > 0 ? '✓ In Stock' : '✗ Out of Stock'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
+                  )
                 );
               })()}
                   </View>
@@ -1063,6 +934,9 @@ export default function ProductDetailScreen({
               return null;
             }
           })()}
+
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
 
           {/* Description & Specifications Wrapper */}
           {(!!product.description || !!product.specifications || !!product.material || !!product.warranty || product.pswidth || product.pslenght || product.psheight) && (
@@ -1320,6 +1194,9 @@ export default function ProductDetailScreen({
             </View>
           </View>
 
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
+
           {/* Brand Information */}
           {brandProfile && (
             <View style={[styles.brandSection, { backgroundColor: colors.card }]}>
@@ -1368,6 +1245,9 @@ export default function ProductDetailScreen({
             </View>
           )}
 
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
+
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <View style={[styles.relatedSection, { backgroundColor: colors.card }]}>
@@ -1386,6 +1266,9 @@ export default function ProductDetailScreen({
               </ScrollView>
             </View>
           )}
+
+          {/* Gray Gap Separator */}
+          <View style={{ height: 8, backgroundColor: '#ffffff' }} />
 
           {/* You May Also Like Section - With Lazy Loading */}
           {youMayAlsoLike.length > 0 && (
@@ -1429,58 +1312,46 @@ export default function ProductDetailScreen({
           style={[styles.buyNowContainer, { borderTopColor: colors.divider }]}
         >
           <View style={{ paddingTop: 8, paddingBottom: insets.bottom || 4 }}>
-          {/* Decorative Icon */}
-          <View style={styles.decorativeIconContainer}>
-            <Ionicons name="sparkles" size={16} color={Colors.sky} />
-            <Text style={styles.decorativeText}>Complete your order</Text>
-          </View>
-
-          {/* Button Row */}
-          <View style={styles.buttonRow}>
-            {/* Add to Cart Button */}
-            <TouchableOpacity
-              style={[styles.addToCartButton, addingToCart && { opacity: 0.6 }]}
-              onPress={() => setShowAddToCartModal(true)}
-              activeOpacity={0.7}
-              disabled={addingToCart}
-            >
-              <View style={styles.addToCartContent}>
-                {addingToCart ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
-                ) : (
-                  <Ionicons name="cart-outline" size={20} color={Colors.white} />
-                )}
-                <Text style={styles.addToCartText}>{addingToCart ? 'Processing...' : 'Add to cart'}</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Buy Now Button with Save Badge */}
-            <View style={styles.buyNowButtonContainer}>
+            {/* Button Row */}
+            <View style={styles.buttonRow}>
+              {/* Add to Cart Button */}
               <TouchableOpacity
-                style={styles.buyNowButton}
-                onPress={() => {
-                  setShowBuyModal(true);
-                  setQuantity(1);
-                }}
+                style={[styles.addToCartButton, addingToCart && { opacity: 0.6 }]}
+                onPress={() => setShowAddToCartModal(true)}
                 activeOpacity={0.7}
+                disabled={addingToCart}
               >
-                <View style={styles.buyNowContent}>
-                  <Ionicons name="flash" size={18} color={Colors.white} />
-                  <View style={styles.buyNowTextContainer}>
-                    <Text style={styles.buyNowTitle}>Buy Now</Text>
-                    <Text style={styles.buyNowSubtitle}>Limited stock • Fast shipping</Text>
-                  </View>
-                  <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                <View style={styles.addToCartContent}>
+                  {addingToCart ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <Ionicons name="cart-outline" size={20} color={Colors.white} />
+                  )}
+                  <Text style={styles.addToCartText}>{addingToCart ? 'Processing...' : 'Add to cart'}</Text>
                 </View>
               </TouchableOpacity>
-              {hasDiscount && (
-                <View style={styles.saveBadge}>
-                  <Ionicons name="gift" size={12} color={Colors.white} />
-                  <Text style={styles.saveBadgeText}>Special Deal</Text>
-                </View>
-              )}
+
+              {/* Buy Now Button */}
+              <View style={styles.buyNowButtonContainer}>
+                <TouchableOpacity
+                  style={styles.buyNowButton}
+                  onPress={() => {
+                    setShowBuyModal(true);
+                    setQuantity(1);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.buyNowContent}>
+                    <Ionicons name="flash" size={18} color={Colors.white} />
+                    <View style={styles.buyNowTextContainer}>
+                      <Text style={styles.buyNowTitle}>Buy Now</Text>
+                      <Text style={styles.buyNowSubtitle}>Limited stock • Fast shipping</Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                  </View>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
           </View>
         </LinearGradient>
         </>
@@ -1816,7 +1687,7 @@ export default function ProductDetailScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#ffffff',
   },
   animatedHeader: {
     position: 'absolute',
@@ -1868,7 +1739,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     minHeight: 300,
     maxHeight: SCREEN_WIDTH * 0.85,
-    backgroundColor: '#ffffff',
     position: 'relative',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -1879,7 +1749,6 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_WIDTH * 0.85,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
   },
   galleryImage: {
     width: SCREEN_WIDTH,
@@ -1893,30 +1762,21 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_WIDTH * 0.85,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
   },
-  galleryDotsContainer: {
+  galleryPageCounter: {
     position: 'absolute',
-    bottom: 16,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    alignItems: 'center',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
-  galleryDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  galleryDotActive: {
-    borderColor: Colors.sky,
-    backgroundColor: Colors.sky,
-    width: 10,
+  galleryPageCounterText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   galleryBackBtn: {
     position: 'absolute',
@@ -1996,7 +1856,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: 20,
+    borderRadius: 12,
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
@@ -2089,7 +1949,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#ef4444',
   },
@@ -2565,13 +2425,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   variantCard: {
-    width: 140,
+    width: 90,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
-    paddingBottom: 8,
+    paddingBottom: 6,
   },
   variantCardSelected: {
     borderColor: Colors.sky,
@@ -2584,7 +2444,7 @@ const styles = StyleSheet.create({
   },
   variantMediaContainer: {
     width: '100%',
-    height: 120,
+    height: 80,
     backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
@@ -2616,23 +2476,23 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   variantInfo: {
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    gap: 4,
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    gap: 2,
   },
   variantLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: Colors.text,
   },
   variantSubInfo: {
-    fontSize: 11,
+    fontSize: 9,
     color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   variantStock: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 9,
+    fontWeight: '500',
     marginTop: 2,
   },
   stockAvailable: {
@@ -2642,10 +2502,8 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   variantPrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.sky,
-    marginTop: 4,
+    fontSize: 0,
+    display: 'none',
   },
   variantDetailsCard: {
     marginHorizontal: 0,
@@ -2969,12 +2827,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 0,
+    paddingHorizontal: 0,
   },
   addToCartButton: {
     width: 70,
     height: 52,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
     backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
@@ -3001,8 +2860,8 @@ const styles = StyleSheet.create({
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    borderTopRightRadius: 6,
+    borderBottomRightRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3037,7 +2896,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f97316',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -3304,29 +3163,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 0,
   },
-  decorativeIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-    paddingLeft: 2,
-  },
-  decorativeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.sky,
-    letterSpacing: 0.3,
-  },
   buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 0,
+    paddingHorizontal: 0,
   },
   addToCartButton: {
     width: 70,
     height: 52,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
     backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
@@ -3353,8 +3200,8 @@ const styles = StyleSheet.create({
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    borderTopRightRadius: 6,
+    borderBottomRightRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3389,7 +3236,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f97316',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -3397,6 +3244,132 @@ const styles = StyleSheet.create({
   saveBadgeText: {
     color: Colors.white,
     fontSize: 12,
+    fontWeight: '700',
+  },
+  // New Shopee-style price section
+  newPriceSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  bigPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  bigPrice: {
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  strikethroughPrice: {
+    fontSize: 14,
+    textDecorationLine: 'line-through',
+  },
+  discountBadgeNew: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 3,
+  },
+  discountBadgeTextNew: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  socialProofRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  ratingSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  socialProofDot: {
+    fontSize: 12,
+  },
+  soldCountCompact: {
+    fontSize: 12,
+  },
+  pvText: {
+    fontSize: 12,
+  },
+  badgeChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  badgeChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // Product name and brand section
+  newNameSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  productNameNew: {
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+  brandSkuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandText: {
+    fontSize: 12,
+  },
+  skuText: {
+    fontSize: 12,
+  },
+  // Delivery section
+  deliverySection: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  deliveryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deliveryInfo: {
+    flex: 1,
+  },
+  deliveryLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  deliveryDetails: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  // Compact variant info
+  variantCompactInfo: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  variantCompactLabel: {
+    fontSize: 12,
+  },
+  variantCompactPrice: {
+    fontSize: 16,
     fontWeight: '700',
   },
   stockInStock: {
