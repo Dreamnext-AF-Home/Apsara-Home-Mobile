@@ -73,6 +73,9 @@
         "projectId": "778fba47-8b53-41eb-a97f-4a5ed0b3b366"
       }
     },
-    "owner": "afhomeph"
+    "owner": "afhomeph",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
