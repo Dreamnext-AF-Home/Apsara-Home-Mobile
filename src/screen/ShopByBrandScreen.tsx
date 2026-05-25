@@ -406,7 +406,7 @@ export default function ShopByBrandScreen({
   }, [onBack]);
 
   const themeColors = {
-    containerBg: isDarkMode ? '#0f172a' : '#f8fbff',
+    containerBg: isDarkMode ? '#0f172a' : '#f5f5f5',
     headerBg: isDarkMode ? '#1e293b' : Colors.white,
     headerBorder: isDarkMode ? '#334155' : '#e0f2fe',
     text: isDarkMode ? '#f1f5f9' : Colors.text,
