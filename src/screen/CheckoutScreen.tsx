@@ -630,7 +630,7 @@ export default function CheckoutScreen({
                     {(checkoutItem.variant_color || checkoutItem.variant_size) && (
                       <Text style={[styles.itemVariantInfo, { color: colors.textSec }]}>
                         {checkoutItem.variant_color && `${checkoutItem.variant_color}`}
-                        {checkoutItem.variant_color && checkoutItem.variant_size && ', '}
+                        {checkoutItem.variant_color && checkoutItem.variant_size ? ', ' : ''}
                         {checkoutItem.variant_size && `${checkoutItem.variant_size}`}
                       </Text>
                     )}
