@@ -127,7 +127,7 @@ export default function CheckoutScreen({
   const [isAddressExpanded, setIsAddressExpanded] = useState(false);
 
   const colors = {
-    bg: isDarkMode ? '#0f172a' : '#f0f9ff',
+    bg: isDarkMode ? '#0f172a' : '#f5f5f5',
     containerBg: isDarkMode ? '#1f2937' : Colors.white,
     text: isDarkMode ? '#f8fafc' : Colors.text,
     textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
@@ -569,7 +569,7 @@ export default function CheckoutScreen({
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={[styles.content, { backgroundColor: colors.bg }]}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 20, gap: 8 }}
       >
         {/* Order Item Section - Grouped by Brand */}
         {Object.entries(groupedItems).map(([brandName, brandItems]) => (
@@ -1090,11 +1090,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   section: {
-    borderRadius: 0,
+    borderRadius: 8,
     padding: 14,
     marginHorizontal: 0,
     width: '100%',
-    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 13,
