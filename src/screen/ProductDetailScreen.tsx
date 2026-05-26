@@ -746,6 +746,82 @@ export default function ProductDetailScreen({
             </View>
                       </View>
 
+          {/* Variants - Shopee Style (Bottom of Image) */}
+          {product.variants && product.variants.length > 0 && (
+            <View style={[styles.shopeeVariantsBar, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.shopeeVariantsScroll}
+                contentContainerStyle={styles.shopeeVariantsContainer}
+              >
+                {product.variants.map((variant, index) => {
+                  const isSize = variant.size && !variant.images;
+
+                  return (
+                    <View key={variant.id}>
+                      <TouchableOpacity
+                        style={[
+                          styles.shopeeVariantItem,
+                          selectedVariant === variant.id && styles.shopeeVariantItemSelected,
+                          { borderColor: selectedVariant === variant.id ? Colors.sky : colors.divider }
+                        ]}
+                        onPress={() => {
+                          setSelectedVariant(variant.id);
+                          // Scroll gallery to this variant's image
+                          if (variant.images && variant.images.length > 0) {
+                            const variantImageIndex = imagesWithVariants.findIndex(item => item.variantId === variant.id);
+                            if (variantImageIndex >= 0) {
+                              setActiveImage(variantImageIndex);
+                              galleryScrollRef.current?.scrollTo({
+                                x: variantImageIndex * SCREEN_WIDTH,
+                                animated: true,
+                              });
+                            }
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        {variant.images && variant.images.length > 0 ? (
+                          <Image
+                            source={{ uri: variant.images[0] }}
+                            style={styles.shopeeVariantImage}
+                            resizeMode="cover"
+                          />
+                        ) : variant.colorHex ? (
+                          <View
+                            style={[
+                              styles.shopeeVariantColor,
+                              { backgroundColor: variant.colorHex }
+                            ]}
+                          />
+                        ) : isSize ? (
+                          <Text style={[styles.shopeeVariantSizeText, { color: colors.text }]}>
+                            {variant.size}
+                          </Text>
+                        ) : (
+                          <Text style={[styles.shopeeVariantText, { color: colors.text }]}>
+                            {variant.name}
+                          </Text>
+                        )}
+                        {selectedVariant === variant.id && (
+                          <View style={styles.shopeeVariantCheck}>
+                            <Ionicons name="checkmark" size={12} color={Colors.white} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                      {selectedVariant === variant.id && variant.colorHex && !variant.images?.length && (
+                        <Text style={[styles.shopeeVariantLabel, { color: colors.text }]}>
+                          {variant.color || variant.name}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Price Section - Shopee Style (Price First, Large & Bold) */}
           <View style={[styles.newPriceSection, { backgroundColor: colors.card }]}>
             {/* Big Price Row */}
@@ -816,124 +892,6 @@ export default function ProductDetailScreen({
               </View>
             </View>
           </View>
-
-          {/* Gray Gap Separator */}
-          <View style={{ height: 12, backgroundColor: '#ffffff' }} />
-
-          {/* Variants */}
-          {(() => {
-            try {
-              console.log('🔄 [Variants] Rendering variants section...');
-              if ((product.variants?.length ?? 0) > 0) {
-                console.log(`📦 [Variants] Found ${product.variants?.length} variants`);
-                return (
-                  <View style={[styles.variantsSection, { backgroundColor: colors.card }]}>
-                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Variants ({product.variants.length})</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.variantsScrollView}
-              >
-                <View style={styles.variantsList}>
-                  {product.variants.map((variant, index) => (
-                    <TouchableOpacity
-                      key={variant.id}
-                      style={[
-                        styles.variantCard,
-                        selectedVariant === variant.id && styles.variantCardSelected,
-                        { borderColor: selectedVariant === variant.id ? Colors.sky : colors.divider, backgroundColor: colors.containerBg }
-                      ]}
-                      onPress={() => setSelectedVariant(variant.id)}
-                      activeOpacity={0.7}
-                    >
-                      {/* Variant Image, Color Circle, or Label */}
-                      <View style={[styles.variantMediaContainer, { backgroundColor: isDarkMode ? '#111827' : '#f1f5f9', borderBottomColor: colors.divider }]}>
-                        {variant.images && variant.images.length > 0 ? (
-                          <Image
-                            source={{ uri: variant.images[0] }}
-                            style={styles.variantImage}
-                            resizeMode="cover"
-                          />
-                        ) : variant.colorHex ? (
-                          <View style={[
-                            styles.variantColorCircle,
-                            { backgroundColor: variant.colorHex, borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : '#e5e7eb' }
-                          ]} />
-                        ) : (
-                          <View style={[styles.variantPlaceholder, { backgroundColor: colors.divider }]}>
-                            <Ionicons name="image-outline" size={24} color={colors.textSec} />
-                          </View>
-                        )}
-                        {selectedVariant === variant.id && (
-                          <View style={styles.variantCheckmark}>
-                            <Ionicons name="checkmark-circle" size={20} color={Colors.sky} />
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Variant Info */}
-                      <View style={styles.variantInfo}>
-                        <Text
-                          style={[styles.variantLabel, { color: colors.text }]}
-                          numberOfLines={1}
-                        >
-                          {variant.color || variant.name || `Variant ${index + 1}`}
-                        </Text>
-                        {(variant.size || variant.style) && (
-                          <Text
-                            style={[styles.variantSubInfo, { color: colors.textSec }]}
-                            numberOfLines={1}
-                          >
-                            {[variant.size, variant.style].filter(Boolean).join(' • ')}
-                          </Text>
-                        )}
-                        <Text
-                          style={[
-                            styles.variantStock,
-                            { color: variant.qty > 0 ? (isDarkMode ? '#4ade80' : Colors.forest) : '#ef4444', fontWeight: '700' }
-                          ]}
-                        >
-                          {variant.qty > 10 ? `${variant.qty} left` : variant.qty > 0 ? `${variant.qty} left` : 'Out of stock'}
-                        </Text>
-                        <Text style={[styles.variantPrice, { color: colors.text }]}>
-                          ₱{(variant.priceMember ?? variant.priceSrp).toLocaleString()}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-
-              {selectedVariant && (() => {
-                const variant = product.variants?.find(v => v.id === selectedVariant);
-                if (!variant) return null;
-
-                const mainPrice = product.priceMember ?? product.priceSrp ?? 0;
-                const variantPrice = variant.priceMember ?? variant.priceSrp ?? 0;
-                const isDifferentPrice = variantPrice !== mainPrice;
-
-                return (
-                  isDifferentPrice && (
-                    <View style={[styles.variantCompactInfo, { backgroundColor: colors.card }]}>
-                      <Text style={[styles.variantCompactLabel, { color: colors.textSec }]}>
-                        {variant.color || variant.name || 'Selected Variant'} Price:
-                      </Text>
-                      <Text style={[styles.variantCompactPrice, { color: Colors.sky }]}>
-                        ₱{variantPrice.toLocaleString()}
-                      </Text>
-                    </View>
-                  )
-                );
-              })()}
-                  </View>
-                );
-              }
-              return null;
-            } catch (error) {
-              console.error('❌ [Variants] Error rendering variants:', error);
-              return null;
-            }
-          })()}
 
           {/* Gray Gap Separator */}
           <View style={{ height: 12, backgroundColor: '#ffffff' }} />
@@ -1372,6 +1330,9 @@ export default function ProductDetailScreen({
         selectedVariant={selectedVariant}
         imageViewerIndex={imageViewerIndex}
         cartCount={cartCount}
+        isWishlisted={isWishlisted}
+        wishlistLoading={wishlistLoading}
+        onWishlistToggle={toggleWishlist}
         onClose={() => setShowImageViewer(false)}
         onAddToCart={() => {
           console.log('Add to cart');
@@ -3420,5 +3381,77 @@ const styles = StyleSheet.create({
   },
   youMayAlsoLikeItem: {
     width: '100%',
+  },
+  // Shopee-style variants bar (bottom of image)
+  shopeeVariantsBar: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  shopeeVariantsScroll: {
+    paddingHorizontal: 8,
+  },
+  shopeeVariantsContainer: {
+    paddingHorizontal: 4,
+    paddingRight: 12,
+    gap: 8,
+  },
+  shopeeVariantItem: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    position: 'relative',
+    padding: 4,
+    overflow: 'hidden',
+  },
+  shopeeVariantItemSelected: {
+    borderColor: Colors.sky,
+    borderWidth: 1.5,
+  },
+  shopeeVariantColor: {
+    width: 48,
+    height: 48,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  shopeeVariantLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  shopeeVariantImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 6,
+  },
+  shopeeVariantText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  shopeeVariantSizeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  shopeeVariantCheck: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.sky,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
 });
