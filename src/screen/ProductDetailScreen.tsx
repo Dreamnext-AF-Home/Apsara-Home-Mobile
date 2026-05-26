@@ -518,7 +518,9 @@ export default function ProductDetailScreen({
 
       // Track wishlist behavior
       const behaviorType = newWishlistState ? 'wishlist_add' : 'wishlist_remove';
-      userBehaviorService.trackBehavior(token, behaviorType, product.id, product.catid, product.brandType).catch(() => {});
+      if (product?.id && product?.catid && product?.brandType) {
+        userBehaviorService.trackBehavior(token, behaviorType, product.id, product.catid, product.brandType).catch(() => {});
+      }
 
       Toast.show({
         type: 'success',
