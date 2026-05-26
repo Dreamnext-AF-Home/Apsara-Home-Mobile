@@ -206,6 +206,49 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
     }
   }, [variantModalOpen, variantModalTranslateY]);
 
+  const fetchVariantImagesForCart = async (items: CartItem[]) => {
+    try {
+      const uniqueProductIds = new Set<number>();
+      items.forEach(item => {
+        if (item.crt_variant_id && !item.variant_image && item.crt_product_id) {
+          uniqueProductIds.add(item.crt_product_id);
+        }
+      });
+
+      if (uniqueProductIds.size === 0) return;
+
+      const newImageCache = { ...variantImageCache };
+
+      for (const productId of uniqueProductIds) {
+        if (newImageCache[productId]) continue;
+
+        try {
+          const product = await productService.getProductById(productId, token ?? undefined);
+          const variants = product.variants || [];
+          const imageCache: { [key: number]: string } = {};
+
+          variants.forEach((v: any) => {
+            if (v.id && (v.images?.[0] || v.image)) {
+              imageCache[v.id] = v.images?.[0] || v.image;
+            }
+          });
+
+          if (Object.keys(imageCache).length > 0) {
+            newImageCache[productId] = imageCache;
+          }
+        } catch (error) {
+          console.error(`Error fetching variants for product ${productId}:`, error);
+        }
+      }
+
+      if (Object.keys(newImageCache).length > 0) {
+        setVariantImageCache(newImageCache);
+      }
+    } catch (error) {
+      console.error('Error fetching variant images:', error);
+    }
+  };
+
   const fetchCart = async () => {
     if (!token) return;
     try {
@@ -215,6 +258,9 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
       });
       const cartItems = response.data.cart_items || [];
       setCartItems(cartItems);
+
+      // Fetch variant images for items that have variant_id but missing variant_image
+      await fetchVariantImagesForCart(cartItems);
     } catch (error: any) {
       console.error('Error fetching cart:', error);
       Toast.show({
@@ -625,9 +671,10 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
                   if (item.variant_image && item.variant_image.trim()) {
                     return item.variant_image;
                   }
-                  // Check variant image cache
-                  if (item.variant_id && variantImageCache[item.crt_product_id]?.[item.variant_id]) {
-                    return variantImageCache[item.crt_product_id][item.variant_id];
+                  // Check variant image cache for crt_variant_id or variant_id
+                  const variantId = item.crt_variant_id || item.variant_id;
+                  if (variantId && variantImageCache[item.crt_product_id]?.[variantId]) {
+                    return variantImageCache[item.crt_product_id][variantId];
                   }
                   // Fallback to product image
                   return item.product_image;
@@ -985,10 +1032,28 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
             style={[styles.checkoutBtn, selectedItems.size === 0 && { opacity: 0.5 }]}
             onPress={() => {
               if (selectedItems.size === 0) return;
-              const selectedItemsList = Array.from(selectedItems).map(crtId =>
-                cartItems.find(item => item.crt_id === crtId)
-              ).filter(Boolean) as CartItem[];
-              onCheckout?.(selectedItemsList);
+              const selectedItemsList = Array.from(selectedItems).map(crtId => {
+                const cartItem = cartItems.find(item => item.crt_id === crtId);
+                if (!cartItem) return null;
+
+                // Get variant image from cache if available
+                const variantId = cartItem.crt_variant_id || cartItem.variant_id;
+                const cachedVariantImage = variantImageCache[cartItem.crt_product_id]?.[variantId];
+
+                return {
+                  product_id: cartItem.crt_product_id,
+                  product_name: cartItem.product_name,
+                  product_image: cartItem.product_image,
+                  product_price_member: parseFloat(cartItem.product_price_member),
+                  product_price_srp: parseFloat(cartItem.product_price_srp),
+                  quantity: cartItem.crt_quantity,
+                  variant_color: cartItem.variant_color || undefined,
+                  variant_size: cartItem.variant_size || undefined,
+                  variant_image: cartItem.variant_image || cachedVariantImage || undefined,
+                  brand_name: cartItem.brand_name,
+                };
+              }).filter(Boolean);
+              onCheckout?.(selectedItemsList as any);
             }}
             disabled={selectedItems.size === 0}
             activeOpacity={0.7}
