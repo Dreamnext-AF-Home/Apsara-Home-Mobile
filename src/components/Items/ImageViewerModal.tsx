@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import {
   View, Image, Text, TouchableOpacity, ScrollView, StyleSheet,
   Dimensions, RefreshControl,
@@ -57,6 +57,9 @@ interface ImageViewerModalProps {
   onProductPress?: (productId: number) => void;
   hasDiscount: boolean;
   cartCount?: number;
+  isWishlisted?: boolean;
+  onWishlistToggle?: () => void;
+  wishlistLoading?: boolean;
 }
 
 export default function ImageViewerModal({
@@ -75,9 +78,26 @@ export default function ImageViewerModal({
   onProductPress,
   hasDiscount,
   cartCount = 0,
+  isWishlisted = false,
+  onWishlistToggle,
+  wishlistLoading = false,
 }: ImageViewerModalProps) {
   const insets = useSafeAreaInsets();
   const imageViewerScrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (visible && imageViewerScrollRef.current && images.length > 0) {
+      // Use a small delay to ensure the ScrollView is rendered
+      const timer = setTimeout(() => {
+        imageViewerScrollRef.current?.scrollTo({
+          x: imageViewerIndex * SCREEN_WIDTH,
+          y: 0,
+          animated: false,
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, imageViewerIndex, images.length]);
 
   if (!visible || !product) return null;
 
@@ -131,16 +151,36 @@ export default function ImageViewerModal({
           </View>
         </TouchableOpacity>
 
-        {/* Share Button */}
-        <TouchableOpacity
-          style={styles.slideshowIconBtn}
-          activeOpacity={0.7}
-          onPress={() => {
-            console.log('Share product');
-          }}
-        >
-          <Ionicons name="share-social-outline" size={20} color={Colors.text} />
-        </TouchableOpacity>
+        {/* Wishlist and Share Buttons */}
+        <View style={styles.slideshowHeaderActions}>
+          <TouchableOpacity
+            style={styles.slideshowIconBtn}
+            activeOpacity={0.7}
+            onPress={onWishlistToggle}
+            disabled={wishlistLoading}
+          >
+            {wishlistLoading ? (
+              <View style={styles.slideshowIconBtn}>
+                <Ionicons name="heart" size={20} color={Colors.textSecondary} />
+              </View>
+            ) : (
+              <Ionicons
+                name={isWishlisted ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isWishlisted ? '#ef4444' : Colors.text}
+              />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.slideshowIconBtn}
+            activeOpacity={0.7}
+            onPress={() => {
+              console.log('Share product');
+            }}
+          >
+            <Ionicons name="share-social-outline" size={20} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       {/* Main Image Carousel */}
@@ -268,77 +308,90 @@ export default function ImageViewerModal({
           </View>
         </View>
 
-        {/* Variants Section */}
+        {/* Variants Section - Shopee Style */}
         {product.variants && product.variants.length > 0 && (
-          <View style={styles.slideshowVariantsSection}>
+          <View style={styles.shopeeVariantsBar}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={styles.slideshowVariantsScroll}
+              style={styles.shopeeVariantsScroll}
+              contentContainerStyle={styles.shopeeVariantsContainer}
             >
-              {product.variants.map((variant) => (
-                <TouchableOpacity
-                  key={variant.id}
-                  style={[
-                    styles.slideshowVariantOption,
-                    selectedVariant === variant.id && styles.slideshowVariantOptionSelected,
-                  ]}
-                  onPress={() => {
-                    onSelectVariant(variant.id);
-                    const variantIndex = imagesWithVariants.findIndex(item => item.variantId === variant.id);
-                    if (variantIndex >= 0) {
-                      onImageIndexChange(variantIndex);
-                      imageViewerScrollRef.current?.scrollTo({
-                        x: variantIndex * SCREEN_WIDTH,
-                        animated: true,
-                      });
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  {variant.images && variant.images.length > 0 ? (
-                    <Image
-                      source={{ uri: variant.images[0] }}
-                      style={styles.slideshowVariantImage}
-                      resizeMode="cover"
-                    />
-                  ) : variant.colorHex ? (
-                    <View
+              {product.variants.map((variant, index) => {
+                const isSize = variant.size && !variant.images;
+
+                return (
+                  <View key={variant.id}>
+                    <TouchableOpacity
                       style={[
-                        styles.slideshowVariantColor,
-                        { backgroundColor: variant.colorHex },
+                        styles.shopeeVariantItem,
+                        selectedVariant === variant.id && styles.shopeeVariantItemSelected,
+                        { borderColor: selectedVariant === variant.id ? Colors.sky : '#e5e7eb' }
                       ]}
-                    />
-                  ) : (
-                    <Ionicons name="image-outline" size={20} color="#d1d5db" />
-                  )}
-                  {selectedVariant === variant.id && (
-                    <View style={styles.slideshowVariantCheck}>
-                      <Ionicons name="checkmark" size={14} color={Colors.white} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
+                      onPress={() => {
+                        onSelectVariant(variant.id);
+                        const variantIndex = imagesWithVariants.findIndex(item => item.variantId === variant.id);
+                        if (variantIndex >= 0) {
+                          onImageIndexChange(variantIndex);
+                          imageViewerScrollRef.current?.scrollTo({
+                            x: variantIndex * SCREEN_WIDTH,
+                            animated: true,
+                          });
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {variant.images && variant.images.length > 0 ? (
+                        <Image
+                          source={{ uri: variant.images[0] }}
+                          style={styles.shopeeVariantImage}
+                          resizeMode="cover"
+                        />
+                      ) : variant.colorHex ? (
+                        <View
+                          style={[
+                            styles.shopeeVariantColor,
+                            { backgroundColor: variant.colorHex }
+                          ]}
+                        />
+                      ) : isSize ? (
+                        <Text style={[styles.shopeeVariantSizeText, { color: Colors.text }]}>
+                          {variant.size}
+                        </Text>
+                      ) : (
+                        <Text style={[styles.shopeeVariantText, { color: Colors.text }]}>
+                          {variant.name}
+                        </Text>
+                      )}
+                      {selectedVariant === variant.id && (
+                        <View style={styles.shopeeVariantCheck}>
+                          <Ionicons name="checkmark" size={12} color={Colors.white} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                    {selectedVariant === variant.id && variant.colorHex && !variant.images?.length && (
+                      <Text style={[styles.shopeeVariantLabel, { color: Colors.text }]}>
+                        {variant.color || variant.name}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
             </ScrollView>
           </View>
         )}
       </LinearGradient>
 
-      {/* Action Buttons with Gradient Background */}
+      {/* Buy Now Button Container */}
       <LinearGradient
         colors={['#f0f9ff', '#f0fdf4']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.slideshowButtonContainer, { paddingBottom: insets.bottom || 12 }]}
-        >
-          {/* Decorative Icon */}
-          <View style={styles.decorativeIconContainer}>
-            <Ionicons name="sparkles" size={16} color={Colors.sky} />
-            <Text style={styles.decorativeText}>Complete your order</Text>
-          </View>
-
+        style={[styles.buyNowContainer, { paddingBottom: insets.bottom || 4 }]}
+      >
+        <View style={{ paddingTop: 8 }}>
           {/* Button Row */}
-          <View style={styles.slideshowButtonRow}>
+          <View style={styles.buttonRow}>
             {/* Add to Cart Button */}
             <TouchableOpacity
               style={styles.addToCartButton}
@@ -351,7 +404,7 @@ export default function ImageViewerModal({
               </View>
             </TouchableOpacity>
 
-            {/* Buy Now Button with Save Badge */}
+            {/* Buy Now Button */}
             <View style={styles.buyNowButtonContainer}>
               <TouchableOpacity
                 style={styles.buyNowButton}
@@ -367,15 +420,10 @@ export default function ImageViewerModal({
                   <Ionicons name="arrow-forward" size={18} color={Colors.white} />
                 </View>
               </TouchableOpacity>
-              {hasDiscount && (
-                <View style={styles.saveBadge}>
-                  <Ionicons name="gift" size={12} color={Colors.white} />
-                  <Text style={styles.saveBadgeText}>Special Deal</Text>
-                </View>
-              )}
             </View>
           </View>
-        </LinearGradient>
+        </View>
+      </LinearGradient>
     </View>
   );
 }
@@ -387,15 +435,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     zIndex: 2000,
     flexDirection: 'column',
+    flex: 1,
   },
   slideshowHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -409,6 +458,11 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  slideshowHeaderActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
   },
   slideshowBrandInfo: {
     flex: 1,
@@ -480,16 +534,17 @@ const styles = StyleSheet.create({
   slideshowPageIndicator: {
     position: 'absolute',
     bottom: 12,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   slideshowPageText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: Colors.white,
+    letterSpacing: 0.3,
   },
   slideshowProductCard: {
     backgroundColor: Colors.white,
@@ -610,35 +665,21 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  slideshowButtonContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 12,
+  buyNowContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 0,
   },
-  decorativeIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-    paddingLeft: 2,
-  },
-  decorativeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.sky,
-    letterSpacing: 0.3,
-  },
-  slideshowButtonRow: {
+  buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 0,
+    paddingHorizontal: 0,
   },
   addToCartButton: {
     width: 70,
     height: 52,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
     backgroundColor: '#f97316',
     borderWidth: 1.5,
     borderColor: '#f97316',
@@ -665,8 +706,8 @@ const styles = StyleSheet.create({
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    borderTopRightRadius: 6,
+    borderBottomRightRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -694,21 +735,77 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 2,
   },
-  saveBadge: {
-    position: 'absolute',
-    top: -12,
-    right: 12,
-    backgroundColor: '#f97316',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  // Shopee-style variants
+  shopeeVariantsBar: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  saveBadgeText: {
-    color: Colors.white,
-    fontSize: 12,
+  shopeeVariantsScroll: {
+    paddingHorizontal: 8,
+  },
+  shopeeVariantsContainer: {
+    paddingHorizontal: 4,
+    paddingRight: 12,
+    gap: 8,
+  },
+  shopeeVariantItem: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    position: 'relative',
+    padding: 4,
+    overflow: 'hidden',
+  },
+  shopeeVariantItemSelected: {
+    borderColor: Colors.sky,
+    borderWidth: 1.5,
+  },
+  shopeeVariantColor: {
+    width: 48,
+    height: 48,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  shopeeVariantImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 6,
+  },
+  shopeeVariantText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  shopeeVariantSizeText: {
+    fontSize: 13,
     fontWeight: '700',
+    textAlign: 'center',
+  },
+  shopeeVariantCheck: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.sky,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  shopeeVariantLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
   },
 });
