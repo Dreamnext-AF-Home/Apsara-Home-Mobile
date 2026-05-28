@@ -46,10 +46,8 @@ yarn-error.*
 /android/local.properties
 /android/*.iml
 /android/app/build/
-/android/gradle/wrapper/gradle-wrapper.jar
 
 /.idea
 .env
-.env.example
 my-key.keystore
 .claude
