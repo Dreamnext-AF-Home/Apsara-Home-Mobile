@@ -38,7 +38,6 @@ export default function ReferralOtpScreen({
   const [loading, setLoading] = useState(false);
   const [expiresIn, setExpiresIn] = useState(300); // 5 minutes in seconds
   const [errorMessage, setErrorMessage] = useState('');
-  const [otpMethod, setOtpMethod] = useState<'email' | 'contact'>('email');
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
   // Countdown timer for OTP expiration
@@ -117,7 +116,7 @@ export default function ReferralOtpScreen({
       Toast.show({
         type: 'success',
         text1: 'Success',
-        text2: 'Email verified successfully!',
+        text2: 'Account verified successfully!',
       });
       setTimeout(() => {
         onSuccess();
@@ -131,7 +130,7 @@ export default function ReferralOtpScreen({
 
   const handleResendOtp = () => {
     // TODO: Implement resend OTP function
-    setErrorMessage('A new OTP has been sent to your email.');
+    setErrorMessage('A new OTP has been sent to your contact number.');
   };
 
   return (
@@ -149,7 +148,7 @@ export default function ReferralOtpScreen({
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={[styles.headerGreeting, { color: colors.text }]}>
-              Verify Email
+              Verify Account
             </Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSec }]}>
               Enter the 4-digit code
@@ -170,57 +169,6 @@ export default function ReferralOtpScreen({
           keyboardShouldPersistTaps="handled"
         >
 
-          {/* Email Display */}
-          <View style={[styles.emailBox, { borderColor: colors.border, backgroundColor: colors.containerBg }]}>
-            <Ionicons name="mail-outline" size={20} color={Colors.sky} />
-            <Text style={[styles.emailText, { color: colors.text }]}>{email}</Text>
-          </View>
-
-          {/* Method Toggle */}
-          <View style={styles.methodToggle}>
-            <TouchableOpacity
-              style={[
-                styles.methodButton,
-                otpMethod === 'email' && styles.methodButtonActive,
-                {
-                  borderColor: otpMethod === 'email' ? Colors.sky : colors.border,
-                  backgroundColor: otpMethod === 'email' ? Colors.sky : 'transparent',
-                },
-              ]}
-              onPress={() => setOtpMethod('email')}
-            >
-              <Text
-                style={[
-                  styles.methodButtonText,
-                  otpMethod === 'email' && styles.methodButtonTextActive,
-                  { color: otpMethod === 'email' ? Colors.white : colors.text },
-                ]}
-              >
-                Use Gmail
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.methodButton,
-                otpMethod === 'contact' && styles.methodButtonActive,
-                {
-                  borderColor: otpMethod === 'contact' ? Colors.sky : colors.border,
-                  backgroundColor: otpMethod === 'contact' ? Colors.sky : 'transparent',
-                },
-              ]}
-              onPress={() => setOtpMethod('contact')}
-            >
-              <Text
-                style={[
-                  styles.methodButtonText,
-                  otpMethod === 'contact' && styles.methodButtonTextActive,
-                  { color: otpMethod === 'contact' ? Colors.white : colors.text },
-                ]}
-              >
-                Use Contact Number
-              </Text>
-            </TouchableOpacity>
-          </View>
 
           {/* OTP Input Boxes */}
           <View style={styles.labelRow}>
@@ -326,43 +274,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 'auto',
     paddingHorizontal: 16,
     paddingVertical: 16,
-  },
-  emailBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-  },
-  emailText: {
-    fontSize: 13,
-    fontWeight: '500',
-    flex: 1,
-  },
-  methodToggle: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  methodButton: {
-    flex: 1,
-    height: 44,
-    borderWidth: 1,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  methodButtonActive: {
-    borderWidth: 0,
-  },
-  methodButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  methodButtonTextActive: {
-    color: Colors.white,
   },
   labelRow: {
     flexDirection: 'row',

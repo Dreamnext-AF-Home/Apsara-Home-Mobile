@@ -149,19 +149,12 @@ export default function ReferralSignupScreen({
     return () => backHandler.remove();
   }, [onBack]);
 
-  function formatPhoneNumber(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, 11);
-    if (digits.length <= 4) return digits;
-    if (digits.length <= 7) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-    return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7, 11)}`;
-  }
 
   function validate() {
     const next: Record<string, string> = {};
     const phoneDigits = signupData.mobileNumber.replace(/\D/g, '');
     if (!signupData.firstName.trim()) next.firstName = 'First name is required.';
     if (!signupData.lastName.trim()) next.lastName = 'Last name is required.';
-    if (!signupData.email.trim()) next.email = 'Email is required.';
     if (!signupData.username.trim()) next.username = 'Username is required.';
     if (phoneDigits.length !== 11) next.mobileNumber = 'Use 11 digits only.';
     if (signupData.password.length < 8) next.password = 'Password must be at least 8 characters.';
@@ -235,11 +228,11 @@ export default function ReferralSignupScreen({
     }
   }
 
-  const fields: Array<{ key: keyof typeof signupData; label: string; half?: boolean; keyboard?: any; disabled?: boolean }> = [
+  const fields: Array<{ key: keyof typeof signupData; label: string; half?: boolean; keyboard?: any; disabled?: boolean; optional?: boolean }> = [
     { key: 'firstName', label: 'First Name', half: true },
     { key: 'lastName', label: 'Last Name', half: true },
     { key: 'mobileNumber', label: 'Mobile Number', keyboard: 'phone-pad', half: true },
-    { key: 'email', label: 'Email Address', keyboard: 'email-address', half: true },
+    { key: 'email', label: 'Email Address', keyboard: 'email-address', half: true, optional: true },
     { key: 'username', label: 'Username', half: true },
     { key: 'referralCode', label: 'Referral Code', half: true, disabled: !!referrerUsername },
   ];
@@ -251,7 +244,7 @@ export default function ReferralSignupScreen({
         colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top, backgroundColor: colors.containerBg }]}
+        style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.containerBg, borderBottomColor: colors.border }]}
       >
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -269,15 +262,18 @@ export default function ReferralSignupScreen({
         </View>
       </LinearGradient>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+      <View style={styles.scrollableContainer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          keyboardVerticalOffset={120}
+        >
         <ScrollView
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={true}
         >
           {Array.from({ length: Math.ceil(fields.length / 2) }).map((_, rowIndex) => {
             const field1 = fields[rowIndex * 2];
@@ -287,7 +283,7 @@ export default function ReferralSignupScreen({
                 {field1 && (
                   <View style={[styles.fieldWrap, field1.half && styles.halfField]}>
                     <Text style={[styles.label, { color: colors.text }]}>
-                      {field1.label} <Text style={styles.required}>*</Text>
+                      {field1.label} {!field1.optional && <Text style={styles.required}>*</Text>}
                     </Text>
                     <TextInput
                       style={[
@@ -297,15 +293,15 @@ export default function ReferralSignupScreen({
                       ]}
                       value={signupData[field1.key]}
                       onChangeText={t => {
-                        const formatted = field1.key === 'mobileNumber' ? formatPhoneNumber(t) : t;
-                        setSignupData(v => ({ ...v, [field1.key]: formatted }));
+                        setSignupData(v => ({ ...v, [field1.key]: t }));
                       }}
                       placeholderTextColor={colors.textSec}
                       keyboardType={field1.keyboard}
                       autoCapitalize={field1.key === 'email' || field1.key === 'username' ? 'none' : 'words'}
                       editable={!field1.disabled}
                     />
-                    {field1.key === 'mobileNumber' ? <Text style={[styles.hint, { color: colors.textSec }]}>Use 11 digits only. Format 0929-226-0447.</Text> : null}
+                    {field1.key === 'email' ? <Text style={[styles.hint, { color: colors.textSec }]}>Optional</Text> : null}
+                    {field1.key === 'mobileNumber' ? <Text style={[styles.hint, { color: colors.textSec }]}>Use 11 digits only.</Text> : null}
                     {field1.key === 'username' ? <Text style={[styles.hint, { color: colors.textSec }]}>Letters and numbers only, no spaces or symbols.</Text> : null}
                     {field1.key === 'referralCode' ? <Text style={[styles.hint, { color: colors.textSec }]}>{referrerUsername ? 'Pre-filled from your referral link.' : 'Optional - Enter referral code if you have one.'}</Text> : null}
                     {errors[field1.key] ? <Text style={styles.errorText}>{errors[field1.key]}</Text> : null}
@@ -314,7 +310,7 @@ export default function ReferralSignupScreen({
                 {field2 && (
                   <View style={[styles.fieldWrap, field2.half && styles.halfField]}>
                     <Text style={[styles.label, { color: colors.text }]}>
-                      {field2.label} <Text style={styles.required}>*</Text>
+                      {field2.label} {!field2.optional && <Text style={styles.required}>*</Text>}
                     </Text>
                     <TextInput
                       style={[
@@ -324,15 +320,15 @@ export default function ReferralSignupScreen({
                       ]}
                       value={signupData[field2.key]}
                       onChangeText={t => {
-                        const formatted = field2.key === 'mobileNumber' ? formatPhoneNumber(t) : t;
-                        setSignupData(v => ({ ...v, [field2.key]: formatted }));
+                        setSignupData(v => ({ ...v, [field2.key]: t }));
                       }}
                       placeholderTextColor={colors.textSec}
                       keyboardType={field2.keyboard}
                       autoCapitalize={field2.key === 'email' || field2.key === 'username' ? 'none' : 'words'}
                       editable={!field2.disabled}
                     />
-                    {field2.key === 'mobileNumber' ? <Text style={[styles.hint, { color: colors.textSec }]}>Use 11 digits only. Format 0929-226-0447.</Text> : null}
+                    {field2.key === 'email' ? <Text style={[styles.hint, { color: colors.textSec }]}>Optional</Text> : null}
+                    {field2.key === 'mobileNumber' ? <Text style={[styles.hint, { color: colors.textSec }]}>Use 11 digits only.</Text> : null}
                     {field2.key === 'username' ? <Text style={[styles.hint, { color: colors.textSec }]}>Letters and numbers only, no spaces or symbols.</Text> : null}
                     {errors[field2.key] ? <Text style={styles.errorText}>{errors[field2.key]}</Text> : null}
                   </View>
@@ -388,7 +384,6 @@ export default function ReferralSignupScreen({
                   At least 8 chars
                 </Text>
               </View>
-              <Text style={[styles.separator, { color: colors.border }]}>•</Text>
               <View style={styles.requirementLine}>
                 <Text style={[styles.requirementCheck, { color: passwordRequirements.hasUppercase ? '#22c55e' : '#9ca3af' }]}>
                   {passwordRequirements.hasUppercase ? '✓' : '○'}
@@ -397,7 +392,6 @@ export default function ReferralSignupScreen({
                   At least one Uppercase
                 </Text>
               </View>
-              <Text style={[styles.separator, { color: colors.border }]}>•</Text>
               <View style={styles.requirementLine}>
                 <Text style={[styles.requirementCheck, { color: passwordRequirements.hasLowercase ? '#22c55e' : '#9ca3af' }]}>
                   {passwordRequirements.hasLowercase ? '✓' : '○'}
@@ -406,7 +400,6 @@ export default function ReferralSignupScreen({
                   At least one Lowercase
                 </Text>
               </View>
-              <Text style={[styles.separator, { color: colors.border }]}>•</Text>
               <View style={styles.requirementLine}>
                 <Text style={[styles.requirementCheck, { color: passwordRequirements.hasNumber ? '#22c55e' : '#9ca3af' }]}>
                   {passwordRequirements.hasNumber ? '✓' : '○'}
@@ -415,7 +408,6 @@ export default function ReferralSignupScreen({
                   At least one Number
                 </Text>
               </View>
-              <Text style={[styles.separator, { color: colors.border }]}>•</Text>
               <View style={styles.requirementLine}>
                 <Text style={[styles.requirementCheck, { color: passwordRequirements.passwordsMatch ? '#22c55e' : '#9ca3af' }]}>
                   {passwordRequirements.passwordsMatch ? '✓' : '○'}
@@ -426,58 +418,67 @@ export default function ReferralSignupScreen({
               </View>
             </View>
           </View>
+        </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
 
-          <View style={[styles.termsBox, { borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.checkboxRow} onPress={openTermsModal} activeOpacity={0.7}>
-              <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
-                {acceptedTerms && <Ionicons name="checkmark" size={11} color={Colors.white} />}
-              </View>
-              <Text style={[styles.termsText, { color: colors.text }]}>
-                I have read and agree to the <Text style={styles.linkText}>Terms and Conditions</Text>.
-              </Text>
-            </TouchableOpacity>
-          </View>
+      {/* Fixed Bottom Footer */}
+      <LinearGradient
+          colors={isDarkMode ? ['#0f172a', '#1e293b'] : ['#f0f9ff', '#f0fdf4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.bottomFooter, { backgroundColor: colors.containerBg, borderTopColor: colors.border }]}
+        >
+          <View style={{ paddingTop: 8, paddingBottom: insets.bottom || 4, paddingHorizontal: 16 }}>
+            <View style={[styles.termsBox, { borderColor: colors.border, marginBottom: 8 }]}>
+              <TouchableOpacity style={styles.checkboxRow} onPress={openTermsModal} activeOpacity={0.7}>
+                <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                  {acceptedTerms && <Ionicons name="checkmark" size={11} color={Colors.white} />}
+                </View>
+                <Text style={[styles.termsText, { color: colors.text }]}>
+                  I have read and agree to the <Text style={styles.linkText}>Terms and Conditions</Text>.
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          {errors.form ? <Text style={styles.errorText}>{errors.form}</Text> : null}
+            {errors.form ? <Text style={[styles.errorText, { marginBottom: 8 }]}>{errors.form}</Text> : null}
 
-          {pendingOtpEmail && pendingOtpToken ? (
-            <>
+            {pendingOtpEmail && pendingOtpToken ? (
+              <>
+                <Button
+                  title="CONTINUE VERIFICATION"
+                  onPress={onResumOtp}
+                  style={[styles.signUpBtn, { backgroundColor: Colors.sky, marginBottom: 8 }]}
+                />
+                <Button
+                  title="START OVER"
+                  onPress={() => {
+                    setSignupData({
+                      firstName: '',
+                      lastName: '',
+                      mobileNumber: '',
+                      email: '',
+                      username: '',
+                      referralCode: referrerUsername,
+                      password: '',
+                      passwordConfirmation: '',
+                    });
+                    setAcceptedTerms(false);
+                  }}
+                  style={styles.signUpBtn}
+                />
+              </>
+            ) : (
               <Button
-                title="CONTINUE VERIFICATION"
-                onPress={onResumOtp}
-                style={[styles.signUpBtn, { backgroundColor: Colors.sky }]}
-              />
-              <Button
-                title="START OVER"
-                onPress={() => {
-                  setSignupData({
-                    firstName: '',
-                    lastName: '',
-                    mobileNumber: '',
-                    email: '',
-                    username: '',
-                    referralCode: referrerUsername,
-                    password: '',
-                    passwordConfirmation: '',
-                  });
-                  setAcceptedTerms(false);
-                }}
+                title="SIGN UP"
+                onPress={handleRegister}
+                loading={loading}
+                disabled={!acceptedTerms}
                 style={styles.signUpBtn}
               />
-            </>
-          ) : (
-            <Button
-              title="SIGN UP"
-              onPress={handleRegister}
-              loading={loading}
-              disabled={!acceptedTerms}
-              style={styles.signUpBtn}
-            />
-          )}
-
-          <View style={styles.spacer} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+            )}
+          </View>
+        </LinearGradient>
 
       <Modal visible={termsModalVisible} transparent animationType="fade" onRequestClose={() => setTermsModalVisible(false)}>
         <View style={[styles.modalOverlay, { backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)' }]}>
@@ -555,15 +556,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    flex: 1,
   },
   backButton: {
     width: 40,
@@ -584,6 +588,9 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  scrollableContainer: {
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
@@ -659,8 +666,8 @@ const styles = StyleSheet.create({
   termsBox: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 12,
-    marginVertical: 12,
+    padding: 8,
+    marginVertical: 0,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -691,11 +698,8 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   signUpBtn: {
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  spacer: {
-    height: 40,
+    marginTop: 0,
+    marginBottom: 0,
   },
   modalOverlay: {
     flex: 1,
@@ -791,8 +795,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   requirementsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 8,
   },
   requirementLine: {
@@ -812,5 +815,8 @@ const styles = StyleSheet.create({
   separator: {
     fontSize: 10,
     fontWeight: '400',
+  },
+  bottomFooter: {
+    borderTopWidth: 1,
   },
 });
