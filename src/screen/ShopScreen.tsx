@@ -519,9 +519,9 @@ function ShopScreen({
     if (currentPageProducts.length === 0 || currentPage >= paginationInfo.totalPages) return null;
 
     return (
-      <View style={[styles.paginationContainer, { backgroundColor: colors.bg }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="small" color={Colors.sky} />
-        <Text style={[styles.paginationInfo, { color: colors.text }]}>
+        <Text style={[styles.loadingText, { color: colors.text }]}>
           Loading more products...
         </Text>
       </View>
@@ -669,6 +669,19 @@ const styles = StyleSheet.create({
   },
   filterLoadingIndicator: {
     marginLeft: 4,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loadingText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.text,
   },
   masonryGrid: {
     flexDirection: 'row',
