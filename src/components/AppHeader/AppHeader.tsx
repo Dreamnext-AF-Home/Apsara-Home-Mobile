@@ -41,6 +41,8 @@ interface AppHeaderProps {
   selectedCategory?: string;
   categories?: any[];
   isDarkMode?: boolean;
+  showScrollToTop?: boolean;
+  onScrollToTop?: () => void;
 }
 
 const MARQUEE_ITEMS = [
@@ -168,6 +170,8 @@ export default function AppHeader({
   selectedBrand = 'All Brands',
   brands = [],
   isDarkMode = false,
+  showScrollToTop = false,
+  onScrollToTop,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -331,6 +335,8 @@ export default function AppHeader({
         selectedBrand={selectedBrand}
         brands={brands}
         isDarkMode={isDarkMode}
+        showScrollToTop={showScrollToTop}
+        onScrollToTop={onScrollToTop}
         onFilterChange={(filterType, value) => {
           onRoomFilterChange?.(filterType, value);
         }}

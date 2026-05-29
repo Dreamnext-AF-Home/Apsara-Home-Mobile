@@ -26,6 +26,8 @@ interface HeaderFilterProps {
   selectedBrand?: string;
   brands?: any[];
   isDarkMode?: boolean;
+  showScrollToTop?: boolean;
+  onScrollToTop?: () => void;
 }
 
 const SORT_OPTIONS = ['Relevant', 'A-Z', 'Z-A', 'Price: Low', 'Price: High', 'Newest'];
@@ -56,6 +58,8 @@ export default function HeaderFilter({
   selectedBrand = 'All Brands',
   brands = [],
   isDarkMode = false,
+  showScrollToTop = false,
+  onScrollToTop,
 }: HeaderFilterProps) {
   const [activeSort, setActiveSort] = useState('Relevant');
   const [activePrice, setActivePrice] = useState('All');
@@ -183,6 +187,20 @@ export default function HeaderFilter({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Scroll to Top Button */}
+        {showScrollToTop && (
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              { backgroundColor: colors.buttonBgActive, borderColor: colors.buttonBorderActive },
+            ]}
+            onPress={onScrollToTop}
+          >
+            <Ionicons name="arrow-up" size={14} color={Colors.sky} />
+            <Text style={[styles.filterText, { color: Colors.sky }]}>Top</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Room Type - Always visible when in ShopByRoomScreen */}
         {showRoomFilter && (
           <View style={styles.filterItem}>
