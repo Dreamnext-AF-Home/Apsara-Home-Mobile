@@ -251,7 +251,7 @@ export default function PurchasesScreen({
   });
 
   const colors = {
-    bg: isDarkMode ? '#0f172a' : '#f0f9ff',
+    bg: isDarkMode ? '#0f172a' : '#f5f5f5',
     containerBg: isDarkMode ? '#1f2937' : Colors.white,
     text: isDarkMode ? '#f8fafc' : Colors.text,
     textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
@@ -611,35 +611,35 @@ export default function PurchasesScreen({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <LinearGradient
-        colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1f2937' : Colors.white }]}
-      >
-        <View style={styles.headerContent}>
+      {/* Header with Background Image */}
+      <View style={styles.headerBackground}>
+        <Image
+          source={require('../../assets/purchases_bg.png')}
+          style={styles.headerBackgroundImage}
+          resizeMode="cover"
+        />
+        <View style={[styles.headerContent, { paddingTop: insets.top, paddingHorizontal: 12 }]}>
           <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <Ionicons name="chevron-back-outline" size={24} color={isDarkMode ? '#e5e7eb' : Colors.text} />
+            <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={[styles.headerGreeting, { color: isDarkMode ? '#f8fafc' : Colors.text }]}>
+            <Text style={[styles.headerGreeting, { color: Colors.white }]}>
               My Purchases
             </Text>
-            <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#9ca3af' : Colors.textSecondary }]}>
+            <Text style={[styles.headerSubtitle, { color: Colors.white }]}>
               Track your orders
             </Text>
           </View>
           <View style={{ width: 40 }} />
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Filter Bar at Top */}
-      <View style={[styles.filterBar, { backgroundColor: colors.containerBg, borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+      <View style={[styles.filterBar, { backgroundColor: colors.bg, borderTopColor: colors.border, borderBottomColor: colors.border, paddingHorizontal: 0 }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterContent}
+          contentContainerStyle={[styles.filterContent, { paddingHorizontal: 8 }]}
           scrollEventThrottle={16}
         >
           {ALL_STATUSES.map((filterStatus) => {
@@ -893,7 +893,7 @@ export default function PurchasesScreen({
             )}
             scrollEnabled={true}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 12, paddingBottom: 20 }}
+            contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8, paddingBottom: 16, gap: 8 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -1171,11 +1171,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+  headerBackground: {
+    position: 'relative',
+    overflow: 'hidden',
+    minHeight: 100,
+  },
+  headerBackgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   headerContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1228,8 +1244,6 @@ const styles = StyleSheet.create({
   orderCard: {
     borderRadius: 8,
     padding: 12,
-    marginHorizontal: 4,
-    marginVertical: 6,
     borderWidth: 1,
   },
   orderHeader: {
@@ -1392,11 +1406,9 @@ const styles = StyleSheet.create({
   filterBar: {
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   filterContent: {
-    paddingHorizontal: 4,
     gap: 8,
   },
   filterButton: {
