@@ -16,6 +16,8 @@ import { getBadgeImageSource } from '../constants/tierConfig';
 import { accountService } from '../services/accountService';
 import { orderService } from '../services/orderService';
 import LevelProgress from '../components/LevelProgress/LevelProgress';
+import DailyCheckin from '../components/DailyCheckin/DailyCheckin';
+import PVEarnerScreen from './PVEarnerScreen';
 import ReferralNetworkScreen from './ReferralNetworkScreen';
 import ProfileDetailsScreen from './ProfileDetailsScreen';
 import LevelProgressDetailsScreen from './LevelProgressDetailsScreen';
@@ -128,6 +130,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   const [loyaltyData, setLoyaltyData] = useState<any>(null);
   const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [showLevelProgressDetails, setShowLevelProgressDetails] = useState(false);
+  const [showPVEarner, setShowPVEarner] = useState(false);
   const [orderCounts, setOrderCounts] = useState<any>(null);
   const [showSecurityBanner, setShowSecurityBanner] = useState(true);
   const [walletData, setWalletData] = useState<any>(null);
@@ -459,6 +462,38 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
               activeOpacity={0.7}
             >
               <Text style={styles.securityBannerActionBtnText}>Setup</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+
+        {/* PV Overview Section */}
+        {loyaltyData && (
+          <View style={[styles.pvOverviewSection, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+            {/* Top Stats */}
+            <View style={styles.pvStatsRow}>
+              <View style={styles.pvStatItem}>
+                <Text style={[styles.pvStatLabel, { color: colors.textSec }]}>Total PV</Text>
+                <Text style={[styles.pvStatValue, { color: Colors.sky }]}>{loyaltyData.personal_pv || 0}</Text>
+              </View>
+              <View style={[styles.pvStatDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.pvStatItem}>
+                <Text style={[styles.pvStatLabel, { color: colors.textSec }]}>Earnings</Text>
+                <Text style={[styles.pvStatValue, { color: Colors.sky }]}>₱{loyaltyData.earnings || 0}</Text>
+              </View>
+            </View>
+
+            {/* Daily Check-In Button */}
+            <TouchableOpacity
+              style={[styles.dailyCheckinBtn, { borderTopColor: colors.borderLight }]}
+              onPress={() => setShowPVEarner(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.dailyCheckinBtnLeft}>
+                <Ionicons name="gift-outline" size={16} color={Colors.sky} />
+                <Text style={[styles.dailyCheckinBtnText, { color: colors.text }]}>Daily Check-In</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
             </TouchableOpacity>
           </View>
         )}
@@ -942,6 +977,18 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
             activeLeaders={loyaltyData.active_leaders_count}
             isDarkMode={isDarkMode}
             onBack={() => setShowLevelProgressDetails(false)}
+          />
+        </View>
+      )}
+
+      {showPVEarner && (
+        <View style={styles.profileDetailsOverlay}>
+          <PVEarnerScreen
+            isDarkMode={isDarkMode}
+            onBack={() => setShowPVEarner(false)}
+            onDailyCheckin={() => {
+              setShowPVEarner(false);
+            }}
           />
         </View>
       )}
@@ -1701,6 +1748,54 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '400',
     lineHeight: 14,
+  },
+
+  // ── PV Overview Section ──
+  pvOverviewSection: {
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  pvStatsRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  pvStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pvStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  pvStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  pvStatDivider: {
+    width: 1,
+    height: 40,
+    marginHorizontal: 12,
+  },
+  dailyCheckinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+  },
+  dailyCheckinBtnLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dailyCheckinBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 
 });
