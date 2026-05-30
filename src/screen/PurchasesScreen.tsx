@@ -681,11 +681,23 @@ export default function PurchasesScreen({
           </View>
         ) : orders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="inbox-outline" size={64} color={colors.textSec} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Orders</Text>
+              <Ionicons name="inbox" size={64} color={colors.textSec} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Purchases Yet</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSec }]}>
               You don't have any {statusConfig.label.toLowerCase()} orders yet
             </Text>
+
+            <TouchableOpacity
+              style={styles.shopNowBtn}
+              onPress={() => {
+                // Best-effort redirect to Shop screen.
+                // @ts-ignore
+                global?.Linking?.openURL?.('apsarahome://shop');
+              }}
+            >
+              <Ionicons name="cart-outline" size={16} color={Colors.white} />
+              <Text style={styles.shopNowBtnText}>Shop now!</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <FlatList
@@ -1674,5 +1686,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
+  },
+  shopNowBtn: {
+    backgroundColor: Colors.sky,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  shopNowBtnText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
