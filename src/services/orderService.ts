@@ -87,4 +87,16 @@ export const orderService = {
       };
     }
   },
+
+  async clearCart(token: string): Promise<any> {
+    try {
+      const response = await api.delete('/cart', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error clearing cart:', error);
+      return { success: false };
+    }
+  },
 };
