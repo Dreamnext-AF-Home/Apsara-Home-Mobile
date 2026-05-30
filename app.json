@@ -50,7 +50,7 @@
         "color": "#13a1d4"
       },
       "predictiveBackGestureEnabled": false,
-      "runtimeVersion": "1.0.2"
+      "runtimeVersion": "1.1.2"
     },
     "web": {
       "favicon": "./assets/favicon.png"
