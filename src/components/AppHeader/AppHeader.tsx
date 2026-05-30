@@ -226,15 +226,16 @@ export default function AppHeader({
 
   return (
     <>
-    <LinearGradient
-      colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={[styles.container, isDarkMode && styles.containerDark, { paddingTop: insets.top }]}
-    >
-      <MarqueeBanner isDarkMode={isDarkMode} />
+    <View style={styles.headerBackground}>
+      <Image
+        source={require('../../../assets/header_bg.png')}
+        style={styles.headerBackgroundImage}
+        resizeMode="cover"
+      />
+      <View style={[styles.headerContent, { paddingTop: insets.top }]}>
+        {/* <MarqueeBanner isDarkMode={isDarkMode} /> */}
 
-      <View style={styles.innerContent}>
+        <View style={styles.innerContent}>
         <View style={styles.topRow}>
           <TouchableOpacity
             style={styles.profileSection}
@@ -255,14 +256,14 @@ export default function AppHeader({
               )}
             </View>
             <View style={styles.nameContainer}>
-              <Text style={[styles.welcomeText, isDarkMode && { color: '#9ca3af' }]}>Welcome back,</Text>
+              <Text style={[styles.welcomeText, { color: Colors.white }]}>Welcome back,</Text>
               <View style={styles.nameRow}>
-                <Text style={[styles.nameText, isDarkMode && { color: '#f8fafc' }]} numberOfLines={1}>{fullName}</Text>
-                <Ionicons name="chevron-forward" size={14} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} style={styles.profileIcon} />
+                <Text style={[styles.nameText, { color: Colors.white }]} numberOfLines={1}>{fullName}</Text>
+                <Ionicons name="chevron-forward" size={14} color={Colors.white} style={styles.profileIcon} />
               </View>
               {user?.username && (
                 <View style={styles.usernameRow}>
-                  <Text style={[styles.usernameText, isDarkMode && { color: '#38bdf8' }]}>@{user.username}</Text>
+                  <Text style={[styles.usernameText, { color: Colors.white }]}>@{user.username}</Text>
                   {badgeName && (
                     <>
                       <View style={styles.usernameDot} />
@@ -293,7 +294,7 @@ export default function AppHeader({
               onPress={onCartPress}
               activeOpacity={0.7}
             >
-              <Ionicons name="cart-outline" size={20} color={isDarkMode ? '#d1d5db' : Colors.text} />
+              <Ionicons name="cart-outline" size={20} color={Colors.white} />
               {cartCount > 0 && (
                 <View style={[styles.cartBadge, isDarkMode && styles.cartBadgeDark]}>
                   <Text style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
@@ -309,9 +310,9 @@ export default function AppHeader({
             onPress={onSearchPress}
             activeOpacity={0.75}
           >
-            <Ionicons name="search-outline" size={16} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} style={styles.searchIconLeft} />
-            <Text style={[styles.searchPlaceholder, isDarkMode && { color: '#9ca3af' }]} numberOfLines={1}>{dynamicPlaceholder}</Text>
-            <Ionicons name="camera-outline" size={16} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} style={styles.cameraIconInside} />
+            <Ionicons name="search-outline" size={16} color={Colors.white} style={styles.searchIconLeft} />
+            <Text style={[styles.searchPlaceholder, { color: Colors.white }]} numberOfLines={1}>{dynamicPlaceholder}</Text>
+            <Ionicons name="camera-outline" size={16} color={Colors.white} style={styles.cameraIconInside} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -319,11 +320,12 @@ export default function AppHeader({
             onPress={() => setShowFilter(!showFilter)}
             activeOpacity={0.7}
           >
-            <Ionicons name="options-outline" size={20} color={showFilter ? Colors.sky : (isDarkMode ? '#d1d5db' : Colors.text)} />
+            <Ionicons name="options-outline" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
       </View>
-    </LinearGradient>
+      </View>
+    </View>
     {showFilter && (
       <HeaderFilter
         showRoomFilter={showRoomFilter}
@@ -394,6 +396,30 @@ const marqueeStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  headerBackground: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    minHeight: 170,
+  },
+  headerBackgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  headerContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
+  },
   container: {
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
@@ -406,7 +432,7 @@ const styles = StyleSheet.create({
   innerContent: {
     paddingHorizontal: 8,
     paddingTop: 12,
-    paddingBottom: 12,
+    paddingBottom: 8,
     gap: 10,
   },
   topRow: {
@@ -534,16 +560,11 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   iconBtnDark: {
-    backgroundColor: '#374151',
-    borderColor: '#4b5563',
   },
   iconBtnActive: {
-    backgroundColor: 'rgba(14, 165, 233, 0.15)',
+    backgroundColor: Colors.sky,
     borderColor: Colors.sky,
   },
   searchRow: {
@@ -555,16 +576,13 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.75)',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
     borderRadius: 20,
     paddingHorizontal: 12,
     height: 40,
+    borderWidth: 1,
+    borderColor: Colors.white,
   },
   searchWrapperDark: {
-    backgroundColor: '#374151',
-    borderColor: '#4b5563',
   },
   searchIcon: {
     marginRight: 6,
