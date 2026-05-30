@@ -65,6 +65,7 @@ interface ProfileScreenProps {
   onShowAFWalletVoucher?: () => void;
   onShowAFWalletRewards?: () => void;
   onShowAFWalletNetwork?: () => void;
+  onShowPVEarner?: (show: boolean) => void;
 }
 
 const REFERRAL_STATS = [
@@ -99,7 +100,7 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, closeReferralNetwork, isDarkMode = false, onPurchaseItemClick, linkedAccountsRefreshTrigger, onSecuritySettingsPress, onShowAFWalletOverview, onShowAFWalletVoucher, onShowAFWalletRewards, onShowAFWalletNetwork }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, closeReferralNetwork, isDarkMode = false, onPurchaseItemClick, linkedAccountsRefreshTrigger, onSecuritySettingsPress, onShowAFWalletOverview, onShowAFWalletVoucher, onShowAFWalletRewards, onShowAFWalletNetwork, onShowPVEarner }: ProfileScreenProps) {
   console.log('[ProfileScreen] Component mounted/updated', {
     userEmail: user?.email,
     hasToken: !!token,
@@ -190,6 +191,10 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
       setShowReferralNetwork(false);
     }
   }, [closeReferralNetwork]);
+
+  useEffect(() => {
+    onShowPVEarner?.(showPVEarner);
+  }, [showPVEarner, onShowPVEarner]);
 
   useEffect(() => {
     console.log('[ProfileScreen] useEffect token changed:', { token: !!token });
