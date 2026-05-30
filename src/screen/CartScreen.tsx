@@ -311,8 +311,13 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
 
     try {
       setUpdatingQuantity(crtId);
-      await axios.patch(
-        `${API_CONFIG.BASE_URL}/cart/${crtId}`,
+      const cartItem = cartItems.find(item => item.crt_id === crtId);
+
+      if (!cartItem) return;
+
+      // Use the new variant update endpoint
+      await axios.put(
+        `${API_CONFIG.BASE_URL}/cart/${crtId}/variant`,
         { quantity: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -322,6 +327,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           ? {
               ...item,
               crt_quantity: newQuantity,
+              crt_total_price: (parseFloat(item.crt_unit_price) * newQuantity).toString(),
             }
           : item
       ));
@@ -401,14 +407,41 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
 
     try {
       setUpdatingVariant(crtId);
-      await axios.patch(
-        `${API_CONFIG.BASE_URL}/cart/${crtId}`,
-        { variant_id: variantId },
+      const cartItem = cartItems.find(item => item.crt_id === crtId);
+
+      if (!cartItem) return;
+
+      // Use the new variant update endpoint
+      const updatePayload: any = {
+        variant_id: variantId,
+      };
+
+      await axios.put(
+        `${API_CONFIG.BASE_URL}/cart/${crtId}/variant`,
+        updatePayload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Refresh cart to get updated variant info
-      await fetchCart();
+      // Update local cart item with new variant
+      const selectedVariant = variantsList.find(v => v.id === variantId);
+      if (selectedVariant) {
+        setCartItems(cartItems.map(item =>
+          item.crt_id === crtId
+            ? {
+                ...item,
+                crt_variant_id: variantId,
+                crt_unit_price: selectedVariant.price_member || selectedVariant.price_dp || selectedVariant.price,
+                crt_total_price: (parseFloat(selectedVariant.price_member || selectedVariant.price_dp || selectedVariant.price) * item.crt_quantity).toString(),
+                variant_id: variantId,
+                variant_name: selectedVariant.name,
+                variant_color: selectedVariant.color,
+                variant_size: selectedVariant.size,
+                variant_image: selectedVariant.image,
+              }
+            : item
+        ));
+      }
+
       setVariantModalOpen(null);
 
       Toast.show({
@@ -887,14 +920,13 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
             style={styles.headerBackgroundImage}
             resizeMode="cover"
           />
-          <View style={[styles.headerContent, { paddingTop: insets.top, paddingHorizontal: 8 }]}>
-          <View style={styles.header}>
+          <View style={[styles.headerContent, { paddingTop: insets.top }]}>
             <TouchableOpacity
               style={styles.headerIcon}
               onPress={onBack}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
+              <Ionicons name="chevron-back-outline" size={20} color={Colors.white} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
@@ -904,14 +936,13 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
               activeOpacity={0.7}
               onPress={onWishlistPress}
             >
-              <Ionicons name="heart-outline" size={24} color={Colors.white} />
+              <Ionicons name="heart-outline" size={20} color={Colors.white} />
               {wishlistCount > 0 && (
                 <View style={[styles.badge, { borderColor: colors.containerBg }]}>
                   <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
-          </View>
           </View>
         </View>
 
@@ -980,14 +1011,13 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           style={styles.headerBackgroundImage}
           resizeMode="cover"
         />
-        <View style={[styles.headerContent, { paddingTop: insets.top, paddingHorizontal: 8 }]}>
-        <View style={styles.header}>
+        <View style={[styles.headerContent, { paddingTop: insets.top }]}>
           <TouchableOpacity
             style={styles.headerIcon}
             onPress={onBack}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
+            <Ionicons name="chevron-back-outline" size={20} color={Colors.white} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
@@ -997,14 +1027,13 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
             activeOpacity={0.7}
             onPress={onWishlistPress}
           >
-            <Ionicons name="heart-outline" size={24} color={Colors.white} />
+            <Ionicons name="heart-outline" size={20} color={Colors.white} />
             {wishlistCount > 0 && (
               <View style={[styles.badge, { borderColor: colors.containerBg }]}>
                 <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
               </View>
             )}
           </TouchableOpacity>
-        </View>
         </View>
       </View>
 
@@ -1226,7 +1255,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     borderBottomWidth: 1,
-    minHeight: 100,
+    minHeight: 90,
   },
   headerBackgroundImage: {
     position: 'absolute',
@@ -1244,7 +1273,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 2,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingBottom: 8,
   },
   centerContainer: {
     flex: 1,
@@ -1275,12 +1307,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    position: 'relative',
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: Colors.text,
+    color: Colors.white,
     flex: 1,
     textAlign: 'center',
   },
@@ -1670,9 +1702,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
