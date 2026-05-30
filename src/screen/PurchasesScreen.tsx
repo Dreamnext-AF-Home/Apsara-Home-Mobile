@@ -741,7 +741,7 @@ export default function PurchasesScreen({
                         key={`${item.product_id}-${index}`}
                         style={[
                           styles.itemRow,
-                          index !== consolidatedItems.length - 1 && { borderBottomColor: colors.border },
+                          index !== consolidatedItems.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                         ]}
                         onPress={() => onProductPress?.(item.product_id)}
                         activeOpacity={0.7}
@@ -753,27 +753,26 @@ export default function PurchasesScreen({
                             resizeMode="contain"
                           />
                         )}
-                        <View style={styles.itemInfo}>
-                          <View style={styles.itemNameRow}>
-                            <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={2}>
-                              {item.name}
-                            </Text>
-                            <Ionicons name="chevron-forward" size={14} color={colors.textSec} />
-                          </View>
-                          <View>
+                        <View style={[styles.itemInfo, { marginRight: 12 }]}>
+                          <Text style={[styles.itemName, { color: colors.text, marginBottom: 6 }]} numberOfLines={2}>
+                            {item.name}
+                          </Text>
+                          <View style={styles.itemDetailsRow}>
                             <Text style={[styles.itemQty, { color: colors.textSec }]}>
                               Qty: {item.quantity}
                             </Text>
                             {(item.selected_color || item.selected_size || item.selected_type) && (
-                              <Text style={[styles.itemVariant, { color: colors.textSec }]}>
+                              <Text style={[styles.itemVariant, { color: colors.textSec, marginLeft: 8 }]}>
                                 {[item.selected_color, item.selected_size, item.selected_type].filter(Boolean).join(', ')}
                               </Text>
                             )}
                           </View>
                         </View>
-                        <Text style={[styles.itemPrice, { color: Colors.sky }]}>
-                          ₱{item.totalPrice.toLocaleString()}
-                        </Text>
+                        <View style={styles.itemPriceContainer}>
+                          <Text style={[styles.itemPrice, { color: Colors.sky }]}>
+                            ₱{item.totalPrice.toLocaleString()}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     ));
                   })()}
@@ -1308,14 +1307,25 @@ const styles = StyleSheet.create({
   },
   itemQty: {
     fontSize: 11,
+    fontWeight: '500',
+  },
+  itemDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   itemVariant: {
     fontSize: 10,
-    marginTop: 2,
+    marginTop: 0,
   },
   itemPrice: {
     fontSize: 13,
     fontWeight: '700',
+    textAlign: 'right',
+  },
+  itemPriceContainer: {
+    minWidth: 95,
+    alignItems: 'flex-end',
   },
   shippingFeeRow: {
     flexDirection: 'row',
