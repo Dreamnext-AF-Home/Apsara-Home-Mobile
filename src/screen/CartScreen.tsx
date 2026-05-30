@@ -638,17 +638,9 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
     return (
         <View style={[
           styles.cartItemContainer,
-          { backgroundColor: colors.containerBg, borderBottomColor: colors.border },
+          { backgroundColor: colors.containerBg },
           selectedItems.has(item.crt_id) && { backgroundColor: isDarkMode ? '#1e293b' : '#f0f7ff' },
         ]}>
-        {discount > 0 && (
-          <LinearGradient
-            colors={['transparent', Colors.sky + '15']}
-            style={styles.containerGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          />
-        )}
         <TouchableOpacity
           style={styles.checkbox}
           onPress={() => handleSelectItem(item.crt_id)}
@@ -692,11 +684,14 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
 
           {/* Details Container */}
           <View style={styles.detailsContainer}>
-            {/* Brand & Name */}
-            <View>
+            {/* Brand & Name with Total Price */}
+            <View style={styles.brandNameRow}>
               <Text style={[styles.brand, { color: colors.textSec }]} numberOfLines={1}>{item.brand_name}</Text>
-              <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{item.product_name}</Text>
+              {item.crt_quantity > 1 && (
+                <Text style={[styles.itemPrice, { color: Colors.sky }]}>₱{parseFloat(item.crt_total_price).toLocaleString()}</Text>
+              )}
             </View>
+            <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{item.product_name}</Text>
 
             {/* Variants Display with Quantity */}
             {hasVariants && (
@@ -772,17 +767,50 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
               </View>
             )}
 
-            {/* Price Row - Only show if no variants */}
-            {!hasVariants && (
+            {/* Price Row for Variant Items */}
+            {hasVariants && (
               <View style={styles.priceRow}>
                 <Text style={[styles.memberPrice, { color: colors.text }]}>₱{parseFloat(item.crt_unit_price).toLocaleString()}</Text>
-                {parseFloat(item.product_price_srp) > parseFloat(item.crt_unit_price) && (
+                {discount > 0 && item.product_price_srp && (
                   <Text style={[styles.srpPrice, { color: colors.textSec }]}>₱{parseFloat(item.product_price_srp).toLocaleString()}</Text>
                 )}
               </View>
             )}
 
-            {/* Badge Row */}
+            {/* Price and Quantity Row - Only show if no variants */}
+            {!hasVariants && (
+              <View style={styles.priceQuantityRow}>
+                <View style={[styles.priceRow, { flex: 1 }]}>
+                  <Text style={[styles.memberPrice, { color: colors.text }]}>₱{parseFloat(item.crt_unit_price).toLocaleString()}</Text>
+                  {discount > 0 && item.product_price_srp && (
+                    <Text style={[styles.srpPrice, { color: colors.textSec }]}>₱{parseFloat(item.product_price_srp).toLocaleString()}</Text>
+                  )}
+                </View>
+
+                {/* Quantity Control for items without variants */}
+                <View style={[styles.quantityControlCompact, { marginLeft: 8 }]}>
+                  <TouchableOpacity
+                    style={[styles.quantityBtnSmall, { borderColor: colors.border, backgroundColor: colors.bg }]}
+                    onPress={() => handleUpdateQuantity(item.crt_id, item.crt_quantity - 1)}
+                    disabled={updatingQuantity === item.crt_id}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="remove" size={10} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={[styles.quantityTextCompact, { color: colors.text }]}>{item.crt_quantity}</Text>
+                  <TouchableOpacity
+                    style={[styles.quantityBtnSmall, { borderColor: colors.border, backgroundColor: colors.bg }]}
+                    onPress={() => handleUpdateQuantity(item.crt_id, item.crt_quantity + 1)}
+                    disabled={updatingQuantity === item.crt_id}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add" size={10} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Badge Row with Remove Button */}
             <View style={styles.badgeRow}>
               <LinearGradient
                 colors={[Colors.sky, Colors.skyDark]}
@@ -793,12 +821,8 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
                 <Ionicons name="trending-up" size={9} color={Colors.white} />
                 <Text style={styles.pvText}>{parseFloat(item.product_prodpv).toLocaleString()} PV</Text>
               </LinearGradient>
-            </View>
 
-            {/* Price & Remove */}
-            <View style={styles.priceRemoveRow}>
-              <Text style={[styles.itemPrice, { color: Colors.sky }]}>₱{parseFloat(item.crt_total_price).toLocaleString()}</Text>
-
+              {/* Remove Button */}
               <TouchableOpacity
                 style={[styles.removeBtn, removingItem === item.crt_id && { opacity: 0.6 }]}
                 onPress={() => handleRemoveItem(item.crt_id)}
@@ -846,31 +870,33 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
 
   if (loading) {
     return (
+      <View style={{ flex: 1, position: 'relative' }}>
       <View style={[styles.container, { backgroundColor: colors.bg }]}>
-        {/* Header with Gradient extending to top */}
-        <LinearGradient
-          colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={[styles.headerGradient, { paddingTop: insets.top, backgroundColor: colors.containerBg, borderBottomColor: colors.border }]}
-        >
+        {/* Header with Background Image */}
+        <View style={[styles.headerBackground, { borderBottomColor: colors.border }]}>
+          <Image
+            source={require('../../assets/cart_bg.png')}
+            style={styles.headerBackgroundImage}
+            resizeMode="cover"
+          />
+          <View style={[styles.headerContent, { paddingTop: insets.top, paddingHorizontal: 8 }]}>
           <View style={styles.header}>
             <TouchableOpacity
-              style={[styles.headerIcon, isDarkMode ? { backgroundColor: '#374151', borderColor: '#4b5563' } : { backgroundColor: '#f1f5f9', borderColor: '#e5e7eb' }]}
+              style={styles.headerIcon}
               onPress={onBack}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back-outline" size={20} color={colors.text} />
+              <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>My Cart</Text>
+            <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
             {/* Wishlist Icon */}
             <TouchableOpacity
-              style={[styles.headerIcon, { backgroundColor: isDarkMode ? '#374151' : '#f1f5f9', borderColor: colors.border }]}
+              style={styles.headerIcon}
               activeOpacity={0.7}
               onPress={onWishlistPress}
             >
-              <Ionicons name="heart-outline" size={20} color={colors.text} />
+              <Ionicons name="heart-outline" size={24} color={Colors.white} />
               {wishlistCount > 0 && (
                 <View style={[styles.badge, { borderColor: colors.containerBg }]}>
                   <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
@@ -878,12 +904,14 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
               )}
             </TouchableOpacity>
           </View>
-        </LinearGradient>
+          </View>
+        </View>
 
         {/* Loading Content */}
         <View style={[styles.centerContainer, { backgroundColor: colors.bg }]}>
           <ActivityIndicator size="large" color={Colors.sky} />
         </View>
+      </View>
       </View>
     );
   }
@@ -937,30 +965,31 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
   return (
     <View style={{ flex: 1, position: 'relative' }}>
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header with Gradient extending to top */}
-      <LinearGradient
-        colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={[styles.headerGradient, { paddingTop: insets.top, backgroundColor: colors.containerBg, borderBottomColor: colors.border }]}
-      >
+      {/* Header with Background Image */}
+      <View style={[styles.headerBackground, { borderBottomColor: colors.border }]}>
+        <Image
+          source={require('../../assets/cart_bg.png')}
+          style={styles.headerBackgroundImage}
+          resizeMode="cover"
+        />
+        <View style={[styles.headerContent, { paddingTop: insets.top, paddingHorizontal: 8 }]}>
         <View style={styles.header}>
           <TouchableOpacity
-            style={[styles.headerIcon, isDarkMode ? { backgroundColor: '#374151', borderColor: '#4b5563' } : { backgroundColor: '#f1f5f9', borderColor: '#e5e7eb' }]}
+            style={styles.headerIcon}
             onPress={onBack}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back-outline" size={20} color={colors.text} />
+            <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>My Cart</Text>
+          <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
           {/* Wishlist Icon */}
           <TouchableOpacity
-            style={[styles.headerIcon, isDarkMode ? { backgroundColor: '#374151', borderColor: '#4b5563' } : { backgroundColor: '#f1f5f9', borderColor: '#e5e7eb' }]}
+            style={styles.headerIcon}
             activeOpacity={0.7}
             onPress={onWishlistPress}
           >
-            <Ionicons name="heart-outline" size={20} color={colors.text} />
+            <Ionicons name="heart-outline" size={24} color={Colors.white} />
             {wishlistCount > 0 && (
               <View style={[styles.badge, { borderColor: colors.containerBg }]}>
                 <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
@@ -968,26 +997,19 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
             )}
           </TouchableOpacity>
         </View>
-      </LinearGradient>
-
-
-      {/* Swipe Hint */}
-      <View style={[styles.swipeHint, { backgroundColor: colors.hint, borderBottomColor: colors.border }]}>
-        <Ionicons name="information-circle-outline" size={14} color={colors.textSec} />
-        <Text style={[styles.swipeHintText, { color: colors.textSec }]}>
-          Swipe <Text style={{ color: Colors.sky, fontWeight: '800' }}>right</Text> to checkout, <Text style={{ color: '#ef4444', fontWeight: '800' }}>left</Text> to delete
-        </Text>
+        </View>
       </View>
+
 
       {/* Cart Items */}
       <SwipeListView
         data={getCartItemsWithBrandHeaders}
         renderItem={renderCartItem}
         renderHiddenItem={renderHiddenItem}
-        leftOpenValue={90}
-        rightOpenValue={-90}
-        swipeToOpenPercent={30}
-        swipeToClosePercent={30}
+        leftOpenValue={0}
+        rightOpenValue={0}
+        disableLeftSwipe={true}
+        disableRightSwipe={true}
         useNativeDriver={false}
         keyExtractor={(item) => item.isBrandHeader ? `brand-${item.brand_name}` : item.crt_id.toString()}
         contentContainerStyle={[styles.listContent, { backgroundColor: colors.bg }]}
@@ -1192,6 +1214,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fbff',
   },
+  headerBackground: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderBottomWidth: 1,
+    minHeight: 100,
+  },
+  headerBackgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  headerContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
+    justifyContent: 'center',
+  },
   centerContainer: {
     flex: 1,
     alignItems: 'center',
@@ -1220,7 +1266,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    justifyContent: 'space-between',
     position: 'relative',
   },
   headerTitle: {
@@ -1258,6 +1304,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     backgroundColor: '#f8fbff',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 16,
+    gap: 0,
   },
   rowBack: {
     alignItems: 'center',
@@ -1307,7 +1357,6 @@ const styles = StyleSheet.create({
   },
   cartItemContainer: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 14,
     gap: 10,
@@ -1415,6 +1464,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textTransform: 'uppercase',
   },
+  brandNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   productName: {
     fontSize: 12,
     fontWeight: '700',
@@ -1473,6 +1527,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 2,
   },
+  priceQuantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 2,
+  },
   memberPrice: {
     fontSize: 14,
     fontWeight: '800',
@@ -1488,8 +1549,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 2,
-    flexWrap: 'wrap',
   },
   pvBadge: {
     flexDirection: 'row',
@@ -1601,12 +1662,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
     position: 'relative',
   },
   badge: {
@@ -1645,11 +1705,11 @@ const styles = StyleSheet.create({
   brandHeader: {
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderBottomWidth: 1,
     backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    borderBottomWidth: 1,
   },
   brandCheckbox: {
     padding: 4,
