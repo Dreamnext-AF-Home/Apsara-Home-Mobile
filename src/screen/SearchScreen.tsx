@@ -133,15 +133,15 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
     }
     let active = true;
     setLoadingLive(true);
-    axios.get(`${API_CONFIG.BASE_URL}/search/live`, {
+    axios.get(`${API_CONFIG.BASE_URL}/meilisearch/search`, {
       params: { q: trimmed, limit: 10 },
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => {
         if (!active) return;
         console.log('🔍 Live search response:', res.data);
-        if (res.data?.success && Array.isArray(res.data?.data)) {
-          setLiveResults(res.data.data);
+        if (res.data?.success && Array.isArray(res.data?.results)) {
+          setLiveResults(res.data.results);
         } else if (Array.isArray(res.data?.data)) {
           setLiveResults(res.data.data);
         } else if (Array.isArray(res.data)) {
