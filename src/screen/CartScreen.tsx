@@ -957,45 +957,47 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
 
   if (cartItems.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.bg }]}>
-        {/* Header with Gradient extending to top */}
-        <LinearGradient
-          colors={isDarkMode ? ['rgba(59,130,246,0.15)', 'rgba(31,41,55,0)'] : ['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={[styles.headerGradient, { paddingTop: insets.top, backgroundColor: colors.containerBg, borderBottomColor: colors.border }]}
-        >
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={[styles.headerIcon, isDarkMode ? { backgroundColor: '#374151', borderColor: '#4b5563' } : { backgroundColor: '#f1f5f9', borderColor: '#e5e7eb' }]}
-              onPress={onBack}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-back-outline" size={20} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>My Cart</Text>
+      <View style={{ flex: 1, position: 'relative' }}>
+        <View style={[styles.container, { backgroundColor: colors.bg }]}>
+          {/* Header with Background Image */}
+          <View style={[styles.headerBackground, { borderBottomColor: colors.border }]}>
+            <Image
+              source={require('../../assets/cart_bg.png')}
+              style={styles.headerBackgroundImage}
+              resizeMode="cover"
+            />
+            <View style={[styles.headerContent, { paddingTop: insets.top }]}>
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={onBack}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chevron-back-outline" size={20} color={Colors.white} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
-            {/* Wishlist Icon */}
-            <TouchableOpacity
-              style={[styles.headerIcon, { backgroundColor: isDarkMode ? '#374151' : '#f1f5f9', borderColor: colors.border }]}
-              activeOpacity={0.7}
-              onPress={onWishlistPress}
-            >
-              <Ionicons name="heart-outline" size={20} color={colors.text} />
-              {wishlistCount > 0 && (
-                <View style={[styles.badge, { borderColor: colors.containerBg }]}>
-                  <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+              {/* Wishlist Icon */}
+              <TouchableOpacity
+                style={styles.headerIcon}
+                activeOpacity={0.7}
+                onPress={onWishlistPress}
+              >
+                <Ionicons name="heart-outline" size={20} color={Colors.white} />
+                {wishlistCount > 0 && (
+                  <View style={[styles.badge, { borderColor: colors.containerBg }]}>
+                    <Text style={styles.badgeText}>{wishlistCount > 99 ? '99+' : wishlistCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </LinearGradient>
 
-        {/* Empty State Content */}
-        <View style={[styles.emptyContainer, { backgroundColor: colors.bg }]}>
-          <Ionicons name="cart-outline" size={64} color={isDarkMode ? '#64748b' : Colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSec }]}>Add items to get started shopping</Text>
+          {/* Empty State Content */}
+          <View style={[styles.emptyContainer, { backgroundColor: colors.bg }]}>
+            <Ionicons name="cart-outline" size={64} color={isDarkMode ? '#64748b' : Colors.textSecondary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSec }]}>Add items to get started shopping</Text>
+          </View>
         </View>
       </View>
     );
