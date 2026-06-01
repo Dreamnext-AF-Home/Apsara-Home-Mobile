@@ -1090,29 +1090,68 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           <TouchableOpacity
             style={[styles.checkoutBtn, selectedItems.size === 0 && { opacity: 0.5 }]}
             onPress={() => {
-              if (selectedItems.size === 0) return;
-              const selectedItemsList = Array.from(selectedItems).map(crtId => {
+              console.log('[CartScreen] ===== CHECKOUT BUTTON PRESSED =====');
+              console.log('[CartScreen] selectedItems.size:', selectedItems.size);
+              console.log('[CartScreen] cartItems.length:', cartItems.length);
+
+              if (selectedItems.size === 0) {
+                console.log('[CartScreen] No items selected, returning early');
+                return;
+              }
+
+              console.log('[CartScreen] Starting to map selected items...');
+              const selectedItemsList = Array.from(selectedItems).map((crtId, index) => {
+                console.log(`[CartScreen] Processing selected item ${index}, crtId:`, crtId);
                 const cartItem = cartItems.find(item => item.crt_id === crtId);
-                if (!cartItem) return null;
+
+                if (!cartItem) {
+                  console.warn('[CartScreen] Cart item not found for crtId:', crtId);
+                  return null;
+                }
+
+                console.log(`[CartScreen] Found cart item ${index}:`, {
+                  crt_id: cartItem.crt_id,
+                  crt_product_id: cartItem.crt_product_id,
+                  product_name: cartItem.product_name,
+                  crt_quantity: cartItem.crt_quantity,
+                });
+
+                // Validate required fields
+                if (!cartItem.crt_product_id || !cartItem.product_name) {
+                  console.warn('[CartScreen] Skipping invalid cart item:', { crtId, crt_product_id: cartItem.crt_product_id, product_name: cartItem.product_name });
+                  return null;
+                }
 
                 // Get variant image from cache if available
                 const variantId = cartItem.crt_variant_id || cartItem.variant_id;
                 const cachedVariantImage = variantImageCache[cartItem.crt_product_id]?.[variantId];
 
-                return {
+                const formattedItem = {
                   product_id: cartItem.crt_product_id,
                   product_name: cartItem.product_name,
-                  product_image: cartItem.product_image,
-                  product_price_member: parseFloat(cartItem.product_price_member),
-                  product_price_srp: parseFloat(cartItem.product_price_srp),
-                  quantity: cartItem.crt_quantity,
+                  product_image: cartItem.product_image || '',
+                  product_price_member: parseFloat(cartItem.product_price_member) || 0,
+                  product_price_srp: parseFloat(cartItem.product_price_srp) || 0,
+                  quantity: cartItem.crt_quantity || 1,
                   variant_color: cartItem.variant_color || undefined,
                   variant_size: cartItem.variant_size || undefined,
                   variant_image: cartItem.variant_image || cachedVariantImage || undefined,
-                  brand_name: cartItem.brand_name,
+                  brand_name: cartItem.brand_name || 'Unknown Brand',
                 };
-              }).filter(Boolean);
+
+                console.log(`[CartScreen] Formatted item ${index}:`, formattedItem);
+                return formattedItem;
+              }).filter((item): item is any => {
+                const isValid = item !== null;
+                console.log('[CartScreen] Filter check - item valid:', isValid, 'item:', item);
+                return isValid;
+              });
+
+              console.log('[CartScreen] Final selectedItemsList length:', selectedItemsList.length);
+              console.log('[CartScreen] Final selectedItemsList:', JSON.stringify(selectedItemsList, null, 2));
+              console.log('[CartScreen] Calling onCheckout with items...');
               onCheckout?.(selectedItemsList as any);
+              console.log('[CartScreen] onCheckout called');
             }}
             disabled={selectedItems.size === 0}
             activeOpacity={0.7}
