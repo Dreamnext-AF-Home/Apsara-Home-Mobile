@@ -114,6 +114,14 @@ export default function CheckoutScreen({
   brands = [],
   isDarkMode = false,
 }: CheckoutScreenProps) {
+  console.log('[CheckoutScreen] RENDER - Component mounted/updated');
+  console.log('[CheckoutScreen] Props received:', {
+    hasItem: !!item,
+    itemsLength: items?.length,
+    hasToken: !!token,
+    hasUser: !!user,
+  });
+
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
@@ -295,7 +303,16 @@ export default function CheckoutScreen({
   };
 
   // Calculate totals - handle both single item and multiple items
-  const checkoutItems = (items && items.length > 0 ? items : (item ? [item] : [])).filter((i): i is CheckoutItem => i !== null && i !== undefined);
+  const checkoutItems = (items && items.length > 0 ? items : (item ? [item] : []))
+    .filter((i): i is CheckoutItem => {
+      if (!i || i === null || i === undefined) return false;
+      // Ensure required properties exist
+      if (!i.product_id || !i.product_name) {
+        console.warn('[CheckoutScreen] Filtering out invalid item:', i);
+        return false;
+      }
+      return true;
+    });
   const groupedItems = groupItemsByBrand(checkoutItems);
   const subtotal = checkoutItems.reduce((sum, i) => {
     const srpPrice = i.product_price_srp || i.product_price_member;
@@ -310,8 +327,22 @@ export default function CheckoutScreen({
 
 
   const handlePlaceOrder = async () => {
-    console.log('[CheckoutScreen] Place order clicked');
-    console.log('[CheckoutScreen] checkoutItems:', JSON.stringify(checkoutItems, null, 2));
+    console.log('[CheckoutScreen] ====== PLACE ORDER CLICKED ======');
+    console.log('[CheckoutScreen] Raw items prop:', JSON.stringify(items, null, 2));
+    console.log('[CheckoutScreen] Raw item prop:', JSON.stringify(item, null, 2));
+    console.log('[CheckoutScreen] Processed checkoutItems:', JSON.stringify(checkoutItems, null, 2));
+    console.log('[CheckoutScreen] checkoutItems length:', checkoutItems.length);
+
+    // Log each item individually
+    checkoutItems.forEach((item, index) => {
+      console.log(`[CheckoutScreen] Item ${index}:`, {
+        product_id: item?.product_id,
+        product_name: item?.product_name,
+        product_image: item?.product_image,
+        quantity: item?.quantity,
+        isValid: item && item.product_id && item.product_name,
+      });
+    });
 
     if (!selectedPaymentMethod) {
       Toast.show({
@@ -337,17 +368,37 @@ export default function CheckoutScreen({
       return;
     }
 
-    // Validate all items have required properties
-    const invalidItems = checkoutItems.filter(i => !i.product_id || !i.product_name);
+    // Double-check all items have required properties (defensive check)
+    console.log('[CheckoutScreen] Starting item validation...');
+    const invalidItems = checkoutItems.filter(i => {
+      try {
+        const isInvalid = !i || !i.product_id || !i.product_name || typeof i.product_id !== 'number' || typeof i.product_name !== 'string';
+        if (isInvalid) {
+          console.warn('[CheckoutScreen] Invalid item found:', {
+            item: i,
+            hasProduct_id: !!i?.product_id,
+            hasProduct_name: !!i?.product_name,
+            product_id_type: typeof i?.product_id,
+            product_name_type: typeof i?.product_name,
+          });
+        }
+        return isInvalid;
+      } catch (e) {
+        console.error('[CheckoutScreen] Error checking item:', e, 'Item:', i);
+        return true;
+      }
+    });
+    console.log('[CheckoutScreen] Invalid items count:', invalidItems.length);
     if (invalidItems.length > 0) {
       console.error('[CheckoutScreen] Invalid items found:', invalidItems);
       Toast.show({
         type: 'error',
         text1: 'Invalid Items',
-        text2: 'Some items are missing required information',
+        text2: 'Some items are missing required information. Please refresh your cart.',
       });
       return;
     }
+    console.log('[CheckoutScreen] All items valid, proceeding with order...');
 
     setLoading(true);
     const startTime = Date.now();
@@ -384,38 +435,60 @@ export default function CheckoutScreen({
       }
 
       // Order details (optional) - handle both single and multiple items
+      console.log('[CheckoutScreen] Building order payload, checkoutItems.length:', checkoutItems.length);
       if (checkoutItems.length === 1) {
         // Single item - use old format for backward compatibility
         const singleItem = checkoutItems[0];
-        paymentPayload.order = {
-          product_name: singleItem.product_name || 'Unknown Product',
-          product_id: singleItem.product_id || 0,
-          product_sku: `SKU-${singleItem.product_id}`,
-          product_image: singleItem.variant_image || singleItem.product_image || '',
-          quantity: singleItem.quantity || 1,
-          subtotal: Math.round(memberTotal * 100) / 100,
-          // handling_fee: Math.round(shippingCost * 100) / 100,
-          handling_fee: 0,
-        };
-        if (singleItem.variant_color) paymentPayload.order.selected_color = singleItem.variant_color;
-        if (singleItem.variant_size) paymentPayload.order.selected_size = singleItem.variant_size;
+        console.log('[CheckoutScreen] Single item order:', {
+          product_id: singleItem?.product_id,
+          product_name: singleItem?.product_name,
+        });
+        try {
+          paymentPayload.order = {
+            product_name: singleItem?.product_name || 'Unknown Product',
+            product_id: singleItem?.product_id || 0,
+            product_sku: `SKU-${singleItem?.product_id}`,
+            product_image: singleItem?.variant_image || singleItem?.product_image || '',
+            quantity: singleItem?.quantity || 1,
+            subtotal: Math.round(memberTotal * 100) / 100,
+            // handling_fee: Math.round(shippingCost * 100) / 100,
+            handling_fee: 0,
+          };
+          if (singleItem?.variant_color) paymentPayload.order.selected_color = singleItem.variant_color;
+          if (singleItem?.variant_size) paymentPayload.order.selected_size = singleItem.variant_size;
+        } catch (e) {
+          console.error('[CheckoutScreen] Error building single item order:', e, 'singleItem:', singleItem);
+          throw e;
+        }
       } else {
         // Multiple items
-        paymentPayload.order = {
-          items: checkoutItems.map(i => ({
-            product_name: i.product_name || 'Unknown Product',
-            product_id: i.product_id || 0,
-            product_sku: `SKU-${i.product_id}`,
-            product_image: i.variant_image || i.product_image || '',
-            quantity: i.quantity || 1,
-            price: (i.product_price_member || 0) * (i.quantity || 1),
-            variant_color: i.variant_color || undefined,
-            variant_size: i.variant_size || undefined,
-          })),
-          subtotal: Math.round(memberTotal * 100) / 100,
-          // handling_fee: Math.round(shippingCost * 100) / 100,
-          handling_fee: 0,
-        };
+        console.log('[CheckoutScreen] Multiple items order, items count:', checkoutItems.length);
+        try {
+          paymentPayload.order = {
+            items: checkoutItems.map((i, index) => {
+              console.log(`[CheckoutScreen] Processing item ${index}:`, {
+                product_id: i?.product_id,
+                product_name: i?.product_name,
+              });
+              return {
+                product_name: i?.product_name || 'Unknown Product',
+                product_id: i?.product_id || 0,
+                product_sku: `SKU-${i?.product_id}`,
+                product_image: i?.variant_image || i?.product_image || '',
+                quantity: i?.quantity || 1,
+                price: (i?.product_price_member || 0) * (i?.quantity || 1),
+                variant_color: i?.variant_color || undefined,
+                variant_size: i?.variant_size || undefined,
+              };
+            }),
+            subtotal: Math.round(memberTotal * 100) / 100,
+            // handling_fee: Math.round(shippingCost * 100) / 100,
+            handling_fee: 0,
+          };
+        } catch (e) {
+          console.error('[CheckoutScreen] Error building multiple items order:', e, 'checkoutItems:', checkoutItems);
+          throw e;
+        }
       }
 
       console.log('[CheckoutScreen] Order object:', {
@@ -1022,7 +1095,12 @@ export default function CheckoutScreen({
                 opacity: 1,
               },
             ]}
-            onPress={handlePlaceOrder}
+            onPress={() => {
+              console.log('[CheckoutScreen] Place Order button PRESSED');
+              console.log('[CheckoutScreen] loading state:', loading);
+              console.log('[CheckoutScreen] checkoutItems.length:', checkoutItems.length);
+              handlePlaceOrder();
+            }}
             disabled={loading}
             activeOpacity={loading ? 1 : 0.7}
           >
