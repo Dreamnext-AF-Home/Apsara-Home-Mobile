@@ -20,7 +20,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { productService, Product } from '../services/productService';
-import ItemCard from '../components/Items/ItemCard';
+import ShopByBrandHomeScreen from './ShopByBrand/ShopByBrandHomeScreen';
+import ShopByBrandProductsScreen from './ShopByBrand/ShopByBrandProductsScreen';
+import ShopByBrandCategoriesScreen from './ShopByBrand/ShopByBrandCategoriesScreen';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
@@ -90,7 +92,7 @@ export default function ShopByBrandScreen({
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'home' | 'products' | 'categories'>('products');
+  const [selectedTab, setSelectedTab] = useState<'home' | 'products' | 'categories'>('home');
   const [showMenu, setShowMenu] = useState(false);
   const perPage = 20;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -101,29 +103,6 @@ export default function ShopByBrandScreen({
     [selectedRoomId]
   );
 
-  const masonryColumns = useMemo(() => {
-    const leftColumn: Product[] = [];
-    const rightColumn: Product[] = [];
-
-    products.forEach((product, index) => {
-      if (index % 2 === 0) {
-        leftColumn.push(product);
-      } else {
-        rightColumn.push(product);
-      }
-    });
-
-    return { leftColumn, rightColumn };
-  }, [products]);
-
-  const featuredProducts = useMemo(() => {
-    const shuffled = [...products];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, 4);
-  }, [products]);
 
   const fetchProducts = useCallback(async (page: number = 1) => {
     if (!token || !brandId) return;
@@ -259,73 +238,6 @@ export default function ShopByBrandScreen({
     }
   };
 
-  const renderItem = (item: Product) => {
-    const wishlistItem = wishlistItems?.find(w => w.product.id === item.id);
-    const productCard = {
-      id: item.id,
-      name: item.name,
-      image: item.image,
-      soldCount: item.soldCount,
-      originalPrice: item.priceSrp,
-      memberPrice: item.priceMember,
-      pv: item.prodpv,
-      brandName: item.brand,
-      variantCount: item.variants?.length ?? 0,
-      badges: {
-        musthave: item.musthave,
-        bestseller: item.bestseller,
-        salespromo: item.salespromo,
-      },
-    };
-
-    return (
-      <View key={`product-${item.id}`} style={styles.masonryItem}>
-        <ItemCard
-          product={productCard}
-          token={token}
-          isDarkMode={isDarkMode}
-          onPress={(product) => onProductPress(product.id)}
-          isWishlisted={!!wishlistItem}
-          wishlistId={wishlistItem?.wishlist_id}
-          onWishlistToggle={onWishlistChange}
-        />
-      </View>
-    );
-  };
-
-  const renderFeaturedItem = (item: Product) => {
-    const wishlistItem = wishlistItems?.find(w => w.product.id === item.id);
-    const productCard = {
-      id: item.id,
-      name: item.name,
-      image: item.image,
-      soldCount: item.soldCount,
-      originalPrice: item.priceSrp,
-      memberPrice: item.priceMember,
-      pv: item.prodpv,
-      brandName: item.brand,
-      variantCount: item.variants?.length ?? 0,
-      badges: {
-        musthave: item.musthave,
-        bestseller: item.bestseller,
-        salespromo: item.salespromo,
-      },
-    };
-
-    return (
-      <View key={`featured-${item.id}`} style={styles.featuredItemWrap}>
-        <ItemCard
-          product={productCard}
-          token={token}
-          isDarkMode={isDarkMode}
-          onPress={(product) => onProductPress(product.id)}
-          isWishlisted={!!wishlistItem}
-          wishlistId={wishlistItem?.wishlist_id}
-          onWishlistToggle={onWishlistChange}
-        />
-      </View>
-    );
-  };
 
   const getBrandLogo = () => {
     if (brand?.logo) return brand.logo;
@@ -338,42 +250,6 @@ export default function ShopByBrandScreen({
     return brand?.name?.trim()?.charAt(0)?.toUpperCase() || '?';
   };
 
-  const renderLoadingPlaceholders = () => {
-    const dummyProducts = Array.from({ length: 6 }, (_, i) => ({ id: i }));
-    const leftColumn = dummyProducts.filter((_, i) => i % 2 === 0);
-    const rightColumn = dummyProducts.filter((_, i) => i % 2 !== 0);
-
-    const renderDummyCard = (item: any) => (
-      <View key={`loading-${item.id}`} style={styles.masonryItem}>
-        <View style={[styles.dummyCard, { backgroundColor: themeColors.cardBg, borderColor: themeColors.cardBorder }]}>
-          <View style={[styles.dummyImageContainer, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9' }]}>
-            <Image
-              source={require('../../assets/af_home_logo.png')}
-              style={styles.dummyImage}
-              resizeMode="contain"
-              tintColor={isDarkMode ? '#cbd5e1' : '#4b5563'}
-            />
-          </View>
-          <View style={styles.dummyContent}>
-            <View style={[styles.dummyLine, { backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }]} />
-            <View style={[styles.dummyLine, { backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', width: '70%' }]} />
-            <View style={[styles.dummyLine, { backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', width: '50%', marginTop: 8 }]} />
-          </View>
-        </View>
-      </View>
-    );
-
-    return (
-      <View style={styles.masonryGrid}>
-        <View style={styles.masonryColumn}>
-          {leftColumn.map(item => renderDummyCard(item))}
-        </View>
-        <View style={styles.masonryColumn}>
-          {rightColumn.map(item => renderDummyCard(item))}
-        </View>
-      </View>
-    );
-  };
 
   const handleShareBrand = async () => {
     setShowMenu(false);
@@ -428,6 +304,7 @@ export default function ShopByBrandScreen({
       <ImageBackground
         source={{ uri: 'https://mms.img.susercontent.com/ph-11134210-81ztm-mlh54hxutfya0b@resize_bs700x700' }}
         style={[styles.customHeader, { paddingTop: insets.top }]}
+        resizeMode="cover"
       >
         <View style={styles.headerOverlay} />
 
@@ -496,60 +373,60 @@ export default function ShopByBrandScreen({
 
         {/* Bottom Row: Brand Info and Follow Button */}
         <View style={styles.headerContent}>
-          <View style={styles.brandHeaderContent}>
-            <View style={[styles.brandLogoHeader, { borderColor: '#cbd5e1' }]}>
-              {getBrandLogo() ? (
-                <Image source={{ uri: getBrandLogo() }} style={styles.brandLogoImageHeader} />
-              ) : (
-                <View style={styles.brandLogoFallbackHeader}>
-                  <Text style={styles.brandInitialHeader}>{getBrandInitial()}</Text>
+            <View style={styles.brandHeaderContent}>
+              <View style={[styles.brandLogoHeader, { borderColor: '#cbd5e1' }]}>
+                {getBrandLogo() ? (
+                  <Image source={{ uri: getBrandLogo() }} style={styles.brandLogoImageHeader} />
+                ) : (
+                  <View style={styles.brandLogoFallbackHeader}>
+                    <Text style={styles.brandInitialHeader}>{getBrandInitial()}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.brandHeaderText}>
+                <Text style={styles.brandHeaderLabel} numberOfLines={1}>Official Brand Store</Text>
+                <View style={styles.brandNameRow}>
+                  <Text style={[styles.brandHeaderName, { color: Colors.white }]} numberOfLines={1}>{brand?.name || 'Brand'}</Text>
+                  <Ionicons name="checkmark-circle" size={14} color={Colors.sky} style={{ marginLeft: 4 }} />
                 </View>
-              )}
-            </View>
-            <View style={styles.brandHeaderText}>
-              <Text style={styles.brandHeaderLabel} numberOfLines={1}>Official Brand Store</Text>
-              <View style={styles.brandNameRow}>
-                <Text style={[styles.brandHeaderName, { color: Colors.white }]} numberOfLines={1}>{brand?.name || 'Brand'}</Text>
-                <Ionicons name="checkmark-circle" size={14} color={Colors.sky} style={{ marginLeft: 4 }} />
-              </View>
-              {brand?.supplier_name ? (
-                <Text style={[styles.brandHeaderSupplier, { color: '#e2e8f0' }]} numberOfLines={1}>{brand.supplier_name}</Text>
-              ) : null}
-              {brand?.tagline ? (
-                <Text style={[styles.brandHeaderTagline, { color: '#e2e8f0' }]} numberOfLines={1}>{brand.tagline}</Text>
-              ) : null}
-              <View style={styles.brandMetaRow}>
-                <Ionicons name="star" size={12} color="#fbbf24" />
-                <Text style={[styles.brandHeaderProducts, { color: Colors.white }]} numberOfLines={1}>4.8</Text>
-                <Text style={[styles.brandMetaDot, { color: '#cbd5e1' }]}>•</Text>
-                <Ionicons name="people" size={12} color={Colors.sky} />
-                <Text style={[styles.brandHeaderProducts, { color: Colors.white }]} numberOfLines={1}>12.5K followers</Text>
+                {brand?.supplier_name ? (
+                  <Text style={[styles.brandHeaderSupplier, { color: '#e2e8f0' }]} numberOfLines={1}>{brand.supplier_name}</Text>
+                ) : null}
+                {brand?.tagline ? (
+                  <Text style={[styles.brandHeaderTagline, { color: '#e2e8f0' }]} numberOfLines={1}>{brand.tagline}</Text>
+                ) : null}
+                <View style={styles.brandMetaRow}>
+                  <Ionicons name="star" size={12} color="#fbbf24" />
+                  <Text style={[styles.brandHeaderProducts, { color: Colors.white }]} numberOfLines={1}>4.8</Text>
+                  <Text style={[styles.brandMetaDot, { color: '#cbd5e1' }]}>•</Text>
+                  <Ionicons name="people" size={12} color={Colors.sky} />
+                  <Text style={[styles.brandHeaderProducts, { color: Colors.white }]} numberOfLines={1}>12.5K followers</Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          <TouchableOpacity
-            onPress={handleFollowPress}
-            disabled={followLoading}
-            style={[
-              styles.topFollowButton,
-              {
-                backgroundColor: isFollowing ? '#0369a1' : Colors.sky,
-                borderWidth: isFollowing ? 0 : 0,
-              }
-            ]}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={isFollowing ? 'heart' : 'heart-outline'}
-              size={16}
-              color={Colors.white}
-              style={{ marginRight: 4 }}
-            />
-            <Text style={[styles.topFollowButtonText, { color: Colors.white }]}>
-              {followLoading ? 'Follow' : (isFollowing ? 'Followed' : 'Follow')}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleFollowPress}
+              disabled={followLoading}
+              style={[
+                styles.topFollowButton,
+                {
+                  backgroundColor: isFollowing ? '#0369a1' : Colors.sky,
+                  borderWidth: isFollowing ? 0 : 0,
+                }
+              ]}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isFollowing ? 'heart' : 'heart-outline'}
+                size={16}
+                color={Colors.white}
+                style={{ marginRight: 4 }}
+              />
+              <Text style={[styles.topFollowButtonText, { color: Colors.white }]}>
+                {followLoading ? 'Follow' : (isFollowing ? 'Followed' : 'Follow')}
+              </Text>
+            </TouchableOpacity>
         </View>
 
         {/* Tab Navigation */}
@@ -577,8 +454,8 @@ export default function ShopByBrandScreen({
             <Text style={[styles.tabText, selectedTab === 'categories' && styles.tabTextActive]}>Categories</Text>
             {selectedTab === 'categories' && <View style={[styles.tabIndicator, { backgroundColor: Colors.sky }]} />}
           </TouchableOpacity>
-        </View>
-      </ImageBackground>
+          </View>
+        </ImageBackground>
 
       <ScrollView
         ref={scrollViewRef}
@@ -589,80 +466,34 @@ export default function ShopByBrandScreen({
         }
         showsVerticalScrollIndicator={false}
       >
-        {featuredProducts.length > 0 && (
-          <View style={[styles.featuredSection, { backgroundColor: themeColors.cardBg, borderColor: themeColors.cardBorder }]}>
-            <View style={[styles.featuredHeaderRow, { borderBottomColor: themeColors.divider }]}>
-              <Text style={[styles.featuredTitle, { color: themeColors.text }]}>Featured Products</Text>
-              <Text style={[styles.featuredSubtitle, { color: themeColors.textSecondary }]}>Top picks from this brand</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredGrid}
-            >
-              {featuredProducts.map((item) => renderFeaturedItem(item))}
-            </ScrollView>
-          </View>
+        {/* HOME TAB */}
+        {selectedTab === 'home' && (
+          <ShopByBrandHomeScreen
+            products={products}
+            token={token}
+            isDarkMode={isDarkMode}
+            onProductPress={onProductPress}
+            wishlistItems={wishlistItems}
+            onWishlistChange={onWishlistChange}
+            loading={loading && !refreshing}
+            onSeeMore={() => setSelectedTab('products')}
+          />
         )}
 
-        {/* Products Grid */}
-        {loading && !refreshing ? (
-          renderLoadingPlaceholders()
-        ) : products.length > 0 ? (
-          <View style={styles.masonryGrid}>
-            <View style={styles.masonryColumn}>
-              {masonryColumns.leftColumn.map((product) => renderItem(product))}
-            </View>
-            <View style={styles.masonryColumn}>
-              {masonryColumns.rightColumn.map((product) => renderItem(product))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cube-outline" size={48} color={themeColors.textSecondary} />
-            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>No products found</Text>
-          </View>
+        {/* PRODUCTS TAB */}
+        {selectedTab === 'products' && (
+          <ShopByBrandProductsScreen
+            isDarkMode={isDarkMode}
+          />
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <View style={[styles.paginationContainer, { backgroundColor: themeColors.paginationBg, borderTopColor: themeColors.paginationBorder }]}>
-            <Pressable
-              onPress={handlePreviousPage}
-              disabled={currentPage === 1}
-              style={[styles.paginationButton, { backgroundColor: currentPage === 1 ? themeColors.buttonBg : isDarkMode ? '#0e4a6b' : '#f0f9ff', borderColor: currentPage === 1 ? themeColors.buttonBorder : Colors.sky }, currentPage === 1 && styles.paginationButtonDisabled]}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={20}
-                color={currentPage === 1 ? themeColors.textSecondary : Colors.sky}
-              />
-              <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>
-                Previous
-              </Text>
-            </Pressable>
-
-            <View style={styles.pageInfo}>
-              <Text style={[styles.pageNumber, { color: themeColors.text }]}>
-                Page {currentPage} of {totalPages}
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={handleNextPage}
-              disabled={currentPage >= totalPages}
-              style={[styles.paginationButton, { backgroundColor: currentPage >= totalPages ? themeColors.buttonBg : isDarkMode ? '#0e4a6b' : '#f0f9ff', borderColor: currentPage >= totalPages ? themeColors.buttonBorder : Colors.sky }, currentPage >= totalPages && styles.paginationButtonDisabled]}
-            >
-              <Text style={[styles.paginationButtonText, currentPage >= totalPages && styles.paginationButtonTextDisabled]}>
-                Next
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={currentPage >= totalPages ? themeColors.textSecondary : Colors.sky}
-              />
-            </Pressable>
-          </View>
+        {/* CATEGORIES TAB */}
+        {selectedTab === 'categories' && (
+          <ShopByBrandCategoriesScreen
+            categories={categories}
+            isDarkMode={isDarkMode}
+            onCategoryPress={(categoryId) => setSelectedCategoryId(categoryId)}
+          />
         )}
       </ScrollView>
     </View>
@@ -677,8 +508,8 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 0,
     position: 'relative',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     overflow: 'hidden',
   },
   headerOverlay: {
@@ -759,8 +590,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#0ea5e9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
   },
   brandLogoImageHeader: {
     width: '100%',
@@ -845,7 +676,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    padding: 8,
+    gap: 8,
+    paddingBottom: 16,
   },
   tabBar: {
     flexDirection: 'row',
@@ -877,131 +710,6 @@ const styles = StyleSheet.create({
     height: 2.5,
     marginTop: 2,
     borderRadius: 1.5,
-  },
-  masonryGrid: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
-  },
-  featuredSection: {
-    marginHorizontal: 8,
-    marginTop: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  featuredHeaderRow: {
-    paddingHorizontal: 4,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    paddingBottom: 8,
-  },
-  featuredTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  featuredSubtitle: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  featuredGrid: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 10,
-    paddingTop: 2,
-    paddingRight: 4,
-  },
-  featuredItemWrap: {
-    width: width * 0.46,
-  },
-  masonryColumn: {
-    flex: 1,
-    gap: 8,
-  },
-  masonryItem: {
-    width: '100%',
-  },
-  dummyCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  dummyImageContainer: {
-    width: '100%',
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dummyImage: {
-    width: '60%',
-    height: '60%',
-  },
-  dummyContent: {
-    padding: 12,
-    gap: 6,
-  },
-  dummyLine: {
-    height: 8,
-    borderRadius: 4,
-    width: '100%',
-  },
-  emptyContainer: {
-    minHeight: 300,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-  },
-  paginationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-    marginTop: 16,
-  },
-  paginationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  paginationButtonDisabled: {
-  },
-  paginationButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.sky,
-  },
-  paginationButtonTextDisabled: {
-    color: Colors.textSecondary,
-  },
-  pageInfo: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  pageNumber: {
-    fontSize: 13,
-    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
