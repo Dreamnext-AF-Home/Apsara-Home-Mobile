@@ -91,6 +91,7 @@ export default function App() {
   const [referralOtpEmail, setReferralOtpEmail] = useState('');
   const [referralOtpToken, setReferralOtpToken] = useState('');
   const [showAffiliateScreen, setShowAffiliateScreen] = useState(false);
+  const [productSlugFromDeepLink, setProductSlugFromDeepLink] = useState<string | null>(null);
 
   // Initialize FCM and register device when authenticated
   useFirebaseMessaging(authToken, authUser?.id || null);
@@ -99,7 +100,7 @@ export default function App() {
     checkStoredAuth();
   }, []);
 
-  // Handle referral deep links at app level (works in unauthenticated flow)
+  // Handle referral and product deep links at app level (works in unauthenticated flow)
   useEffect(() => {
     const handleDeepLink = async ({ url }: { url: string }) => {
       console.log('[App] Deep link received:', url);
@@ -116,6 +117,13 @@ export default function App() {
           } catch (error: any) {
             console.error('[App] Failed to fetch referrer profile:', error);
           }
+        }
+      } else if (url.includes('/product/')) {
+        console.log('[App] Product deep link detected:', url);
+        const productSlug = url.split('/product/')[1]?.split('?')[0] || '';
+        if (productSlug) {
+          console.log('[App] Product slug from deep link:', productSlug);
+          setProductSlugFromDeepLink(productSlug);
         }
       }
     };
@@ -294,7 +302,7 @@ export default function App() {
         ) : !hasOnboarded ? (
           <OnboardingScreen onDone={handleOnboardingDone} />
         ) : authenticated ? (
-          <AppNavigator user={authUser} token={authToken} onLogout={logout} />
+          <AppNavigator user={authUser} token={authToken} onLogout={logout} productSlugFromDeepLink={productSlugFromDeepLink} onProductDeepLinkHandled={() => setProductSlugFromDeepLink(null)} />
         ) : (
           <>
             {renderAuth()}
