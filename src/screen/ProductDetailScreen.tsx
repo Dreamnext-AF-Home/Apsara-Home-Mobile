@@ -12,6 +12,7 @@ import { productService, type Product, type ProductCard, type ProductReviewsResp
 import { authService } from '../services/authService';
 import { userBehaviorService } from '../services/userBehaviorService';
 import ItemCard from '../components/Items/ItemCard';
+import FeaturedItems from '../components/Items/FeaturedItems';
 import ImageViewerModal from '../components/Items/ImageViewerModal';
 import BuyNowModal from '../components/Items/BuyNowModal';
 import AddToCartModal from '../components/Items/AddToCartModal';
@@ -180,6 +181,10 @@ export default function ProductDetailScreen({
     setDescriptionExpanded(false);
     setSpecificationsExpanded(false);
     setSelectedVariant(null);
+    setShowHeaderOnScroll(false);
+    // Reset animated header values to initial state
+    headerTranslateY.setValue(-100);
+    headerOpacity.setValue(0);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
 
     let active = true;
@@ -1266,10 +1271,10 @@ export default function ProductDetailScreen({
           )}
 
           {/* Gray Gap Separator */}
-          <View style={{ height: 12, backgroundColor: '#ffffff' }} />
+          <View style={{ height: 0, backgroundColor: '#ffffff' }} />
 
           {/* Related Products */}
-          {relatedProducts.length > 0 && (
+          {relatedProducts.length > 0 ? (
             <View style={[styles.relatedSection, { backgroundColor: colors.card }]}>
               <View style={[styles.relatedHeader, { borderBottomColor: colors.divider }]}>
                 <Ionicons name="grid-outline" size={15} color={Colors.sky} />
@@ -1279,11 +1284,24 @@ export default function ProductDetailScreen({
                 <View style={styles.relatedRow}>
                   {relatedProducts.map(p => (
                     <View key={p.id} style={styles.relatedCard}>
-                      <ItemCard
-                        product={p}
+                      <FeaturedItems
+                        product={{
+                          id: p.id,
+                          name: p.name,
+                          image: p.image,
+                          price: p.memberPrice,
+                          priceMember: p.memberPrice,
+                          priceDp: p.memberPrice,
+                          prodpv: p.pv,
+                          original_price: p.originalPrice,
+                          discounted_price: p.memberPrice,
+                          musthave: p.badges?.musthave || false,
+                          bestseller: p.badges?.bestseller || false,
+                          salespromo: p.badges?.salespromo || false,
+                        }}
                         token={token}
                         isWishlisted={wishlistItems?.some(item => item.product_id === p.id) || false}
-                        onPress={item => onProductPress?.(item.id)}
+                        onPress={(id) => onProductPress?.(id)}
                         onWishlistToggle={onWishlistToggle}
                         isDarkMode={isDarkMode}
                       />
@@ -1292,10 +1310,11 @@ export default function ProductDetailScreen({
                 </View>
               </ScrollView>
             </View>
+          ) : (
+            <View style={[styles.relatedSection, { backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center', paddingVertical: 16 }]}>
+              <Text style={[{ color: colors.textSecondary, fontSize: 14 }]}>No related products found</Text>
+            </View>
           )}
-
-          {/* Gray Gap Separator */}
-          <View style={{ height: 12, backgroundColor: '#ffffff' }} />
 
           {/* You May Also Like Section - With Lazy Loading */}
           {youMayAlsoLike.length > 0 && (
@@ -1928,7 +1947,7 @@ const styles = StyleSheet.create({
   relatedSection: {
     paddingHorizontal: 8,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 8,
     gap: 12,
   },
   relatedHeader: {
