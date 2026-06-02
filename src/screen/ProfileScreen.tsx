@@ -499,7 +499,11 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
             >
               <View style={styles.dailyCheckinBtnLeft}>
                 <View style={styles.dailyCheckinIconContainer}>
-                  <Ionicons name="gift-outline" size={16} color={Colors.sky} />
+                  <Image
+                    source={require('../../assets/coin_1.png')}
+                    style={styles.dailyCheckinIcon}
+                    resizeMode="contain"
+                  />
                   {!dailyCheckinClaimed && (
                     <View style={styles.dailyCheckinBadge} />
                   )}
@@ -837,7 +841,11 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 activeOpacity={0.7}
               >
                 <View style={styles.walletCardTitle}>
-                  <Ionicons name="gift-outline" size={18} color="#f59e0b" />
+                  <Image
+                    source={require('../../assets/coin_1.png')}
+                    style={styles.walletCardIcon}
+                    resizeMode="contain"
+                  />
                   <Text style={[styles.walletCardTitleText, { color: colors.text }]}>Rewards & Cashback</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textSec} />
@@ -1825,6 +1833,15 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: '#ff4444',
+  },
+  dailyCheckinIcon: {
+    width: 20,
+    height: 20,
+  },
+  walletCardIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
   },
 
 });

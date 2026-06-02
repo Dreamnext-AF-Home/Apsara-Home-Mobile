@@ -17,7 +17,7 @@ interface DailyCheckinProps {
 }
 
 const CHECKIN_REWARDS = [20, 25, 30, 35, 40, 45, 50]; // PV for each day
-const DAY_LABELS = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+const DAY_LABELS = ['Today', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
 
 export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyCheckinProps) {
   const [checkedInDays, setCheckedInDays] = useState<number[]>([]);
@@ -54,6 +54,28 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
       }
     }
   };
+
+  React.useEffect(() => {
+    const bounceAnims = scaleAnims.map((anim, index) => {
+      const day = index + 1;
+      if (day === 1 && !checkedInDays.includes(1)) {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(anim, {
+              toValue: 1.05,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+      }
+    });
+  }, [checkedInDays, scaleAnims]);
 
   const todayReward = CHECKIN_REWARDS[0];
   const totalPV = CHECKIN_REWARDS.reduce((sum, pv) => sum + pv, 0);
@@ -93,19 +115,19 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
                   style={[
                     styles.dayCard,
                     {
-                      backgroundColor: isChecked ? Colors.sky : colors.cardBg,
+                      backgroundColor: 'transparent',
+                      borderColor: isToday ? Colors.sky : colors.border,
+                      borderWidth: 1,
                     },
                   ]}
                   onPress={() => handleCheckin(day)}
                   disabled={isChecked}
-                  activeOpacity={0.8}
+                  activeOpacity={1}
                 >
                   {/* Reward Badge */}
-                  {!isChecked && (
-                    <View style={styles.rewardBadge}>
-                      <Text style={styles.rewardBadgeText}>+{reward}</Text>
-                    </View>
-                  )}
+                  <View style={styles.rewardBadge}>
+                    <Text style={styles.rewardBadgeText}>+{reward}</Text>
+                  </View>
 
                   {/* Coin Image */}
                   <View style={styles.coinContainer}>
@@ -152,6 +174,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
+    marginBottom: 20,
   },
   header: {
     paddingHorizontal: 16,
@@ -218,7 +241,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   rewardBadgeText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '700',
     color: Colors.sky,
   },
