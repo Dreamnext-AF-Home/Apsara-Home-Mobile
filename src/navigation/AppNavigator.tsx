@@ -294,6 +294,8 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
   const [showReferralOtpScreen, setShowReferralOtpScreen] = useState(false);
   const [referralOtpData, setReferralOtpData] = useState<{ phone: string; verificationToken: string } | null>(null);
   const [showPVEarnerFromTab, setShowPVEarnerFromTab] = useState(false);
+  const [showShopProductDetail, setShowShopProductDetail] = useState(false);
+  const [shopSelectedProductId, setShopSelectedProductId] = useState<number | null>(null);
 
   // Handle product deep links
   useEffect(() => {
@@ -839,15 +841,25 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     return () => sub.remove();
   }, [selectedProductId, previousTab, previousSearchQuery]);
 
+  useEffect(() => {
+    if (!showShopProductDetail) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setShowShopProductDetail(false);
+      setShopSelectedProductId(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [showShopProductDetail]);
+
   // Global back button handler for exit confirmation on main screens
   useEffect(() => {
-    if (selectedProductId !== null || searchVisible || searchQuery) return;
+    if (selectedProductId !== null || searchVisible || searchQuery || showShopProductDetail) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setShowExitConfirm(true);
       return true;
     });
     return () => sub.remove();
-  }, [selectedProductId, searchVisible, searchQuery]);
+  }, [selectedProductId, searchVisible, searchQuery, showShopProductDetail]);
 
   // Update notification count when app comes to foreground
   useEffect(() => {
@@ -1215,9 +1227,8 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                   }
                 }}
                 onProductPress={(id) => {
-                  setPreviousSearchQuery(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSelectedProductId(id);
+                  setShopSelectedProductId(id);
+                  setShowShopProductDetail(true);
                 }}
                 onCartPress={() => setShowCart(true)}
                 wishlistItems={wishlistItems}
@@ -1241,9 +1252,8 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                   navigateTo(previousTab);
                 }}
                 onProductPress={(id) => {
-                  setPreviousSearchQuery(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSelectedProductId(id);
+                  setShopSelectedProductId(id);
+                  setShowShopProductDetail(true);
                 }}
                 onCartPress={() => setShowCart(true)}
                 onOpenSearch={() => {
@@ -1356,7 +1366,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
           )}
         </View>
 
-        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && !profileDetailsFromTab && !showSecurity && !referralNetworkFromTab && !showPVEarnerFromTab && !(activeTab === 'shop' && selectedBrandId !== null && selectedBrand !== null) && (activeTab !== 'home' || isInitialHomeDataReady) && (
+        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && !profileDetailsFromTab && !showSecurity && !referralNetworkFromTab && !showPVEarnerFromTab && !(activeTab === 'shop' && selectedBrandId !== null && selectedBrand !== null) && (activeTab !== 'home' || isInitialHomeDataReady) && !showShopProductDetail && (
           <SafeAreaView edges={['bottom']} style={[styles.navBarContainer, isDarkMode && styles.navBarContainerDark]}>
             <View style={[styles.navBar, isDarkMode && styles.navBarDark]}>
               {TABS.map(key => {
@@ -1557,6 +1567,76 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
             setSearchVisible(false);
           }}
         />
+      )}
+
+      {showShopProductDetail && shopSelectedProductId !== null && (
+        <View style={styles.cartScreenOverlay}>
+          <ProductDetailScreen
+            productId={shopSelectedProductId}
+            token={token}
+            user={enrichedUser}
+            cartCount={cartCount}
+            wishlistItems={wishlistItems}
+            onBack={() => {
+              setShowShopProductDetail(false);
+              setShopSelectedProductId(null);
+            }}
+            onProductPress={(id) => {
+              setShopSelectedProductId(id);
+            }}
+            onSearch={() => {
+              setShowShopProductDetail(false);
+              setShopSelectedProductId(null);
+              setSearchSourceProductId(null);
+              setPreviousTab(activeTabRef.current);
+              setSearchVisible(true);
+            }}
+            onCartUpdate={async () => {
+              const headers = { Authorization: `Bearer ${token}` };
+              try {
+                const cartRes = await axios.get(`${API_CONFIG.BASE_URL}/cart`, { headers });
+                setCartCount(extractCount(cartRes.data));
+              } catch (error) {
+                console.error('Failed to update cart count:', error);
+              }
+            }}
+            onWishlistToggle={(productId, isWishlisted) => {
+              fetchWishlistData();
+            }}
+            onShopNavigate={(brandType, shopName) => {
+              setShowShopProductDetail(false);
+              setShopSelectedProductId(null);
+              setSelectedBrandId(brandType);
+              setSelectedBrand({
+                id: brandType,
+                name: shopName,
+              });
+              setPreviousTab('shop');
+            }}
+            onCheckout={(product, quantity, variant) => {
+              const item = {
+                product_id: product.id,
+                product_name: product.name,
+                product_image: product.image || (product.images?.[0]),
+                product_price_member: variant?.priceMember || product.priceMember || 0,
+                product_price_srp: variant?.priceSrp || product.priceSrp || 0,
+                brand_name: product.brand,
+                brand_id: product.supplier_id || 0,
+                quantity: quantity,
+                variant_color: variant?.color,
+                variant_size: variant?.name,
+                variant_image: variant?.images?.[0],
+              };
+              setCheckoutItem(item);
+              setCheckoutCartItems([]);
+              setShowShopProductDetail(false);
+              setShopSelectedProductId(null);
+              setCheckoutSource('product');
+              setShowCheckout(true);
+            }}
+            isDarkMode={isDarkMode}
+          />
+        </View>
       )}
 
       {showCart && (
