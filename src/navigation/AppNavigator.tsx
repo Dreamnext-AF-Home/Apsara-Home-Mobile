@@ -176,7 +176,7 @@ interface RoomType {
   count: number;
 }
 
-export default function AppNavigator({ user, token, onLogout }: { user?: User | null; token?: string | null; onLogout?: () => void }) {
+export default function AppNavigator({ user, token, onLogout, productSlugFromDeepLink, onProductDeepLinkHandled }: { user?: User | null; token?: string | null; onLogout?: () => void; productSlugFromDeepLink?: string | null; onProductDeepLinkHandled?: () => void }) {
   console.log('[AppNavigator] User object received:', {
     name: user?.name,
     badge_name: user?.badge_name,
@@ -294,6 +294,25 @@ export default function AppNavigator({ user, token, onLogout }: { user?: User | 
   const [showReferralOtpScreen, setShowReferralOtpScreen] = useState(false);
   const [referralOtpData, setReferralOtpData] = useState<{ phone: string; verificationToken: string } | null>(null);
   const [showPVEarnerFromTab, setShowPVEarnerFromTab] = useState(false);
+
+  // Handle product deep links
+  useEffect(() => {
+    if (productSlugFromDeepLink) {
+      console.log('[AppNavigator] Handling product deep link:', productSlugFromDeepLink);
+      // Parse the product ID from the slug (format: "item-slug-name-with-id" or similar)
+      // The ProductDetailScreen will handle fetching the product data from the slug
+      // For now, we pass the slug to the ProductDetailScreen
+      // The screen will parse it and fetch the product
+
+      // TODO: Implement slug parsing to extract product ID if needed
+      // For MVP, we're passing the entire slug to ProductDetailScreen
+      setSelectedProductId(0); // Temporary: will be handled by ProductDetailScreen
+
+      if (onProductDeepLinkHandled) {
+        onProductDeepLinkHandled();
+      }
+    }
+  }, [productSlugFromDeepLink, onProductDeepLinkHandled]);
 
   // Home screen data - persists across navigation
   const [homeCategories, setHomeCategories] = useState<CategoryItem[]>([]);
