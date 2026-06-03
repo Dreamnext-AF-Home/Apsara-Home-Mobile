@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Animated,
+  View, Text, StyleSheet, ScrollView, Image, Animated,
   Dimensions, NativeSyntheticEvent, NativeScrollEvent, FlatList, Pressable, RefreshControl, Platform, TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +25,6 @@ import {
   BrandCardSkeleton
 } from '../components/SkeletonLoader/SkeletonLoader';
 import { usePrefetchProducts } from '../hooks/usePrefetchProducts';
-import { useRecommendations } from '../hooks/useRecommendations';
 import { ChatBotIcon } from '../components/ChatBot';
 
 interface HomeScreenProps {
@@ -302,8 +301,20 @@ function HomeScreen({
   onShopByCategoryPress = () => {},
   onShopByBrandPress = () => {},
 }: HomeScreenProps) {
-  console.log('📱 HomeScreen MOUNTED - Categories:', categories.length, 'Brands:', brands.length, 'Rooms:', roomTypes.length);
-  console.log('[HomeScreen] User object on mount:', { name: user?.name, badge_name: user?.badge_name, badge_image: user?.badge_image, avatar_url: user?.avatar_url, fullUser: JSON.stringify(user) });
+  const navigationStartTime = useRef(performance.now());
+
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🏠 [HOMESCREEN] MOUNTED/NAVIGATED');
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('📊 DATA STATUS:', {
+    categoriesCount: categories.length,
+    brandsCount: brands.length,
+    roomsCount: roomTypes.length,
+    productsCount: featuredProducts.length,
+    isLoading: loadingFeatured,
+  });
+  console.log('👤 USER:', { name: user?.name, badge: user?.badge_name });
+  console.log('═══════════════════════════════════════════════════════════');
 
   const colors = {
     bg: isDarkMode ? '#0f172a' : '#f5f5f5',
@@ -325,55 +336,23 @@ function HomeScreen({
   // Prefetch products in background for instant Shop screen load
   usePrefetchProducts(token);
 
-  // Fetch personalized recommendations
-  const { recommendations, loading: recommendationsLoading } = useRecommendations({
-    token,
-    limit: 20,
-    enabled: !!token,
-  });
-
-  const fetchHomeData = async (isRefreshing = false) => {
-    if (!token) return;
-
-    if (isRefreshing) {
-      setRefreshing(true);
-    } else if (!dataFetchedRef.current) {
-      setLoadingFeatured(true);
-    }
-
-    try {
-      const [categoryData, brandData, productData, roomData] = await Promise.all([
-        authService.getCategories(token),
-        authService.getBrandsWithProducts(token, 6),
-        productService.getProductCards(token),
-        axios.get(`${API_CONFIG.BASE_URL}/room-types`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then(res => res.data?.data || []).catch(() => []),
-      ]);
-
-      setCategories(sortByOrder(categoryData));
-      setBrands(brandData);
-
-
-      setRoomTypes(roomData);
-    } catch (error: any) {
-      console.error('Home data fetch error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Sync failed',
-        text2: error.message || 'Unable to update home data.',
-      });
-    } finally {
-      setLoadingFeatured(false);
-      setRefreshing(false);
-    }
-  };
+  // Track when data updates
+  useEffect(() => {
+    const timeSinceNav = performance.now() - navigationStartTime.current;
+    console.log(`📦 [HOMESCREEN] DATA UPDATED at ${timeSinceNav.toFixed(0)}ms:`, {
+      categories: categories.length,
+      brands: brands.length,
+      rooms: roomTypes.length,
+      products: featuredProducts.length,
+    });
+  }, [categories.length, brands.length, roomTypes.length, featuredProducts.length]);
 
   const onRefresh = () => {
-    fetchHomeData(true);
+    console.log('🔄 [HOMESCREEN] PULL-TO-REFRESH TRIGGERED');
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
-  // Fetch stats from API
   useEffect(() => {
     const fetchStats = async () => {
       if (!token) return;
@@ -489,7 +468,11 @@ function HomeScreen({
     setActiveBanner(index);
   }
 
-  console.log('🎨 HomeScreen RENDERING...');
+  const renderTime = performance.now() - navigationStartTime.current;
+  console.log(`⚡ [HOMESCREEN] RENDER TIME: ${renderTime.toFixed(0)}ms`);
+  if (renderTime > 1000) {
+    console.log('⚠️  WARNING: Slow render detected!');
+  }
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
@@ -761,65 +744,6 @@ function HomeScreen({
         )}
       </View>
 
-      {/* For You - Personalized Recommendations */}
-      {token && (
-        <View style={[styles.section, { backgroundColor: colors.bg }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>For You</Text>
-            <View style={styles.sectionAction}>
-              <Text style={[styles.sectionMeta, { color: colors.textSec }]}>Personalized</Text>
-              <Ionicons name="sparkles" size={16} color={colors.textSec} />
-            </View>
-          </View>
-          {recommendationsLoading ? (
-            <View style={styles.recommendationsLoading}>
-              <ActivityIndicator size="small" color={Colors.sky} />
-              <Text style={[styles.loadingText, { color: colors.textSec }]}>Loading personalized items...</Text>
-            </View>
-          ) : recommendations.length > 0 ? (
-            <FlatList
-              data={recommendations}
-              renderItem={({ item }) => (
-                <ItemCard
-                  product={{
-                    id: item.id,
-                    name: item.name,
-                    image: item.image,
-                    soldCount: 0,
-                    originalPrice: item.priceSrp,
-                    memberPrice: item.priceMember,
-                    pv: 0,
-                    brandName: '',
-                    variantCount: 0,
-                    badges: {
-                      musthave: false,
-                      bestseller: false,
-                      salespromo: false,
-                    },
-                  }}
-                  isDarkMode={isDarkMode}
-                  onPress={() => onProductPress?.(item.id)}
-                  onWishlistChange={onWishlistChange}
-                  isWishlisted={wishlistItems?.some(w => w.product_id === item.id) || false}
-                  colors={colors}
-                />
-              )}
-              keyExtractor={item => `rec-${item.id}`}
-              numColumns={2}
-              contentContainerStyle={styles.productGrid}
-              scrollEnabled={false}
-            />
-          ) : (
-            <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-              <Ionicons name="bag-outline" size={32} color={colors.textSec} />
-              <Text style={[styles.emptyStateText, { color: colors.text }]}>No personalized items yet</Text>
-              <Text style={[styles.emptyStateSubtext, { color: colors.textSec }]}>
-                Browse products to get personalized recommendations
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
 
       </ScrollView>
 
