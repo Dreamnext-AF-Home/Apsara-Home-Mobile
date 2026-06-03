@@ -441,8 +441,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   homeLogoImage: {
-    width: 26,
-    height: 26,
+    width: 30,
+    height: 30,
     resizeMode: 'contain',
   },
   badge: {
