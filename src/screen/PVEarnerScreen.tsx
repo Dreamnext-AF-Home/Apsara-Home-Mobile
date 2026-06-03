@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/colors';
 import DailyCheckin from '../components/DailyCheckin/DailyCheckin';
 import MissionTasks from '../components/MissionTasks/MissionTasks';
@@ -27,6 +28,7 @@ interface PVEarnerScreenProps {
   wishlistItems?: any[];
   onWishlistChange?: () => void;
   onProductPress?: (id: number) => void;
+  onShopPress?: () => void;
 }
 
 export default function PVEarnerScreen({
@@ -37,6 +39,7 @@ export default function PVEarnerScreen({
   wishlistItems = [],
   onWishlistChange = () => {},
   onProductPress = () => {},
+  onShopPress = () => {},
 }: PVEarnerScreenProps) {
   const insets = useSafeAreaInsets();
   const [currentPage, setCurrentPage] = useState(1);
@@ -260,6 +263,24 @@ export default function PVEarnerScreen({
           <Text style={[styles.productsSectionTitle, { color: colors.text }]}>Explore Products</Text>
           {renderProductsContent()}
         </View>
+
+        {/* Shop More Button */}
+        <TouchableOpacity
+          style={[styles.shopMoreButton, { marginHorizontal: 8 }]}
+          activeOpacity={0.85}
+          onPress={onShopPress}
+        >
+          <LinearGradient
+            colors={['#0284c7', '#0ea5e9']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.shopMoreGradient}
+          >
+            <Ionicons name="storefront" size={20} color={Colors.white} />
+            <Text style={styles.shopMoreText}>Shop More Products</Text>
+            <Ionicons name="chevron-forward" size={20} color={Colors.white} />
+          </LinearGradient>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -393,5 +414,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: Colors.text,
+  },
+  shopMoreButton: {
+    marginTop: 20,
+    marginBottom: 28,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  shopMoreGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  shopMoreText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.white,
+    flex: 1,
+    textAlign: 'center',
   },
 });
