@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View, Text, Image, TouchableOpacity, Pressable,
-  StyleSheet, Modal, PanResponder, Animated, BackHandler, Clipboard, Linking, AppState,
+  StyleSheet, Modal, BackHandler, Clipboard, Linking, AppState,
 } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationProvider, NavigationContextType } from '../context/NavigationContext';
+import { AppContextProvider, useAppContext } from '../context/AppContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Colors } from '../constants/colors';
 import { getBadgeImage, getBadgeImageSource } from '../constants/tierConfig';
@@ -14,6 +15,7 @@ import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 import type { ProductCard } from '../services/productService';
 import AppHeader from '../components/AppHeader/AppHeader';
+import TabNavigator from './TabNavigator';
 import HomeScreen from '../screen/HomeScreen';
 import ProfileScreen from '../screen/ProfileScreen';
 import SearchScreen from '../screen/SearchScreen';
@@ -66,13 +68,6 @@ import { NotificationService } from '../services/notificationService';
 import { useWishlist } from '../hooks/useWishlist';
 
 type TabKey = 'home' | 'wishlist' | 'shop' | 'notification' | 'profile' | 'settings';
-
-const TABS: TabKey[] = ['home', 'wishlist', 'shop', 'notification', 'profile'];
-const SLIDE_DISTANCE = 30;
-const OUT_DURATION = 0;
-const IN_DURATION = 0;
-
-let screenTapTime = 0;
 
 // Cache utilities using expo-file-system
 const CACHE_DIR = FileSystem.cacheDirectory + 'apsara_cache/';
@@ -296,6 +291,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
   const [showPVEarnerFromTab, setShowPVEarnerFromTab] = useState(false);
   const [showShopProductDetail, setShowShopProductDetail] = useState(false);
   const [shopSelectedProductId, setShopSelectedProductId] = useState<number | null>(null);
+  const [chatbotHidden, setChatbotHidden] = useState(false);
 
   // Handle product deep links
   useEffect(() => {
@@ -654,13 +650,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     return () => clearInterval(interval);
   }, [isDarkMode]);
 
-  useEffect(() => {
-    if (screenTapTime) {
-      const elapsed = Date.now() - screenTapTime;
-      console.log(`✅ [RENDER] ${labelMap[activeTab]} screen displayed in ${elapsed}ms`);
-      screenTapTime = 0;
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     if (!token) return;
@@ -817,7 +806,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
       } else {
         // Otherwise restore the previous tab
         setActiveTab(previousTab);
-        activeTabRef.current = previousTab;
+        activeTab = previousTab;
       }
       return true;
     });
@@ -835,7 +824,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
       } else {
         // Otherwise restore the previous tab
         setActiveTab(previousTab);
-        activeTabRef.current = previousTab;
+        activeTab = previousTab;
       }
       return true;
     });
@@ -896,10 +885,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     fetchReferrerProfile();
   }, [referralCodeFromDeepLink]);
 
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const activeTabRef = useRef<TabKey>('home');
-
   const normalizePurchaseStatus = (status?: string) => {
     const s = String(status || '').trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
     if (s === 'to_ship') return 'shipped' as const;
@@ -907,71 +892,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     if (s === 'to_receive' || s === 'toreceive') return 'to_receive' as const;
     if (s === 'pending' || s === 'paid' || s === 'processing' || s === 'shipped' || s === 'delivered' || s === 'cancelled' || s === 'return') return s;
     return 'pending' as const;
-  };
-
-  function navigateTo(key: TabKey) {
-    if (key === activeTabRef.current) return;
-
-    screenTapTime = Date.now();
-    console.log(`⏱️ [TAP] ${labelMap[key]} screen tapped`);
-
-    setPreviousTab(activeTabRef.current);
-    activeTabRef.current = key;
-    setActiveTab(key);
-  }
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => {
-        // Disable swipe navigation on Wishlist screen to allow item swiping
-        if (activeTabRef.current === 'wishlist') return false;
-        // Disable swipe navigation while Shop By Brand is open
-        if (activeTabRef.current === 'shop' && selectedBrandId !== null && selectedBrand !== null) return false;
-        return Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 12;
-      },
-      onPanResponderRelease: (_, g) => {
-        if (g.dx < -50) {
-          const i = TABS.indexOf(activeTabRef.current);
-          if (i < TABS.length - 1) navigateTo(TABS[i + 1]);
-        } else if (g.dx > 50) {
-          const i = TABS.indexOf(activeTabRef.current);
-          if (i > 0) navigateTo(TABS[i - 1]);
-        }
-      },
-    })
-  ).current;
-
-  const labelMap: Record<TabKey, string> = {
-    home: 'Home',
-    wishlist: 'Wishlist',
-    shop: 'Shop',
-    notification: 'Notifications',
-    profile: 'Me',
-    settings: 'Settings',
-  };
-
-  const iconActive: Record<TabKey, keyof typeof Ionicons.glyphMap> = {
-    home: 'home',
-    wishlist: 'heart',
-    shop: 'storefront',
-    notification: 'notifications',
-    profile: 'person',
-    settings: 'settings',
-  };
-
-  const iconInactive: Record<TabKey, keyof typeof Ionicons.glyphMap> = {
-    home: 'home-outline',
-    wishlist: 'heart-outline',
-    shop: 'storefront-outline',
-    notification: 'notifications-outline',
-    profile: 'person-outline',
-    settings: 'settings-outline',
-  };
-
-  const badgeCount: Partial<Record<TabKey, number>> = {
-    notification: unreadCount,
-    wishlist: wishlistItems.length,
   };
 
   // Navigation context value for notifications to use
@@ -988,8 +908,9 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     <NavigationProvider value={navigationValue}>
     <View style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-        <View style={styles.body} {...panResponder.panHandlers}>
-          {selectedProductId !== null ? (
+        <View style={styles.body}>
+          {/* Overlay: Product Detail Screen */}
+          {selectedProductId !== null && (
             <ProductDetailScreen
               productId={selectedProductId}
               token={token}
@@ -1004,7 +925,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
               onSearch={() => {
                 setSearchSourceProductId(selectedProductId);
                 setSelectedProductId(null);
-                setPreviousTab(activeTabRef.current);
+                setPreviousTab(activeTab);
                 setSearchVisible(true);
               }}
               onCartUpdate={async () => {
@@ -1017,29 +938,20 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 }
               }}
               onWishlistToggle={(productId, isWishlisted) => {
-                // Refresh wishlist data to get complete product details
                 invalidateWishlist();
               }}
               onShopNavigate={(brandType, shopName) => {
-                // Store the current product ID so we can return to it
                 setShopSourceProductId(selectedProductId);
-                // Clear selected product to allow ShopByBrandScreen to show
                 setSelectedProductId(null);
-                // Navigate to ShopByBrandScreen
                 setSelectedBrandId(brandType);
-                // Create brand object from available data
                 setSelectedBrand({
                   id: brandType,
                   name: shopName,
                 });
-                // Store previous tab so we can go back to ProductDetailScreen later
-                setPreviousTab(activeTabRef.current);
-                // Switch to shop tab to show ShopByBrandScreen
+                setPreviousTab(activeTab);
                 setActiveTab('shop');
-                activeTabRef.current = 'shop';
               }}
               onCheckout={(product, quantity, variant) => {
-                // Create item object from product details
                 const item = {
                   product_id: product.id,
                   product_name: product.name,
@@ -1054,15 +966,18 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                   variant_image: variant?.images?.[0],
                 };
                 setCheckoutItem(item);
-                setCheckoutCartItems([]); // Clear cart items when selecting single product
-                setPreviousTab(activeTabRef.current);
+                setCheckoutCartItems([]);
+                setPreviousTab(activeTab);
                 setSelectedProductId(null);
                 setCheckoutSource('product');
                 setShowCheckout(true);
               }}
               isDarkMode={isDarkMode}
             />
-          ) : searchQuery ? (
+          )}
+
+          {/* Overlay: Search Results Screen */}
+          {searchQuery && (
             <SearchResultScreen
               token={token}
               query={searchQuery}
@@ -1076,467 +991,140 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 setSelectedProductId(product.id);
               }}
             />
-          ) : activeTab === 'notification' ? (
-            <>
-              <AppHeader
-                user={enrichedUser}
-                cartCount={cartCount}
-                isDarkMode={isDarkMode}
-                onCartPress={() => setShowCart(true)}
-                onCameraPress={() => {
-                  console.log('Camera pressed');
-                }}
-                onSearchPress={() => {
-                  setSearchSourceProductId(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSearchVisible(true);
-                }}
-                onProfilePress={() => setShowProfileDetails(true)}
-                onLogout={onLogout}
-              />
-              <NotificationsScreen
-                token={token}
-                isDarkMode={isDarkMode}
-                onNavigateToPurchases={(status, orderId) => {
-                  setPurchasesStatus(normalizePurchaseStatus(status));
-                  setPurchasesInitialOrderId(orderId);
-                  setShowPurchases(true);
-                }}
-              />
-            </>
+          )}
 
-          ) : activeTab === 'settings' ? (
-            <SettingsScreen
-              user={enrichedUser}
-              isDarkMode={isDarkMode}
-              setIsDarkMode={setIsDarkMode}
-              onBack={() => navigateTo('profile')}
-              onEditProfile={() => setShowProfileDetails(true)}
-              onNavigateSecurity={() => setShowSecurity(true)}
-              onNavigateAboutUs={() => setShowAboutUs(true)}
-              onNavigatePrivacyPolicy={() => setShowPrivacyPolicy(true)}
-              onNavigateTermsAndConditions={() => setShowTermsAndConditions(true)}
-              onNavigateIncomeDisclaimer={() => setShowIncomeDisclaimer(true)}
-              onNavigateCookiePolicy={() => setShowCookiePolicy(true)}
-              onNavigateRewardsAndCommissions={() => setShowRewardsAndCommissions(true)}
-              onNavigateContactUs={() => setShowContactUs(true)}
-              onNavigateOurBranches={() => setShowOurBranches(true)}
-              onNavigateFAQs={() => setShowFAQs(true)}
-              onNavigateShippingInfo={() => setShowShippingInfo(true)}
-              onNavigateReturns={() => setShowReturns(true)}
-              onLogout={onLogout}
-            />
-          ) : activeTab === 'wishlist' ? (
-            <>
-              <AppHeader
-                user={enrichedUser}
-                cartCount={cartCount}
-                isDarkMode={isDarkMode}
-                onCartPress={() => setShowCart(true)}
-                onCameraPress={() => {
-                  console.log('Camera pressed');
-                }}
-                onSearchPress={() => {
-                  setSearchSourceProductId(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSearchVisible(true);
-                }}
-                onProfilePress={() => setShowProfileDetails(true)}
-                onLogout={onLogout}
-              />
-              <WishlistScreen
-                token={token}
-                wishlistItems={wishlistItems}
-                loading={wishlistLoading}
-                refreshing={wishlistRefreshing}
-                isDarkMode={isDarkMode}
-                onRefresh={() => invalidateWishlist()}
-                onProductPress={(id: number) => {
+          {/* Tab Screens using React Navigation */}
+          {!selectedProductId && !searchQuery && (
+            <AppContextProvider
+              value={{
+                token: token || '',
+                enrichedUser,
+                isDarkMode,
+                setIsDarkMode,
+                cartCount,
+                wishlistItems,
+                wishlistLoading,
+                wishlistRefreshing,
+                invalidateWishlist,
+                onWishlistChange: () => invalidateWishlist(),
+                homeCategories,
+                setHomeCategories,
+                homeBrands,
+                setHomeBrands,
+                homeRoomTypes,
+                setHomeRoomTypes,
+                homeFeaturedProducts,
+                setHomeFeaturedProducts,
+                homeLoadingFeatured,
+                setHomeLoadingFeatured,
+                isInitialHomeDataReady,
+                homeInitialFetchRef,
+                activeTab,
+                setActiveTab,
+                previousTab,
+                setPreviousTab,
+                selectedRoomId,
+                setSelectedRoomId,
+                selectedCategoryId,
+                setSelectedCategoryId,
+                selectedBrandId,
+                setSelectedBrandId,
+                selectedBrand,
+                setSelectedBrand,
+                shopSourceIsCart,
+                setShopSourceIsCart,
+                shopSourceIsCheckout,
+                setShopSourceIsCheckout,
+                shopSourceProductId,
+                setShopSourceProductId,
+                searchQuery: null,
+                setSearchQuery: () => {},
+                searchVisible: false,
+                setSearchVisible: () => {},
+                selectedProductId: null,
+                setSelectedProductId,
+                previousSearchQuery: null,
+                setPreviousSearchQuery,
+                searchSourceProductId: null,
+                setSearchSourceProductId,
+                showPVEarnerFromTab,
+                setShowPVEarnerFromTab,
+                profileDetailsFromTab: false,
+                setProfileDetailsFromTab: () => {},
+                currentProfile: null,
+                setCurrentProfile: () => {},
+                referralNetworkFromTab: false,
+                setReferralNetworkFromTab: () => {},
+                closeReferralNetwork,
+                setCloseReferralNetwork: () => {},
+                referralTree: null,
+                setReferralTree: () => {},
+                purchasesStatus: purchasesStatus,
+                setPurchasesStatus,
+                purchasesInitialOrderId: purchasesInitialOrderId,
+                setPurchasesInitialOrderId,
+                linkedAccountsRefreshTrigger,
+                setLinkedAccountsRefreshTrigger: () => {},
+                showShopProductDetail,
+                setShowShopProductDetail,
+                shopSelectedProductId,
+                setShopSelectedProductId,
+                onProductPress: (id: number) => {
                   setPreviousSearchQuery(null);
-                  setPreviousTab(activeTabRef.current);
+                  setPreviousTab(activeTab);
                   setSelectedProductId(id);
-                }}
-                onCartUpdate={async () => {
-                  const headers = { Authorization: `Bearer ${token}` };
-                  try {
-                    const cartRes = await axios.get(`${API_CONFIG.BASE_URL}/cart`, { headers });
-                    setCartCount(extractCount(cartRes.data));
-                  } catch (error) {
-                    console.error('Failed to update cart count:', error);
-                  }
-                }}
-                onNavigateToCart={() => setShowCart(true)}
-              />
-            </>
-          ) : activeTab === 'profile' ? (
-            <ProfileScreen
-              user={enrichedUser}
-              token={token}
-              onLogout={onLogout}
-              onNavigateSettings={() => navigateTo('settings')}
-              onCartPress={() => setShowCart(true)}
-              cartCount={cartCount}
-              isDarkMode={isDarkMode}
-              onShowProfileDetails={(show) => setProfileDetailsFromTab(show)}
-              onShowReferralNetwork={(show, tree) => {
-                setReferralNetworkFromTab(show);
-                if (tree) setReferralTree(tree);
-                setCloseReferralNetwork(false);
-              }}
-              closeReferralNetwork={closeReferralNetwork}
-              onPurchaseItemClick={(status) => {
-                setPurchasesStatus(normalizePurchaseStatus(status));
-                setShowPurchases(true);
-              }}
-              linkedAccountsRefreshTrigger={linkedAccountsRefreshTrigger}
-              onSecuritySettingsPress={() => setShowSecurity(true)}
-              onShowAFWalletOverview={() => setShowAFWalletOverview(true)}
-              onShowAFWalletVoucher={() => setShowAFWalletVoucher(true)}
-              onShowAFWalletRewards={() => setShowAFWalletRewards(true)}
-              onShowAFWalletNetwork={() => setShowAFWalletNetwork(true)}
-              onShowPVEarner={(show) => setShowPVEarnerFromTab(show)}
-              showPVEarnerFromTab={showPVEarnerFromTab}
-              wishlistItems={wishlistItems}
-              onWishlistChange={invalidateWishlist}
-              onProductPress={(id) => {
-                setPreviousTab('profile');
-                setPreviousSearchQuery(null);
-                setSelectedProductId(id);
-              }}
-              onShopNavigate={() => {
-                setPreviousTab('profile');
-                setActiveTab('shop');
-              }}
-            />
-          ) : activeTab === 'shop' ? (
-            selectedBrandId != null && selectedBrand ? (
-              <ShopByBrandScreen
-                key={selectedBrandId}
-                token={token}
-                user={enrichedUser}
-                cartCount={cartCount}
-                brandId={selectedBrandId}
-                brand={selectedBrand}
-                categories={homeCategories}
-                onBack={() => {
-                  setSelectedBrandId(null);
-                  setSelectedBrand(null);
-                  // If we came from checkout, go back to checkout
-                  if (shopSourceIsCheckout) {
-                    setShowCheckout(true);
-                    setShopSourceIsCheckout(false);
-                  } else if (shopSourceIsCart) {
-                    // If we came from cart, go back to cart
-                    setShowCart(true);
-                    setShopSourceIsCart(false);
-                  } else if (shopSourceProductId !== null) {
-                    // If we came from ProductDetailScreen, restore it
-                    setSelectedProductId(shopSourceProductId);
-                    setShopSourceProductId(null);
-                  } else {
-                    // Otherwise go back to the previous tab
-                    setActiveTab(previousTab);
-                    activeTabRef.current = previousTab;
-                  }
-                }}
-                onProductPress={(id) => {
-                  setShopSelectedProductId(id);
-                  setShowShopProductDetail(true);
-                }}
-                onCartPress={() => setShowCart(true)}
-                wishlistItems={wishlistItems}
-                isDarkMode={isDarkMode}
-                onWishlistChange={() => invalidateWishlist()}
-              />
-            ) : (
-              <ShopScreen
-                token={token}
-                user={enrichedUser}
-                cartCount={cartCount}
-                roomId={selectedRoomId}
-                categoryId={selectedCategoryId}
-                brandId={selectedBrandId}
-                categories={homeCategories}
-                brands={homeBrands}
-                onBack={() => {
-                  setSelectedRoomId(null);
-                  setSelectedCategoryId(null);
-                  setSelectedBrandId(null);
-                  navigateTo(previousTab);
-                }}
-                onProductPress={(id) => {
-                  setShopSelectedProductId(id);
-                  setShowShopProductDetail(true);
-                }}
-                onCartPress={() => setShowCart(true)}
-                onOpenSearch={() => {
+                },
+                onCartPress: () => setShowCart(true),
+                onSearchPress: () => {
                   setSearchSourceProductId(null);
-                  setPreviousTab(activeTabRef.current);
+                  setPreviousTab(activeTab);
                   setSearchVisible(true);
-                }}
-                wishlistItems={wishlistItems}
-                isDarkMode={isDarkMode}
-                onWishlistChange={() => invalidateWishlist()}
-              />
-            )
-          ) : activeTab === 'home' ? (
-            !isInitialHomeDataReady ? (
-              <LoadingScreen />
-            ) : (
-            <>
-              <AppHeader
-                user={enrichedUser}
-                cartCount={cartCount}
-                isDarkMode={isDarkMode}
-                onCartPress={() => setShowCart(true)}
-                onCameraPress={() => {
-                  // TODO: Implement camera functionality
-                  console.log('Camera pressed');
-                }}
-                onSearchPress={() => {
-                  setSearchSourceProductId(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSearchVisible(true);
-                }}
-                onProfilePress={() => setShowProfileDetails(true)}
-                onLogout={onLogout}
-              />
-              <HomeScreen
-                token={token}
-                user={enrichedUser}
-                isDarkMode={isDarkMode}
-                onProductPress={(id: number) => {
-                  setPreviousSearchQuery(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSelectedProductId(id);
-                }}
-                categories={homeCategories}
-                setCategories={setHomeCategories}
-                brands={homeBrands}
-                setBrands={setHomeBrands}
-                featuredProducts={homeFeaturedProducts}
-                setFeaturedProducts={setHomeFeaturedProducts}
-                roomTypes={homeRoomTypes}
-                setRoomTypes={setHomeRoomTypes}
-                loadingFeatured={homeLoadingFeatured}
-                setLoadingFeatured={setHomeLoadingFeatured}
-                dataFetchedRef={homeInitialFetchRef}
-                wishlistItems={wishlistItems}
-                onWishlistChange={() => invalidateWishlist()}
-                onShopByRoomPress={(roomId: number) => {
-                  setPreviousTab(activeTabRef.current);
+                },
+                onShopByRoomPress: (roomId: number) => {
+                  setPreviousTab(activeTab);
                   setSelectedRoomId(roomId);
                   setSelectedCategoryId(null);
-                  activeTabRef.current = 'shop';
                   setActiveTab('shop');
-                }}
-                onShopByCategoryPress={(categoryId: number) => {
-                  setPreviousTab(activeTabRef.current);
+                },
+                onShopByCategoryPress: (categoryId: number) => {
+                  setPreviousTab(activeTab);
                   setSelectedCategoryId(categoryId);
                   setSelectedRoomId(null);
-                  activeTabRef.current = 'shop';
                   setActiveTab('shop');
-                }}
-                onShopByBrandPress={(brandId: number) => {
+                },
+                onShopByBrandPress: (brandId: number) => {
                   const brand = homeBrands.find(b => b.id === brandId);
-                  setPreviousTab(activeTabRef.current);
+                  setPreviousTab(activeTab);
                   setSelectedBrandId(brandId);
                   setSelectedBrand(brand || null);
                   setSelectedRoomId(null);
                   setSelectedCategoryId(null);
-                  activeTabRef.current = 'shop';
                   setActiveTab('shop');
-                }}
-                onCartPress={() => setShowCart(true)}
-                onReferralPress={handleOpenAffiliateReferralModal}
-              />
-            </>
-            )
-          ) : (
-            <>
-              <AppHeader
-                user={enrichedUser}
-                cartCount={cartCount}
-                isDarkMode={isDarkMode}
-                onCartPress={() => setShowCart(true)}
-                onCameraPress={() => {
-                  // TODO: Implement camera functionality
-                  console.log('Camera pressed');
-                }}
-                onSearchPress={() => {
-                  setSearchSourceProductId(null);
-                  setPreviousTab(activeTabRef.current);
-                  setSearchVisible(true);
-                }}
-                onProfilePress={() => setShowProfileDetails(true)}
-                onLogout={onLogout}
-              />
-              <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-                <Text style={styles.h1}>{labelMap[activeTab]}</Text>
-                <Text style={styles.bodyText}>This is the {labelMap[activeTab].toLowerCase()} page.</Text>
-              </Animated.View>
-            </>
+                },
+                onShopNavigate: () => {
+                  setPreviousTab('profile');
+                  setActiveTab('shop');
+                },
+                onShowProfileDetails: (show: boolean) => setShowProfileDetails(show),
+                onShowReferralNetwork: (show: boolean) => setReferralNetworkFromTab(show),
+                onPurchaseItemClick: () => setShowPurchases(true),
+                onSecuritySettingsPress: () => setShowSecurity(true),
+                onShowAFWalletOverview: () => setShowAFWalletOverview(true),
+                onShowAFWalletVoucher: () => setShowAFWalletVoucher(true),
+                onShowAFWalletRewards: () => setShowAFWalletRewards(true),
+                onShowAFWalletNetwork: () => setShowAFWalletNetwork(true),
+                handleOpenAffiliateReferralModal,
+                onLogout,
+                chatbotHidden,
+                setChatbotHidden,
+              }}
+            >
+              <TabNavigator hideTabBar={selectedProductId !== null || searchQuery !== null} />
+            </AppContextProvider>
           )}
         </View>
 
-        {!searchQuery && activeTab !== 'settings' && selectedProductId === null && !profileDetailsFromTab && !showSecurity && !referralNetworkFromTab && !showPVEarnerFromTab && !(activeTab === 'shop' && selectedBrandId !== null && selectedBrand !== null) && (activeTab !== 'home' || isInitialHomeDataReady) && !showShopProductDetail && (
-          <SafeAreaView edges={['bottom']} style={[styles.navBarContainer, isDarkMode && styles.navBarContainerDark]}>
-            <View style={[styles.navBar, isDarkMode && styles.navBarDark]}>
-              {TABS.map(key => {
-              const active = activeTab === key;
 
-            if (key === 'home') {
-              const count = badgeCount[key] ?? 0;
-              return (
-                <Pressable
-                  key={key}
-                  style={styles.navItem}
-                  onPress={() => navigateTo(key)}
-                >
-                  <View style={styles.indicator}>
-                    {active && <View style={styles.indicatorLine} />}
-                  </View>
-                  <View style={styles.iconWrap}>
-                    <Ionicons
-                      name={active ? iconActive[key] : iconInactive[key]}
-                      size={24}
-                      color={active ? (isDarkMode ? '#38bdf8' : Colors.sky) : (isDarkMode ? '#d1d5db' : Colors.textSecondary)}
-                    />
-                    {count > 0 && (
-                      <View style={[styles.badge, isDarkMode && styles.badgeDark]}>
-                        <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[
-                    styles.navLabel,
-                    active && styles.navLabelActive,
-                    isDarkMode && styles.navLabelDark,
-                    isDarkMode && active && styles.navLabelActiveDark,
-                  ]}>
-                    {labelMap[key]}
-                  </Text>
-                </Pressable>
-              );
-            }
-
-            if (key === 'shop') {
-              return (
-                <Pressable key={key} style={styles.shopItem} onPress={() => {
-                  setSelectedRoomId(null);
-                  setSelectedCategoryId(null);
-                  setSelectedBrandId(null);
-                  setSelectedBrand(null);
-                  navigateTo(key);
-                }}>
-                  <View style={styles.shopSlot}>
-                    <View style={[styles.shopDiamond, active && styles.shopDiamondActive]}>
-                      <View style={styles.shopDiamondInner}>
-                        <Image
-                          source={require('../../assets/home_logo.png')}
-                          style={[
-                            styles.shopLogoImage,
-                            {
-                              opacity: 1,
-                              tintColor: Colors.white,
-                            }
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            }
-
-            if (key === 'profile') {
-              const photoUrl = user?.avatar_url ?? null;
-              const initial = user?.name ? user.name.charAt(0).toUpperCase() : null;
-              return (
-                <Pressable key={key} style={styles.navItem} onPress={() => navigateTo(key)}>
-                  <View style={styles.indicator}>
-                    {active && <View style={styles.indicatorLine} />}
-                  </View>
-                  <View style={[styles.avatar, active && styles.avatarActive]}>
-                    {photoUrl ? (
-                      <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
-                    ) : initial ? (
-                      <Text style={[styles.avatarInitial, active && styles.avatarInitialActive]}>
-                        {initial}
-                      </Text>
-                    ) : (
-                      <Ionicons name="person" size={14} color={active ? Colors.sky : Colors.textSecondary} />
-                    )}
-                  </View>
-                  <Text style={[
-                    styles.navLabel,
-                    active && styles.navLabelActive,
-                    isDarkMode && styles.navLabelDark,
-                    isDarkMode && active && styles.navLabelActiveDark,
-                  ]}>
-                    {labelMap[key]}
-                  </Text>
-                </Pressable>
-              );
-            }
-
-            const count = badgeCount[key] ?? 0;
-            return (
-              <Pressable
-                key={key}
-                style={styles.navItem}
-                onPress={() => navigateTo(key)}
-                onLongPress={() => key === 'notification' && deviceToken && setShowTokenModal(true)}
-              >
-                <View style={styles.indicator}>
-                  {active && <View style={styles.indicatorLine} />}
-                </View>
-                <View style={styles.iconWrap}>
-                  <Ionicons
-                    name={active ? iconActive[key] : iconInactive[key]}
-                    size={24}
-                    color={active ? (isDarkMode ? '#38bdf8' : Colors.sky) : (isDarkMode ? '#d1d5db' : Colors.textSecondary)}
-                  />
-                  {count > 0 && (
-                    <View style={[styles.badge, isDarkMode && styles.badgeDark]}>
-                      <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[
-                  styles.navLabel,
-                  active && styles.navLabelActive,
-                  isDarkMode && styles.navLabelDark,
-                  isDarkMode && active && styles.navLabelActiveDark,
-                ]}>
-                  {labelMap[key]}
-                </Text>
-              </Pressable>
-            );
-          })}
-            </View>
-          </SafeAreaView>
-        )}
-
-        <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
-          <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
-            <View style={styles.menuPanel}>
-              <Text style={styles.menuTitle}>Menu</Text>
-              {TABS.map(item => (
-                <TouchableOpacity
-                  key={item}
-                  style={styles.menuItem}
-                  onPress={() => {
-                    navigateTo(item);
-                    setMenuVisible(false);
-                  }}
-                >
-                  <Text style={styles.menuText}>{labelMap[item]}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Modal>
 
         <Modal visible={showTokenModal} transparent animationType="fade" onRequestClose={() => setShowTokenModal(false)}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTokenModal(false)}>
@@ -1573,7 +1161,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
           onBack={() => {
             setSearchVisible(false);
             setActiveTab(previousTab);
-            activeTabRef.current = previousTab;
+            activeTab = previousTab;
           }}
           onSearchSubmit={(query) => {
             setSearchQuery(query);
@@ -1601,7 +1189,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
               setShowShopProductDetail(false);
               setShopSelectedProductId(null);
               setSearchSourceProductId(null);
-              setPreviousTab(activeTabRef.current);
+              setPreviousTab(activeTab);
               setSearchVisible(true);
             }}
             onCartUpdate={async () => {
@@ -1664,12 +1252,12 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
             onBack={() => setShowCart(false)}
             onProfilePress={() => {
               setShowCart(false);
-              navigateTo('profile');
+              setActiveTab('profile');
             }}
             onProductPress={(productId) => {
               setShowCart(false);
               setPreviousSearchQuery(null);
-              setPreviousTab(activeTabRef.current);
+              setPreviousTab(activeTab);
               setSelectedProductId(productId);
             }}
             onShopNavigate={(brandId, shopName) => {
@@ -1680,12 +1268,12 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 id: brandId,
                 name: shopName,
               };
-              setPreviousTab(activeTabRef.current);
+              setPreviousTab(activeTab);
               setSelectedBrandId(brandId);
               setSelectedBrand(brand);
               setSelectedRoomId(null);
               setSelectedCategoryId(null);
-              activeTabRef.current = 'shop';
+              activeTab = 'shop';
               setActiveTab('shop');
             }}
             onCheckout={(selectedItems) => {
@@ -1737,12 +1325,12 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 id: brandId,
                 name: shopName,
               };
-              setPreviousTab(activeTabRef.current);
+              setPreviousTab(activeTab);
               setSelectedBrandId(brandId);
               setSelectedBrand(brand);
               setSelectedRoomId(null);
               setSelectedCategoryId(null);
-              activeTabRef.current = 'shop';
+              activeTab = 'shop';
               setActiveTab('shop');
             }}
             onNavigateToOrderSuccess={(orderData) => {
@@ -2169,7 +1757,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
             }}
             onProductPress={(productId) => {
               setShowPurchases(false);
-              setPreviousTab(activeTabRef.current);
+              setPreviousTab(activeTab);
               setSelectedProductId(productId);
             }}
             onProceedToPayment={(checkoutUrl) => {
