@@ -218,20 +218,16 @@ function ItemCard({
 
         {/* Top-right: Heart icon for wishlist */}
         <TouchableOpacity
-          style={[styles.wishlistButton, isTogglingWishlist && { opacity: 0.8 }]}
+          style={styles.wishlistButton}
           onPress={handleWishlistToggle}
           disabled={isTogglingWishlist}
           activeOpacity={0.7}
         >
-          {isTogglingWishlist ? (
-            <ActivityIndicator size={16} color="#ef4444" />
-          ) : (
-            <Ionicons
-              name={wishlisted ? "heart" : "heart-outline"}
-              size={18}
-              color={wishlisted ? "#ef4444" : Colors.white}
-            />
-          )}
+          <Ionicons
+            name={wishlisted ? "heart" : "heart-outline"}
+            size={18}
+            color={wishlisted ? "#ef4444" : Colors.white}
+          />
         </TouchableOpacity>
 
         {/* Bottom-left: Product badges (Must Have, Bestseller, On Sale) */}
