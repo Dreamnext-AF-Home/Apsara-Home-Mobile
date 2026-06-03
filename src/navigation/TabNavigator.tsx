@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
@@ -18,6 +19,7 @@ const Tab = createBottomTabNavigator();
 
 // Home Tab Screen Wrapper
 function HomeTabScreen() {
+  const navigation = useNavigation();
   const {
     token,
     enrichedUser,
@@ -45,6 +47,12 @@ function HomeTabScreen() {
     onLogout,
     onSearchPress,
     handleOpenAffiliateReferralModal,
+    setSelectedRoomId,
+    setSelectedCategoryId,
+    setSelectedBrandId,
+    setSelectedBrand,
+    setPreviousTab,
+    activeTab,
   } = useAppContext();
 
   if (!isInitialHomeDataReady) return <LoadingScreen />;
@@ -83,9 +91,27 @@ function HomeTabScreen() {
         dataFetchedRef={homeInitialFetchRef}
         wishlistItems={wishlistItems}
         onWishlistChange={onWishlistChange}
-        onShopByRoomPress={onShopByRoomPress}
-        onShopByCategoryPress={onShopByCategoryPress}
-        onShopByBrandPress={onShopByBrandPress}
+        onShopByRoomPress={(roomId: number) => {
+          setPreviousTab(activeTab);
+          setSelectedRoomId(roomId);
+          setSelectedCategoryId(null as any);
+          navigation.navigate('shop' as any);
+        }}
+        onShopByCategoryPress={(categoryId: number) => {
+          setPreviousTab(activeTab);
+          setSelectedCategoryId(categoryId);
+          setSelectedRoomId(null as any);
+          navigation.navigate('shop' as any);
+        }}
+        onShopByBrandPress={(brandId: number) => {
+          const brand = homeBrands.find(b => b.id === brandId);
+          setPreviousTab(activeTab);
+          setSelectedBrandId(brandId);
+          setSelectedBrand(brand || null);
+          setSelectedRoomId(null as any);
+          setSelectedCategoryId(null as any);
+          navigation.navigate('shop' as any);
+        }}
         onCartPress={onCartPress}
         onReferralPress={handleOpenAffiliateReferralModal}
       />
@@ -141,7 +167,7 @@ function ShopTabScreen() {
           user={enrichedUser}
           cartCount={cartCount}
           brandId={selectedBrandId}
-          brand={selectedBrand}
+          brand={selectedBrand as any}
           categories={homeCategories}
           onBack={() => {
             setSelectedBrandId(null);
@@ -190,7 +216,7 @@ function ShopTabScreen() {
 
 // Notification Tab Screen Wrapper
 function NotificationTabScreen() {
-  const { token, enrichedUser, isDarkMode, cartCount, onCartPress, onLogout, onSearchPress, purchasesStatus, setPurchasesStatus, setPurchasesInitialOrderId, setShowPurchases } = useAppContext();
+  const { token, enrichedUser, isDarkMode, cartCount, onCartPress, onLogout, onSearchPress, purchasesStatus, setPurchasesStatus, setPurchasesInitialOrderId } = useAppContext();
 
   return (
     <>
@@ -216,7 +242,6 @@ function NotificationTabScreen() {
           else if (['pending', 'paid', 'processing', 'shipped', 'to_receive', 'delivered', 'cancelled', 'return'].includes(s)) normalized = s;
           setPurchasesStatus(normalized);
           setPurchasesInitialOrderId(orderId);
-          setShowPurchases(true);
         }}
       />
     </>
@@ -357,7 +382,6 @@ export default function TabNavigator({ hideTabBar = false }: { hideTabBar?: bool
       screenOptions={{
         headerShown: false,
         lazy: false, // Pre-mount all screens immediately = instant switching
-        unmountOnBlur: false, // Keep screens mounted when not focused
         tabBarHideOnKeyboard: true,
       }}
       tabBar={(props) => <CustomTabBar {...props} hideTabBar={hideTabBar} />}
