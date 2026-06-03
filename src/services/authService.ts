@@ -43,7 +43,6 @@ export interface CategoryItem {
   description?: string;
   url?: string;
   image?: string | null;
-  images?: string[];
   order?: number;
   product_count?: number;
 }
@@ -471,25 +470,6 @@ export const authService = {
     }
   },
 
-  async getCategories(token: string): Promise<CategoryItem[]> {
-    try {
-      const response = await api.get('/categories', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = response.data;
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.categories)) return data.categories;
-      if (Array.isArray(data?.data)) return data.data;
-      return [];
-    } catch (error: any) {
-      throw {
-        message: error.response?.data?.message || 'Failed to load categories',
-        details: error.response?.data,
-        status: error.response?.status,
-      } as AuthError;
-    }
-  },
-
   async getBrands(token: string): Promise<BrandItem[]> {
     try {
       const response = await api.get('/product-brands', {
@@ -503,25 +483,6 @@ export const authService = {
     } catch (error: any) {
       throw {
         message: error.response?.data?.message || 'Failed to load brands',
-        details: error.response?.data,
-        status: error.response?.status,
-      } as AuthError;
-    }
-  },
-
-  async getBrandsWithProducts(token: string, maxImages: number = 6): Promise<BrandItem[]> {
-    try {
-      const response = await api.get(`/product-brands/with-products?max_images=${maxImages}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = response.data;
-      if (Array.isArray(data?.brands)) return data.brands;
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.data)) return data.data;
-      return [];
-    } catch (error: any) {
-      throw {
-        message: error.response?.data?.message || 'Failed to load brands with products',
         details: error.response?.data,
         status: error.response?.status,
       } as AuthError;
@@ -561,7 +522,7 @@ export const authService = {
   async getShopByCategories(token?: string): Promise<CategoryItem[]> {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await api.get('/shop/categories', { headers });
+      const response = await api.get('/home/shop/categories', { headers });
       const data = response.data;
       if (Array.isArray(data?.categories)) return data.categories;
       return [];
@@ -574,19 +535,4 @@ export const authService = {
     }
   },
 
-  async getShopByBrands(token?: string): Promise<BrandItem[]> {
-    try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await api.get('/shop/brands', { headers });
-      const data = response.data;
-      if (Array.isArray(data?.brands)) return data.brands;
-      return [];
-    } catch (error: any) {
-      throw {
-        message: error.response?.data?.message || 'Failed to load shop brands',
-        details: error.response?.data,
-        status: error.response?.status,
-      } as AuthError;
-    }
-  },
 };
