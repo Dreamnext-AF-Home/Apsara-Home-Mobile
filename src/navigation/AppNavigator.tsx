@@ -275,6 +275,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
   const [showReturns, setShowReturns] = useState(false);
   const [paymentSourceScreen, setPaymentSourceScreen] = useState<'checkout' | 'purchases'>('checkout');
   const [showAffiliateReferralModal, setShowAffiliateReferralModal] = useState(false);
+  const [affiliateLoading, setAffiliateLoading] = useState(false);
   const [showShippingAddressScreen, setShowShippingAddressScreen] = useState(false);
   const [shippingAddressScreenData, setShippingAddressScreenData] = useState<any>(null);
   const [shopSourceIsCart, setShopSourceIsCart] = useState(false);
@@ -776,8 +777,12 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
       return;
     }
 
+    // Show modal immediately, fetch data in background
+    setShowAffiliateReferralModal(true);
+
     if (!referralTree) {
       try {
+        setAffiliateLoading(true);
         const { referralService } = require('../services/referralService');
         const data = await referralService.getReferralTree(token);
         setReferralTree(data);
@@ -788,11 +793,10 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
           text1: 'Error',
           text2: error.message || 'Failed to load affiliate referral screen',
         });
-        return;
+      } finally {
+        setAffiliateLoading(false);
       }
     }
-
-    setShowAffiliateReferralModal(true);
   };
 
   useEffect(() => {
@@ -1603,6 +1607,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
         username={enrichedUser?.username}
         referralTree={referralTree}
         isDarkMode={isDarkMode}
+        loading={affiliateLoading}
         onViewNetwork={() => {
           setShowAffiliateReferralModal(false);
           setReferralNetworkFromTab(true);
