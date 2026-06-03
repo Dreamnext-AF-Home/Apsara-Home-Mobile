@@ -682,30 +682,49 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
 
   }, [token, refreshNotificationCount]);
 
-  const fetchHomeData = async () => {
+  const fetchHomeData = async (forceRefresh = false) => {
     if (!token) return;
 
     try {
-      setHomeLoadingFeatured(true);
       const totalStart = performance.now();
-      console.log('🔄 FETCHING INITIAL DATA (FAST)...');
+
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('🔄 [APP-NAVIGATOR] FETCH HOME DATA CALLED');
+      console.log('═══════════════════════════════════════════════════════════');
+
+      // CHECK CACHE FIRST - skip fetch if recent cache exists
+      if (!forceRefresh && homeCategories.length > 0 && homeBrands.length > 0) {
+        console.log('✅ [APP-NAVIGATOR] CACHE HIT - Using cached data');
+        console.log('   Cached: Categories=%d, Brands=%d, Rooms=%d, Products=%d',
+          homeCategories.length, homeBrands.length, homeRoomTypes.length, homeFeaturedProducts.length);
+        console.log('═══════════════════════════════════════════════════════════');
+        setIsInitialHomeDataReady(true);
+        return;
+      }
+
+      console.log('❌ [APP-NAVIGATOR] CACHE MISS - Fetching fresh data from API');
+
+      setHomeLoadingFeatured(true);
 
       // STEP 1: Fetch only categories first (fast, ~200ms)
+      console.log('⏱️  STEP 1: Fetching categories...');
       const categoryStart = performance.now();
       const categoryData = await authService.getCategories(token);
       const sortedCategories = categoryData.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
-      console.log(`⚡ CATEGORIES FETCHED: ${Math.round(performance.now() - categoryStart)}ms`);
+      const categoryTime = performance.now() - categoryStart;
+      console.log(`✅ Categories fetched: ${Math.round(categoryTime)}ms (${sortedCategories.length} items)`);
 
       // Update state immediately with categories
       setHomeCategories(sortedCategories);
       await cacheUtils.set('home_categories', sortedCategories);
 
       // Ready to show home screen with at least categories
-      console.log(`✅ HOME READY FOR DISPLAY: ${Math.round(performance.now() - totalStart)}ms`);
+      const readyTime = performance.now() - totalStart;
+      console.log(`🎉 HOME SCREEN READY FOR DISPLAY: ${Math.round(readyTime)}ms`);
       setIsInitialHomeDataReady(true);
 
       // STEP 2: Lazy load brands, rooms, and featured products in background
-      console.log('🔄 LAZY LOADING OTHER DATA...');
+      console.log('⏱️  STEP 2: Lazy loading brands, rooms, products...');
       const lazyStart = performance.now();
       const [brandData, roomData, productData] = await Promise.all([
         authService.getBrandsWithProducts(token, 50),
@@ -714,7 +733,8 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
         }).then(res => res.data?.data || []).catch(() => []),
         productService.getProductCards(token).catch(() => []),
       ]);
-      console.log(`📡 LAZY LOAD COMPLETE: ${Math.round(performance.now() - lazyStart)}ms`);
+      const lazyTime = performance.now() - lazyStart;
+      console.log(`✅ Lazy load complete: ${Math.round(lazyTime)}ms`);
 
       // Filter for affordahome brand products
       const affordahomeProducts = Array.isArray(productData)
@@ -735,7 +755,21 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
         cacheUtils.set('home_featured_products', affordahomeProducts.slice(0, 10)),
       ]);
 
-      console.log(`⏱️ ALL DATA READY: ${Math.round(performance.now() - totalStart)}ms`);
+      const totalTime = performance.now() - totalStart;
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('✅ [APP-NAVIGATOR] COMPLETE LOAD SUMMARY');
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('Step 1 (Categories):        %dms', Math.round(categoryTime));
+      console.log('Display Ready:              %dms', Math.round(readyTime));
+      console.log('Step 2 (Lazy Load):         %dms', Math.round(lazyTime));
+      console.log('Total:                      %dms', Math.round(totalTime));
+      console.log('Data Loaded:', {
+        categories: sortedCategories.length,
+        brands: (brandData || []).length,
+        rooms: (roomData || []).length,
+        products: affordahomeProducts.length,
+      });
+      console.log('═══════════════════════════════════════════════════════════');
     } catch (error: any) {
       console.error('❌ Home data fetch error:', error?.message);
       setIsInitialHomeDataReady(true);
