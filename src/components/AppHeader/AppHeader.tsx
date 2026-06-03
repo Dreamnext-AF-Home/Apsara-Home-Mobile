@@ -312,7 +312,12 @@ export default function AppHeader({
           >
             <Ionicons name="search-outline" size={16} color={Colors.white} style={styles.searchIconLeft} />
             <Text style={[styles.searchPlaceholder, { color: Colors.white }]} numberOfLines={1}>{dynamicPlaceholder}</Text>
-            <Ionicons name="camera-outline" size={16} color={Colors.white} style={styles.cameraIconInside} />
+            <TouchableOpacity
+              onPress={onCameraPress}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="mic-outline" size={16} color={Colors.white} style={styles.cameraIconInside} />
+            </TouchableOpacity>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -591,10 +596,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   cameraIconInside: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    transform: [{ translateY: -8 }],
+    marginLeft: 8,
   },
   searchPlaceholder: {
     flex: 1,
