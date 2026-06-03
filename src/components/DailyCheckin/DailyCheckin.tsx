@@ -432,9 +432,4 @@ const styles = StyleSheet.create({
     color: Colors.white,
     textAlign: 'center',
   },
-  confettiPiece: {
-    position: 'absolute',
-    fontSize: 28,
-    left: '50%',
-  },
 });
