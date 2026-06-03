@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { createBottomTabNavigator, useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Pressable } from 'react-native';
@@ -55,6 +55,36 @@ function HomeTabScreen() {
     activeTab,
   } = useAppContext();
 
+  const handleShopByRoom = useCallback((roomId: number) => {
+    navigation.navigate('shop' as any);
+    setImmediate(() => {
+      setPreviousTab(activeTab);
+      setSelectedRoomId(roomId);
+      setSelectedCategoryId(null as any);
+    });
+  }, [navigation, activeTab]);
+
+  const handleShopByCategory = useCallback((categoryId: number) => {
+    navigation.navigate('shop' as any);
+    setImmediate(() => {
+      setPreviousTab(activeTab);
+      setSelectedCategoryId(categoryId);
+      setSelectedRoomId(null as any);
+    });
+  }, [navigation, activeTab]);
+
+  const handleShopByBrand = useCallback((brandId: number) => {
+    const brand = homeBrands.find(b => b.id === brandId);
+    navigation.navigate('shop' as any);
+    setImmediate(() => {
+      setPreviousTab(activeTab);
+      setSelectedBrandId(brandId);
+      setSelectedBrand(brand || null);
+      setSelectedRoomId(null as any);
+      setSelectedCategoryId(null as any);
+    });
+  }, [navigation, activeTab, homeBrands]);
+
   if (!isInitialHomeDataReady) return <LoadingScreen />;
 
   return (
@@ -91,27 +121,9 @@ function HomeTabScreen() {
         dataFetchedRef={homeInitialFetchRef}
         wishlistItems={wishlistItems}
         onWishlistChange={onWishlistChange}
-        onShopByRoomPress={(roomId: number) => {
-          setPreviousTab(activeTab);
-          setSelectedRoomId(roomId);
-          setSelectedCategoryId(null as any);
-          navigation.navigate('shop' as any);
-        }}
-        onShopByCategoryPress={(categoryId: number) => {
-          setPreviousTab(activeTab);
-          setSelectedCategoryId(categoryId);
-          setSelectedRoomId(null as any);
-          navigation.navigate('shop' as any);
-        }}
-        onShopByBrandPress={(brandId: number) => {
-          const brand = homeBrands.find(b => b.id === brandId);
-          setPreviousTab(activeTab);
-          setSelectedBrandId(brandId);
-          setSelectedBrand(brand || null);
-          setSelectedRoomId(null as any);
-          setSelectedCategoryId(null as any);
-          navigation.navigate('shop' as any);
-        }}
+        onShopByRoomPress={handleShopByRoom}
+        onShopByCategoryPress={handleShopByCategory}
+        onShopByBrandPress={handleShopByBrand}
         onCartPress={onCartPress}
         onReferralPress={handleOpenAffiliateReferralModal}
       />
