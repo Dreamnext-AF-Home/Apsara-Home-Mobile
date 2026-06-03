@@ -235,15 +235,15 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
           </TouchableOpacity>
 
           <View style={[styles.searchWrapper, isDarkMode && styles.searchWrapperDark]}>
-            <Ionicons name="search-outline" size={16} color={colors.textSecondary} style={styles.searchIcon} />
+            <Ionicons name="search-outline" size={16} color={Colors.white} style={styles.searchIcon} />
             <TextInput
               ref={inputRef}
-              style={[styles.searchInput, isDarkMode && styles.searchInputDark]}
+              style={[styles.searchInput, isDarkMode && styles.searchInputDark, { color: Colors.white }]}
               value={query}
               onChangeText={setQuery}
               onSubmitEditing={() => submitSearch(query)}
               placeholder="Search products..."
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={Colors.white}
               returnKeyType="search"
             />
             {hasQuery ? (
@@ -252,7 +252,7 @@ export default function SearchScreen({ onBack, token, onProductPress, onSearchSu
               </TouchableOpacity>
             ) : (
               <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-                <Ionicons name="camera-outline" size={18} color={colors.textSecondary} />
+                <Ionicons name="camera-outline" size={18} color={Colors.white} />
               </TouchableOpacity>
             )}
           </View>
@@ -452,9 +452,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Colors.white,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 40,
@@ -473,7 +472,6 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 14,
-    color: Colors.sky,
     fontWeight: '600',
   },
   scroll: {
