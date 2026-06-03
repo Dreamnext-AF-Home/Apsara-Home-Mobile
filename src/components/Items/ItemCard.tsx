@@ -61,6 +61,11 @@ function ItemCard({
   const [showMenu, setShowMenu] = useState(false);
   const menuScaleAnim = useRef(new Animated.Value(0)).current;
 
+  // Sync incoming isWishlisted prop to local state
+  useEffect(() => {
+    setWishlisted(isWishlisted);
+  }, [isWishlisted]);
+
   useEffect(() => {
     if (showMenu) {
       Animated.spring(menuScaleAnim, {
