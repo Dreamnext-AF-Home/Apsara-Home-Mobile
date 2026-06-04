@@ -295,11 +295,15 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
       const response = await axios.get(`${API_CONFIG.BASE_URL}/cart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const cartItems = getOrderedCartItems(response.data.cart_items || []);
-      setCartItems(cartItems);
+      const nextCartItems = getOrderedCartItems(response.data.cart_items || []);
+      setCartItems(nextCartItems);
+      setSelectedItems(prevSelected => {
+        const nextIds = new Set(nextCartItems.map(item => item.crt_id));
+        return new Set([...prevSelected].filter(id => nextIds.has(id)));
+      });
 
       // Fetch variant images for items that have variant_id but missing variant_image
-      await fetchVariantImagesForCart(cartItems);
+      await fetchVariantImagesForCart(nextCartItems);
     } catch (error: any) {
       console.error('Error fetching cart:', error);
       Toast.show({
@@ -313,9 +317,13 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
   };
 
   const onRefresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
-    await fetchCart();
-    setRefreshing(false);
+    try {
+      await fetchCart();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSelectItem = (crtId: number) => {
