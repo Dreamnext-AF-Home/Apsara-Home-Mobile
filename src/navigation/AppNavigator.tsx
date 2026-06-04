@@ -245,6 +245,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
   const [previousSearchQuery, setPreviousSearchQuery] = useState<string | null>(null);
   const [searchSourceProductId, setSearchSourceProductId] = useState<number | null>(null);
   const [shopSourceProductId, setShopSourceProductId] = useState<number | null>(null);
+  const [productDetailSource, setProductDetailSource] = useState<'tab' | 'cart' | 'shop' | 'search'>('tab');
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
@@ -787,6 +788,10 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     }
   };
 
+  const refreshHomeData = useCallback(async () => {
+    await fetchHomeData(true);
+  }, [fetchHomeData]);
+
 
   const handleOpenAffiliateReferralModal = async () => {
     if (!token) {
@@ -876,6 +881,10 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     if (selectedProductId === null) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setSelectedProductId(null);
+      if (productDetailSource === 'cart') {
+        setShowCart(true);
+        return true;
+      }
       // If product was opened from search, restore search query
       if (previousSearchQuery) {
         setSearchQuery(previousSearchQuery);
@@ -887,7 +896,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
       return true;
     });
     return () => sub.remove();
-  }, [selectedProductId, previousTab, previousSearchQuery]);
+  }, [selectedProductId, previousTab, previousSearchQuery, productDetailSource]);
 
   useEffect(() => {
     if (!showShopProductDetail) return;
@@ -975,9 +984,15 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
               user={enrichedUser}
               cartCount={cartCount}
               wishlistItems={wishlistItems}
-              onBack={() => setSelectedProductId(null)}
+              onBack={() => {
+                setSelectedProductId(null);
+                if (productDetailSource === 'cart') {
+                  setShowCart(true);
+                }
+              }}
               onProductPress={(id) => {
                 setPreviousSearchQuery(null);
+                setProductDetailSource('tab');
                 setSelectedProductId(id);
               }}
               onSearch={() => {
@@ -1078,6 +1093,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 setHomeLoadingFeatured,
                 isInitialHomeDataReady,
                 homeInitialFetchRef,
+                refreshHomeData,
                 activeTab,
                 setActiveTab,
                 previousTab,
@@ -1317,6 +1333,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
               setShowCart(false);
               setPreviousSearchQuery(null);
               setPreviousTab(activeTab);
+              setProductDetailSource('cart');
               setSelectedProductId(productId);
             }}
             onShopNavigate={(brandId, shopName) => {
