@@ -54,8 +54,7 @@ interface ProfileScreenProps {
   cartCount?: number;
   token?: string | null;
   onShowProfileDetails?: (show: boolean) => void;
-  onShowReferralNetwork?: (show: boolean, tree?: ReferralTree | null) => void;
-  closeReferralNetwork?: boolean;
+  onShowReferralNetwork?: (tree: ReferralTree | null) => void;
   isDarkMode?: boolean;
   onPurchaseItemClick?: (status: 'pending' | 'paid' | 'processing' | 'shipped' | 'to_receive' | 'delivered' | 'cancelled' | 'return') => void;
   linkedAccountsRefreshTrigger?: number;
@@ -104,7 +103,7 @@ const MENU_ITEMS = [
   { icon: 'log-out-outline' as const, label: 'Log Out', chevron: false, danger: true, key: 'logout' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, closeReferralNetwork, isDarkMode = false, onPurchaseItemClick, linkedAccountsRefreshTrigger, onSecuritySettingsPress, onShowAFWalletOverview, onShowAFWalletVoucher, onShowAFWalletRewards, onShowAFWalletNetwork, onShowPVEarner, showPVEarnerFromTab = false, wishlistItems = [], onWishlistChange = () => {}, onProductPress = () => {}, onShopNavigate = () => {} }: ProfileScreenProps) {
+export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCartPress, cartCount = 0, token, onShowProfileDetails, onShowReferralNetwork, isDarkMode = false, onPurchaseItemClick, linkedAccountsRefreshTrigger, onSecuritySettingsPress, onShowAFWalletOverview, onShowAFWalletVoucher, onShowAFWalletRewards, onShowAFWalletNetwork, onShowPVEarner, showPVEarnerFromTab = false, wishlistItems = [], onWishlistChange = () => {}, onProductPress = () => {}, onShopNavigate = () => {} }: ProfileScreenProps) {
   console.log('[ProfileScreen] Component mounted/updated', {
     userEmail: user?.email,
     hasToken: !!token,
@@ -127,7 +126,6 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   };
   const [enlargedQR, setEnlargedQR] = useState<'signup' | 'shopping' | null>(null);
   const [referralTree, setReferralTree] = useState<ReferralTree | null>(null);
-  const [showReferralNetwork, setShowReferralNetwork] = useState(false);
   const [loadingReferral, setLoadingReferral] = useState(false);
   const [googleLinked, setGoogleLinked] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -186,16 +184,6 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   useEffect(() => {
     onShowProfileDetails?.(showProfileDetails);
   }, [showProfileDetails, onShowProfileDetails]);
-
-  useEffect(() => {
-    onShowReferralNetwork?.(showReferralNetwork, referralTree);
-  }, [showReferralNetwork, referralTree, onShowReferralNetwork]);
-
-  useEffect(() => {
-    if (closeReferralNetwork) {
-      setShowReferralNetwork(false);
-    }
-  }, [closeReferralNetwork]);
 
   useEffect(() => {
     console.log('[ProfileScreen] useEffect token changed:', { token: !!token });
@@ -376,7 +364,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
       }
 
       setReferralTree(data);
-      setShowReferralNetwork(true);
+      onShowReferralNetwork?.(data);
     } catch (error: any) {
       console.error('[ProfileScreen] handleViewNetwork - error:', error);
       Toast.show({
