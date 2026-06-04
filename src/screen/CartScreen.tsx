@@ -184,50 +184,30 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
     onProductPress?.(productId);
   };
 
+  const getCartItemActivityTime = (item: CartItem) => {
+    const updatedAt = new Date(item.crt_updated_at || item.crt_created_at).getTime();
+    const createdAt = new Date(item.crt_created_at).getTime();
+    return Number.isNaN(updatedAt) ? createdAt : updatedAt;
+  };
+
   const updateCartItemInState = (crtId: number, updater: (item: CartItem) => CartItem) => {
     setCartItems(prevItems => prevItems.map(item => (item.crt_id === crtId ? updater(item) : item)));
   };
 
   const getOrderedCartItems = (items: CartItem[]) => {
-    const existingOrder = cartOrderRef.current;
-    const nextOrder = { ...existingOrder };
-    const knownIds = new Set(Object.keys(existingOrder).map(Number));
-    const newItems = items.filter(item => !knownIds.has(item.crt_id));
-    const existingItems = items.filter(item => knownIds.has(item.crt_id));
-
-    newItems.sort((a, b) => {
-      const dateA = new Date(a.crt_created_at).getTime();
-      const dateB = new Date(b.crt_created_at).getTime();
-      return dateB - dateA;
+    const sortedItems = [...items].sort((a, b) => {
+      const timeB = getCartItemActivityTime(b);
+      const timeA = getCartItemActivityTime(a);
+      if (timeB !== timeA) return timeB - timeA;
+      return b.crt_id - a.crt_id;
     });
 
-    if (Object.keys(existingOrder).length === 0) {
-      const sortedInitialItems = [...items].sort((a, b) => {
-        const dateA = new Date(a.crt_created_at).getTime();
-        const dateB = new Date(b.crt_created_at).getTime();
-        return dateB - dateA;
-      });
+    cartOrderRef.current = sortedItems.reduce<Record<number, number>>((orderMap, item, index) => {
+      orderMap[item.crt_id] = index;
+      return orderMap;
+    }, {});
 
-      sortedInitialItems.forEach((item, index) => {
-        nextOrder[item.crt_id] = index;
-      });
-
-      cartOrderRef.current = nextOrder;
-      return sortedInitialItems;
-    }
-
-    const preservedExisting = existingItems
-      .slice()
-      .sort((a, b) => (existingOrder[a.crt_id] ?? Number.MAX_SAFE_INTEGER) - (existingOrder[b.crt_id] ?? Number.MAX_SAFE_INTEGER));
-
-    let topOrder = Math.min(...Object.values(existingOrder), 0) - 1;
-    newItems.forEach(item => {
-      nextOrder[item.crt_id] = topOrder;
-      topOrder -= 1;
-    });
-
-    cartOrderRef.current = nextOrder;
-    return [...newItems, ...preservedExisting];
+    return sortedItems;
   };
 
   useEffect(() => {
@@ -372,6 +352,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
         ...item,
         crt_quantity: newQuantity,
         crt_total_price: (parseFloat(item.crt_unit_price) * newQuantity).toString(),
+        crt_updated_at: new Date().toISOString(),
       }));
 
       // Use the new variant update endpoint
@@ -478,6 +459,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
           crt_variant_id: variantId,
           crt_unit_price: selectedVariant.price_member || selectedVariant.price_dp || selectedVariant.price,
           crt_total_price: (parseFloat(selectedVariant.price_member || selectedVariant.price_dp || selectedVariant.price) * item.crt_quantity).toString(),
+          crt_updated_at: new Date().toISOString(),
           variant_id: variantId,
           variant_name: selectedVariant.name,
           variant_color: selectedVariant.color,
@@ -569,20 +551,27 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
       grouped[brand].push(item);
     });
 
-    // Sort items within each group by creation date (newest first)
+    // Sort items within each group by latest cart activity
     Object.keys(grouped).forEach(brand => {
       grouped[brand].sort((a, b) => {
-        const dateA = new Date(a.crt_created_at).getTime();
-        const dateB = new Date(b.crt_created_at).getTime();
-        return dateB - dateA;
+        const timeB = getCartItemActivityTime(b);
+        const timeA = getCartItemActivityTime(a);
+        if (timeB !== timeA) return timeB - timeA;
+        return b.crt_id - a.crt_id;
       });
     });
 
-    // Sort brands by their newest item's creation date
+    // Sort brands by the most recently active item in the group
     const sortedBrands = Object.keys(grouped).sort((brandA, brandB) => {
-      const brandANewest = new Date(grouped[brandA][0].crt_created_at).getTime();
-      const brandBNewest = new Date(grouped[brandB][0].crt_created_at).getTime();
-      return brandBNewest - brandANewest;
+      const brandATime = grouped[brandA].reduce((max, item) => {
+        const time = getCartItemActivityTime(item);
+        return Math.max(max, time);
+      }, 0);
+      const brandBTime = grouped[brandB].reduce((max, item) => {
+        const time = getCartItemActivityTime(item);
+        return Math.max(max, time);
+      }, 0);
+      return brandBTime - brandATime;
     });
 
     // Rebuild grouped object with sorted brands
