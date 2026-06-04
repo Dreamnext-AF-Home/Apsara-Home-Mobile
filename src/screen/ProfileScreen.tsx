@@ -573,7 +573,11 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
 
         {/* My Purchases */}
         <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
-          <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
+          <TouchableOpacity
+            style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}
+            onPress={() => handlePurchaseItemClick('View Purchase History', 'pending')}
+            activeOpacity={0.7}
+          >
             <Text style={[styles.purchasesTitle, { color: colors.text }]}>My Purchases</Text>
             <TouchableOpacity
               style={styles.purchasesViewAll}
@@ -589,7 +593,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
               </View>
               <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
           <View style={styles.purchasesWrap}>
             <ScrollView
               horizontal
@@ -646,7 +650,12 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
 
         {/* My Referrals */}
         <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
-          <View style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}>
+          <TouchableOpacity
+            style={[styles.purchasesHeader, { borderBottomColor: colors.borderLight }]}
+            onPress={handleViewNetwork}
+            disabled={loadingReferral}
+            activeOpacity={0.7}
+          >
             <Text style={[styles.purchasesTitle, { color: colors.text }]}>My Referrals</Text>
             <TouchableOpacity
               style={styles.purchasesViewAll}
@@ -662,7 +671,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 </>
               )}
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
           <View style={styles.referralsGrid}>
             {referralTree ? (
               <>
