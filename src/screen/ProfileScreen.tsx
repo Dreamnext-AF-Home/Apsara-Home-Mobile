@@ -517,6 +517,14 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 <Text style={[styles.pvStatLabel, { color: colors.textSec }]}>Earnings</Text>
                 <Text style={[styles.pvStatValue, { color: Colors.sky }]}>₱{loyaltyData.earnings || 0}</Text>
               </View>
+              <View style={[styles.pvStatDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.pvStatItem}>
+                <Text style={[styles.pvStatLabel, { color: colors.textSec }]}>Leaderboard</Text>
+                <View style={styles.leaderboardRankDisplay}>
+                  <Ionicons name="trophy" size={16} color="#FFD700" />
+                  <Text style={[styles.pvStatValue, { color: Colors.sky }]}>#1</Text>
+                </View>
+              </View>
             </View>
 
             {/* Daily Check-In Button */}
@@ -1811,6 +1819,11 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     marginHorizontal: 12,
+  },
+  leaderboardRankDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   dailyCheckinBtn: {
     flexDirection: 'row',
