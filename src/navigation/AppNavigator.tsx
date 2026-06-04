@@ -260,7 +260,10 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
   const [paymentConfirmationData, setPaymentConfirmationData] = useState<any>(null);
   const [showSecurity, setShowSecurity] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [previousScreenFromSecurity, setPreviousScreenFromSecurity] = useState<'settings' | null>(null);
+  const [editProfileFromSettings, setEditProfileFromSettings] = useState(false);
   const [linkedAccountsRefreshTrigger, setLinkedAccountsRefreshTrigger] = useState(0);
   const [showAboutUs, setShowAboutUs] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
@@ -862,7 +865,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
       } else {
         // Otherwise restore the previous tab
         setActiveTab(previousTab);
-        activeTab = previousTab;
       }
       return true;
     });
@@ -880,7 +882,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
       } else {
         // Otherwise restore the previous tab
         setActiveTab(previousTab);
-        activeTab = previousTab;
       }
       return true;
     });
@@ -1166,6 +1167,7 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 onShowReferralNetwork: (show: boolean) => setReferralNetworkFromTab(show),
                 onPurchaseItemClick: () => setShowPurchases(true),
                 onSecuritySettingsPress: () => setShowSecurity(true),
+                setShowSettings,
                 onShowAFWalletOverview: () => setShowAFWalletOverview(true),
                 onShowAFWalletVoucher: () => setShowAFWalletVoucher(true),
                 onShowAFWalletRewards: () => setShowAFWalletRewards(true),
@@ -1218,7 +1220,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
           onBack={() => {
             setSearchVisible(false);
             setActiveTab(previousTab);
-            activeTab = previousTab;
           }}
           onSearchSubmit={(query) => {
             setSearchQuery(query);
@@ -1330,7 +1331,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
               setSelectedBrand(brand);
               setSelectedRoomId(null);
               setSelectedCategoryId(null);
-              activeTab = 'shop';
               setActiveTab('shop');
             }}
             onCheckout={(selectedItems) => {
@@ -1387,7 +1387,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
               setSelectedBrand(brand);
               setSelectedRoomId(null);
               setSelectedCategoryId(null);
-              activeTab = 'shop';
               setActiveTab('shop');
             }}
             onNavigateToOrderSuccess={(orderData) => {
@@ -1598,7 +1597,12 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
             isDarkMode={isDarkMode}
             onBack={() => {
               setShowProfileEdit(false);
-              setShowProfileDetails(true);
+              if (editProfileFromSettings) {
+                setShowSettings(true);
+                setEditProfileFromSettings(false);
+              } else {
+                setShowProfileDetails(true);
+              }
             }}
             onSave={async (profileData) => {
               try {
@@ -1639,7 +1643,12 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                   text2: 'Profile updated successfully',
                 });
                 setShowProfileEdit(false);
-                setShowProfileDetails(true);
+                if (editProfileFromSettings) {
+                  setShowSettings(true);
+                  setEditProfileFromSettings(false);
+                } else {
+                  setShowProfileDetails(true);
+                }
               } catch (error: any) {
                 console.log('[AppNavigator] Error updating profile:', error.response?.data || error.message);
                 Toast.show({
@@ -1672,9 +1681,81 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
           <SecurityScreen
             isDarkMode={isDarkMode}
             token={token}
-            onBack={() => setShowSecurity(false)}
+            onBack={() => {
+              setShowSecurity(false);
+              if (previousScreenFromSecurity === 'settings') {
+                setShowSettings(true);
+                setPreviousScreenFromSecurity(null);
+              }
+            }}
             onGoogleLinked={() => setLinkedAccountsRefreshTrigger(prev => prev + 1)}
             onOpenHistory={() => setShowHistory(true)}
+          />
+        </View>
+      )}
+
+      {showSettings && (
+        <View style={styles.cartScreenOverlay}>
+          <SettingsScreen
+            user={enrichedUser}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            onBack={() => setShowSettings(false)}
+            onNavigateSecurity={() => {
+              setPreviousScreenFromSecurity('settings');
+              setShowSettings(false);
+              setShowSecurity(true);
+            }}
+            onEditProfile={() => {
+              setEditProfileFromSettings(true);
+              setShowSettings(false);
+              setShowProfileEdit(true);
+            }}
+            onNavigateAboutUs={() => {
+              setShowSettings(false);
+              setShowAboutUs(true);
+            }}
+            onNavigatePrivacyPolicy={() => {
+              setShowSettings(false);
+              setShowPrivacyPolicy(true);
+            }}
+            onNavigateTermsAndConditions={() => {
+              setShowSettings(false);
+              setShowTermsAndConditions(true);
+            }}
+            onNavigateIncomeDisclaimer={() => {
+              setShowSettings(false);
+              setShowIncomeDisclaimer(true);
+            }}
+            onNavigateCookiePolicy={() => {
+              setShowSettings(false);
+              setShowCookiePolicy(true);
+            }}
+            onNavigateRewardsAndCommissions={() => {
+              setShowSettings(false);
+              setShowRewardsAndCommissions(true);
+            }}
+            onNavigateContactUs={() => {
+              setShowSettings(false);
+              setShowContactUs(true);
+            }}
+            onNavigateOurBranches={() => {
+              setShowSettings(false);
+              setShowOurBranches(true);
+            }}
+            onNavigateFAQs={() => {
+              setShowSettings(false);
+              setShowFAQs(true);
+            }}
+            onNavigateShippingInfo={() => {
+              setShowSettings(false);
+              setShowShippingInfo(true);
+            }}
+            onNavigateReturns={() => {
+              setShowSettings(false);
+              setShowReturns(true);
+            }}
+            onLogout={onLogout}
           />
         </View>
       )}
