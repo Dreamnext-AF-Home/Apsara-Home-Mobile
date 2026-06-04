@@ -322,22 +322,23 @@ export default function PurchasesScreen({
     fetchOrders();
   }, [token, selectedStatus]);
 
-  useEffect(() => {
-    const fetchCancellationReasons = async () => {
-      if (!token) return;
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const response = await axios.get(
-          `${API_CONFIG.BASE_URL}/orders/cancellation-reasons`,
-          { headers }
-        );
-        setCancellationReasons(response.data?.cancellation_reasons || {});
-      } catch (error) {
-        console.error('Failed to fetch cancellation reasons:', error);
-      }
-    };
-    fetchCancellationReasons();
-  }, [token]);
+  // COMMENTED OUT: Fetch cancellation reasons - API endpoint returns 404
+  // useEffect(() => {
+  //   const fetchCancellationReasons = async () => {
+  //     if (!token) return;
+  //     try {
+  //       const headers = { Authorization: `Bearer ${token}` };
+  //       const response = await axios.get(
+  //         `${API_CONFIG.BASE_URL}/orders/cancellation-reasons`,
+  //         { headers }
+  //       );
+  //       setCancellationReasons(response.data?.cancellation_reasons || {});
+  //     } catch (error) {
+  //       console.error('Failed to fetch cancellation reasons:', error);
+  //     }
+  //   };
+  //   fetchCancellationReasons();
+  // }, [token]);
 
   const hasSetInitialOrder = React.useRef(false);
 
@@ -505,81 +506,82 @@ export default function PurchasesScreen({
     }
   };
 
-  const handleCancelOrder = async (order: Order) => {
-    if (!token) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Authentication required' });
-      return;
-    }
+  // COMMENTED OUT: Cancel order functionality - API endpoint returns 404
+  // const handleCancelOrder = async (order: Order) => {
+  //   if (!token) {
+  //     Toast.show({ type: 'error', text1: 'Error', text2: 'Authentication required' });
+  //     return;
+  //   }
 
-    const normalizedStatus = normalizeStatusKey(order.status);
+  //   const normalizedStatus = normalizeStatusKey(order.status);
 
-    // Allow cancellation for pending and paid orders only
-    if (normalizedStatus !== 'pending' && normalizedStatus !== 'paid') {
-      Toast.show({
-        type: 'error',
-        text1: 'Cannot Cancel',
-        text2: 'Orders can only be cancelled if pending or paid.',
-      });
-      return;
-    }
+  //   // Allow cancellation for pending and paid orders only
+  //   if (normalizedStatus !== 'pending' && normalizedStatus !== 'paid') {
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Cannot Cancel',
+  //       text2: 'Orders can only be cancelled if pending or paid.',
+  //     });
+  //     return;
+  //   }
 
-    setSelectedOrder(order);
-    setSelectedCancellationReason(null);
-    setShowCancelReasonModal(true);
-  };
+  //   setSelectedOrder(order);
+  //   setSelectedCancellationReason(null);
+  //   setShowCancelReasonModal(true);
+  // };
 
-  const handleConfirmCancelWithReason = async () => {
-    if (!selectedOrder || !token) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Order or token missing' });
-      return;
-    }
+  // const handleConfirmCancelWithReason = async () => {
+  //   if (!selectedOrder || !token) {
+  //     Toast.show({ type: 'error', text1: 'Error', text2: 'Order or token missing' });
+  //     return;
+  //   }
 
-    if (cancelLoading === selectedOrder.id) return;
+  //   if (cancelLoading === selectedOrder.id) return;
 
-    setCancelLoading(selectedOrder.id);
-    setCancelReasonLoading(true);
+  //   setCancelLoading(selectedOrder.id);
+  //   setCancelReasonLoading(true);
 
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const payload: any = {};
+  //   try {
+  //     const headers = { Authorization: `Bearer ${token}` };
+  //     const payload: any = {};
 
-      if (selectedCancellationReason) {
-        payload.cancellation_reason = selectedCancellationReason;
-      }
+  //     if (selectedCancellationReason) {
+  //       payload.cancellation_reason = selectedCancellationReason;
+  //     }
 
-      // Try the correct endpoint with order ID
-      await axios.post(
-        `${API_CONFIG.BASE_URL}/orders/${selectedOrder.id}/cancel`,
-        payload,
-        { headers }
-      );
+  //     // Try the correct endpoint with order ID
+  //     await axios.post(
+  //       `${API_CONFIG.BASE_URL}/orders/${selectedOrder.id}/cancel`,
+  //       payload,
+  //       { headers }
+  //     );
 
-      Toast.show({
-        type: 'success',
-        text1: 'Order Cancelled',
-        text2: `Order #${selectedOrder.order_number} has been cancelled. Refund will be processed within 3-5 business days.`,
-      });
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Order Cancelled',
+  //       text2: `Order #${selectedOrder.order_number} has been cancelled. Refund will be processed within 3-5 business days.`,
+  //     });
 
-      setShowDetailModal(false);
-      setShowCancelReasonModal(false);
-      setSelectedOrder(null);
-      setSelectedCancellationReason(null);
-      fetchOrders();
-    } catch (error: any) {
-      console.error('Cancel error:', error);
-      const errorMsg = error?.response?.data?.message
-        || error?.response?.data?.error
-        || 'Failed to cancel order';
-      Toast.show({
-        type: 'error',
-        text1: 'Cancel Failed',
-        text2: errorMsg,
-      });
-    } finally {
-      setCancelLoading(null);
-      setCancelReasonLoading(false);
-    }
-  };
+  //     setShowDetailModal(false);
+  //     setShowCancelReasonModal(false);
+  //     setSelectedOrder(null);
+  //     setSelectedCancellationReason(null);
+  //     fetchOrders();
+  //   } catch (error: any) {
+  //     console.error('Cancel error:', error);
+  //     const errorMsg = error?.response?.data?.message
+  //       || error?.response?.data?.error
+  //       || 'Failed to cancel order';
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Cancel Failed',
+  //       text2: errorMsg,
+  //     });
+  //   } finally {
+  //     setCancelLoading(null);
+  //     setCancelReasonLoading(false);
+  //   }
+  // };
 
   const handleBuyAgain = (order: Order) => {
     if (!order || !order.items || order.items.length === 0) {
@@ -852,6 +854,7 @@ export default function PurchasesScreen({
                   {(selectedStatus === 'pending' || selectedStatus === 'paid') && (
                     <View style={styles.paymentSection}>
                       <View style={styles.listActionsRow}>
+                        {/* COMMENTED OUT: Cancel order button - API endpoint returns 404
                         <TouchableOpacity
                           style={[styles.cancelListBtn, cancelLoading === order.id && { opacity: 0.6 }]}
                           onPress={() => handleCancelOrder(order)}
@@ -866,6 +869,7 @@ export default function PurchasesScreen({
                             </>
                           )}
                         </TouchableOpacity>
+                        */}
 
                         {selectedStatus === 'pending' && (
                           <TouchableOpacity
@@ -1044,6 +1048,7 @@ export default function PurchasesScreen({
                   </>
                 )}
               </View>
+              {/* COMMENTED OUT: Cancel order button section - API endpoint returns 404
               {(selectedOrder.status === 'pending' || selectedOrder.status === 'paid') && (
                 <View style={styles.detailActions}>
                   <TouchableOpacity
@@ -1081,99 +1086,100 @@ export default function PurchasesScreen({
                   )}
                 </View>
               )}
+              */}
             </ScrollView>
           )}
           </Animated.View>
         </View>
       </Modal>
 
-      {/* Cancel Reason Modal */}
-      <Modal
-        visible={showCancelReasonModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCancelReasonModal(false)}
-      >
-        <View style={styles.sheetBackdrop}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setShowCancelReasonModal(false)}
-          />
-          <Animated.View
-            style={[
-              styles.cancelReasonSheet,
-              { backgroundColor: isDarkMode ? '#1f2937' : Colors.white, transform: [{ translateY: cancelReasonTranslateY }] },
-            ]}
-            {...cancelReasonPanResponder.panHandlers}
-          >
-            {/* Handle Container */}
-            <View style={styles.handleContainer}>
-              <View style={[styles.sheetHandle, { backgroundColor: isDarkMode ? '#475569' : '#cbd5e1' }]} />
-            </View>
-            {/* Sheet Header */}
-            <View
-              style={[styles.sheetHeader, { backgroundColor: isDarkMode ? '#1f2937' : Colors.white, borderBottomColor: colors.border }]}
+      {/* COMMENTED OUT: Cancel Reason Modal - API endpoint returns 404 */}
+      {false && (
+        <Modal
+          visible={showCancelReasonModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowCancelReasonModal(false)}
+        >
+          <View style={styles.sheetBackdrop}>
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => setShowCancelReasonModal(false)}
+            />
+            <Animated.View
+              style={[
+                styles.cancelReasonSheet,
+                { backgroundColor: isDarkMode ? '#1f2937' : Colors.white, transform: [{ translateY: cancelReasonTranslateY }] },
+              ]}
+              {...cancelReasonPanResponder.panHandlers}
             >
-              <Text style={[styles.sheetTitle, { color: isDarkMode ? '#f8fafc' : Colors.text }]}>Reason for Cancellation</Text>
-            </View>
+              <View style={styles.handleContainer}>
+                <View style={[styles.sheetHandle, { backgroundColor: isDarkMode ? '#475569' : '#cbd5e1' }]} />
+              </View>
+              <View
+                style={[styles.sheetHeader, { backgroundColor: isDarkMode ? '#1f2937' : Colors.white, borderBottomColor: colors.border }]}
+              >
+                <Text style={[styles.sheetTitle, { color: isDarkMode ? '#f8fafc' : Colors.text }]}>Reason for Cancellation</Text>
+              </View>
 
-            <ScrollView style={styles.reasonList} contentContainerStyle={styles.reasonListContent}>
-              {Object.entries(cancellationReasons).length > 0 ? (
-                Object.entries(cancellationReasons).map(([key, label]) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[
-                      styles.reasonOption,
-                      {
-                        borderBottomColor: colors.border,
-                        backgroundColor: selectedCancellationReason === key ? '#eff6ff' : 'transparent',
-                      },
-                    ]}
-                    onPress={() => setSelectedCancellationReason(key)}
-                  >
-                    <View style={styles.reasonOptionContent}>
-                      <Text style={[styles.reasonText, { color: colors.text, fontWeight: selectedCancellationReason === key ? '700' : '500' }]}>{label}</Text>
-                    </View>
-                    {selectedCancellationReason === key && (
-                      <View style={styles.reasonCheckmark}>
-                        <Ionicons name="checkmark" size={20} color={Colors.sky} />
+              <ScrollView style={styles.reasonList} contentContainerStyle={styles.reasonListContent}>
+                {Object.entries(cancellationReasons).length > 0 ? (
+                  Object.entries(cancellationReasons).map(([key, label]) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.reasonOption,
+                        {
+                          borderBottomColor: colors.border,
+                          backgroundColor: selectedCancellationReason === key ? '#eff6ff' : 'transparent',
+                        },
+                      ]}
+                      onPress={() => setSelectedCancellationReason(key)}
+                    >
+                      <View style={styles.reasonOptionContent}>
+                        <Text style={[styles.reasonText, { color: colors.text, fontWeight: selectedCancellationReason === key ? '700' : '500' }]}>{label}</Text>
                       </View>
-                    )}
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <Text style={[styles.reasonText, { color: colors.textSec, textAlign: 'center', marginTop: 20 }]}>
-                  Loading reasons...
-                </Text>
-              )}
-            </ScrollView>
-
-            <View style={styles.reasonActions}>
-              <TouchableOpacity
-                style={[styles.reasonBtn, { backgroundColor: colors.border }]}
-                onPress={() => setShowCancelReasonModal(false)}
-                disabled={cancelReasonLoading}
-              >
-                <Text style={[styles.reasonBtnText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.reasonBtn,
-                  { backgroundColor: '#ef4444', opacity: !selectedCancellationReason || cancelReasonLoading ? 0.6 : 1 },
-                ]}
-                onPress={handleConfirmCancelWithReason}
-                disabled={!selectedCancellationReason || cancelReasonLoading}
-              >
-                {cancelReasonLoading ? (
-                  <ActivityIndicator color="white" size="small" />
+                      {selectedCancellationReason === key && (
+                        <View style={styles.reasonCheckmark}>
+                          <Ionicons name="checkmark" size={20} color={Colors.sky} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))
                 ) : (
-                  <Text style={styles.reasonBtnText}>Confirm Cancel</Text>
+                  <Text style={[styles.reasonText, { color: colors.textSec, textAlign: 'center', marginTop: 20 }]}>
+                    Loading reasons...
+                  </Text>
                 )}
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
+              </ScrollView>
+
+              <View style={styles.reasonActions}>
+                <TouchableOpacity
+                  style={[styles.reasonBtn, { backgroundColor: colors.border }]}
+                  onPress={() => setShowCancelReasonModal(false)}
+                  disabled={cancelReasonLoading}
+                >
+                  <Text style={[styles.reasonBtnText, { color: colors.text }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.reasonBtn,
+                    { backgroundColor: '#ef4444', opacity: !selectedCancellationReason || cancelReasonLoading ? 0.6 : 1 },
+                  ]}
+                  onPress={handleConfirmCancelWithReason}
+                  disabled={!selectedCancellationReason || cancelReasonLoading}
+                >
+                  {cancelReasonLoading ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.reasonBtnText}>Confirm Cancel</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
