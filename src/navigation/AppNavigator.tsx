@@ -1519,18 +1519,14 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                   setShowPaymentSuccess(true);
                 });
 
-                // Clear cart after successful payment
-                orderService.clearCart(token).then(() => {
-                  setCartCount(0);
+                // Refresh cart state after successful payment.
+                // The backend webhook marks only the purchased items as completed.
+                axios.get(`${API_CONFIG.BASE_URL}/cart`, { headers }).then(res => {
+                  setCartCount(extractCount(res.data));
                   setCartRefreshTrigger(prev => prev + 1);
-                  console.log('[AppNavigator] Cart cleared after successful payment');
+                  console.log('[AppNavigator] Cart refreshed after successful payment');
                 }).catch(err => {
-                  console.error('Failed to clear cart:', err);
-                  // Fallback: refresh cart count from backend
-                  axios.get(`${API_CONFIG.BASE_URL}/cart`, { headers }).then(res => {
-                    setCartCount(extractCount(res.data));
-                    setCartRefreshTrigger(prev => prev + 1);
-                  }).catch(err => console.error('Failed to refresh cart:', err));
+                  console.error('Failed to refresh cart after payment:', err);
                 });
               }
             }}
