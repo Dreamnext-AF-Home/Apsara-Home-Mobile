@@ -168,7 +168,40 @@ function WishlistTabScreen() {
 
 // Shop Tab Screen Wrapper
 function ShopTabScreen() {
-  const { token, enrichedUser, isDarkMode, cartCount, homeCategories, homeBrands, wishlistItems, onWishlistChange, handleOptimisticWishlistToggle, selectedBrandId, selectedBrand, setSelectedBrandId, setSelectedBrand, selectedRoomId, selectedCategoryId, setSelectedRoomId, setSelectedCategoryId, shopSourceIsCart, setShopSourceIsCart, shopSourceIsCheckout, setShopSourceIsCheckout, shopSourceProductId, setShopSourceProductId, previousTab, setActiveTab, onProductPress, onCartPress, onSearchPress } = useAppContext();
+  const {
+    token,
+    enrichedUser,
+    isDarkMode,
+    cartCount,
+    homeCategories,
+    homeBrands,
+    wishlistItems,
+    onWishlistChange,
+    handleOptimisticWishlistToggle,
+    selectedBrandId,
+    selectedBrand,
+    setSelectedBrandId,
+    setSelectedBrand,
+    selectedRoomId,
+    selectedCategoryId,
+    setSelectedRoomId,
+    setSelectedCategoryId,
+    shopSourceIsCart,
+    setShopSourceIsCart,
+    shopSourceIsCheckout,
+    setShopSourceIsCheckout,
+    shopSourceProductId,
+    setShopSourceProductId,
+    setShowShopProductDetail,
+    setShopSelectedProductId,
+    onCartPress,
+    onSearchPress,
+  } = useAppContext();
+
+  const handleShopProductPress = useCallback((id: number) => {
+    setShopSelectedProductId(id);
+    setShowShopProductDetail(true);
+  }, [setShopSelectedProductId, setShowShopProductDetail]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -192,13 +225,13 @@ function ShopTabScreen() {
               setShopSourceProductId(null);
             }
           }}
-          onProductPress={(id) => onProductPress(id)}
+          onProductPress={handleShopProductPress}
           onCartPress={onCartPress}
           wishlistItems={wishlistItems}
           isDarkMode={isDarkMode}
           onWishlistChange={onWishlistChange}
-        />
-      ) : (
+          />
+        ) : (
         <ShopScreen
           token={token}
           user={enrichedUser}
@@ -212,9 +245,8 @@ function ShopTabScreen() {
             setSelectedRoomId(null);
             setSelectedCategoryId(null);
             setSelectedBrandId(null);
-            setActiveTab(previousTab);
           }}
-          onProductPress={(id) => onProductPress(id)}
+          onProductPress={handleShopProductPress}
           onCartPress={onCartPress}
           onOpenSearch={onSearchPress}
           wishlistItems={wishlistItems}
