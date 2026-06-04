@@ -89,10 +89,10 @@ android {
 
     namespace 'com.afhome.mobile'
     defaultConfig {
-        applicationId 'com.afhome.mobile'
+        applicationId 'com.afhome.mobile7
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
+        versionCode 7
         versionName "1.3.2"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
