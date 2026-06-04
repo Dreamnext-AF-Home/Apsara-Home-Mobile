@@ -59,6 +59,7 @@ interface HomeScreenProps {
   onShopByRoomPress?: (roomId: number) => void;
   onShopByCategoryPress?: (categoryId: number) => void;
   onShopByBrandPress?: (brandId: number) => void;
+  onRefresh?: () => Promise<void> | void;
 }
 
 interface RoomType {
@@ -294,6 +295,7 @@ function HomeScreen({
   onShopByRoomPress = () => {},
   onShopByCategoryPress = () => {},
   onShopByBrandPress = () => {},
+  onRefresh: onRefreshProp,
 }: HomeScreenProps) {
   const navigationStartTime = useRef(performance.now());
 
@@ -341,10 +343,11 @@ function HomeScreen({
     });
   }, [categories.length, brands.length, roomTypes.length, featuredProducts.length]);
 
-  const onRefresh = () => {
+  const handleRefresh = () => {
     console.log('🔄 [HOMESCREEN] PULL-TO-REFRESH TRIGGERED');
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    Promise.resolve(onRefreshProp?.())
+      .finally(() => setRefreshing(false));
   };
 
   useEffect(() => {
@@ -477,7 +480,7 @@ function HomeScreen({
       refreshControl={
         <RefreshControl 
           refreshing={refreshing} 
-          onRefresh={onRefresh}
+          onRefresh={handleRefresh}
           colors={[Colors.sky]} 
           tintColor={isDarkMode ? '#fff' : Colors.sky}
         />
