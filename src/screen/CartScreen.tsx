@@ -926,7 +926,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
               onPress={onBack}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back-outline" size={20} color={Colors.white} />
+              <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
@@ -972,7 +972,7 @@ export default function CartScreen({ token, user, onCheckout, onBack, onProductP
                 onPress={onBack}
                 activeOpacity={0.7}
               >
-                <Ionicons name="chevron-back-outline" size={20} color={Colors.white} />
+                <Ionicons name="chevron-back-outline" size={24} color={Colors.white} />
               </TouchableOpacity>
               <Text style={[styles.headerTitle, { color: Colors.white }]}>My Cart</Text>
 
