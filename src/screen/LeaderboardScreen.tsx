@@ -128,24 +128,25 @@ export default function LeaderboardScreen({
   const restRankings = derivedLeaderboard.slice(3);
 
   const renderTopCard = (entry: LeaderboardEntry, position: 'first' | 'second' | 'third', rank: number) => {
-    const positionConfig = {
-      first: { cardBg: ['#FF6B9D', '#FFA500', '#FFD700'], cardHeight: 240, cardWidth: 112, avatarSize: 72 },
-      second: { cardBg: ['#4FC3F7', '#29B6F6', '#0288D1'], cardHeight: 174, cardWidth: 96, avatarSize: 64 },
-      third: { cardBg: ['#FF7043', '#FF5722', '#D84315'], cardHeight: 174, cardWidth: 96, avatarSize: 64 },
-    };
-    const config = positionConfig[position];
+    const avatarSize = position === 'first' ? 120 : 100;
     const scale = glow.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] });
     const translateY = bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] });
     const avatarTheme = position === 'first'
       ? { border: '#D4AF37', inner: '#FFF7D6', text: '#8A6500', ring: ['#FFF9E6', '#D4AF37'] as [string, string] }
       : position === 'second'
-        ? { border: '#94A3B8', inner: 'rgba(255,255,255,0.18)', text: '#ffffff', ring: ['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.12)'] as [string, string] }
-        : { border: '#C08457', inner: 'rgba(255,255,255,0.18)', text: '#ffffff', ring: ['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.12)'] as [string, string] };
+        ? { border: '#E0E0E0', inner: '#E8F4FF', text: '#1E40AF', ring: ['#E0F2FE', '#C0C0C0'] as [string, string] }
+        : { border: '#CD7F32', inner: '#FFE8D6', text: '#6B3E0E', ring: ['#FFE8D6', '#CD7F32'] as [string, string] };
     const initials = entry.name
       .split(' ')
       .slice(0, 2)
       .map((word) => word.charAt(0).toUpperCase())
       .join('');
+
+    const getRankBadgeColor = () => {
+      if (position === 'first') return '#FFD700';
+      if (position === 'second') return '#C0C0C0';
+      return '#CD7F32';
+    };
 
     return (
       <Animated.View
@@ -158,71 +159,50 @@ export default function LeaderboardScreen({
               <Text style={styles.crownEmoji}>👑</Text>
             </View>
           )}
-          <View
-            style={[
-              styles.topCardAvatarOuter,
-              {
-                width: config.avatarSize,
-                height: config.avatarSize,
-                borderRadius: config.avatarSize / 2,
-                borderColor: avatarTheme.border,
-              },
-            ]}
+          <View style={{ position: 'relative' }}>
+            <View
+              style={[
+                styles.topCardAvatarOuter,
+                {
+                  width: avatarSize,
+                  height: avatarSize,
+                  borderRadius: avatarSize / 2,
+                  borderColor: avatarTheme.border,
+                },
+              ]}
             >
-          {entry.avatar ? (
-            <View style={styles.topCardAvatarImageWrap}>
-              <Image source={{ uri: entry.avatar }} style={styles.topCardAvatarImage} />
-            </View>
-          ) : (
-            <View style={styles.topCardInitialCircle}>
-              <LinearGradient
-                colors={avatarTheme.ring}
-                style={styles.topCardInitialRing}
-              >
-                <View style={[styles.topCardInitialInner, { backgroundColor: avatarTheme.inner, borderColor: avatarTheme.border }]}>
-                  <Text style={[styles.topCardInitial, { color: avatarTheme.text, fontSize: position === 'first' ? 26 : 22 }]}>
-                    {initials}
-                  </Text>
+              {entry.avatar ? (
+                <View style={[styles.topCardAvatarImageWrap, { borderColor: avatarTheme.border }]}>
+                  <Image source={{ uri: entry.avatar }} style={styles.topCardAvatarImage} />
                 </View>
-              </LinearGradient>
+              ) : (
+                <View style={styles.topCardInitialCircle}>
+                  <LinearGradient
+                    colors={avatarTheme.ring}
+                    style={styles.topCardInitialRing}
+                  >
+                    <View style={[styles.topCardInitialInner, { backgroundColor: avatarTheme.inner, borderColor: avatarTheme.border }]}>
+                      <Text style={[styles.topCardInitial, { color: avatarTheme.text, fontSize: position === 'first' ? 32 : 26 }]}>
+                        {initials}
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </View>
+              )}
             </View>
-          )}
+            <View style={[styles.rankBadge, { backgroundColor: getRankBadgeColor() }]}>
+              <Text style={styles.rankBadgeText}>{rank}</Text>
             </View>
+          </View>
         </View>
 
         <Text style={[styles.topCardName, { color: Colors.white }]} numberOfLines={2}>
           {entry.name}
         </Text>
 
-        <View style={styles.topCardContainer}>
-          <View style={styles.topCardBadge}>
-            <Ionicons name="people" size={13} color="#ffffff" />
-            <Text style={styles.topCardBadgeText}>{entry.referrals} refs</Text>
-          </View>
-
-          <LinearGradient
-            colors={config.cardBg as [string, string]}
-            style={[
-              styles.topCard,
-              {
-                width: config.cardWidth,
-                height: config.cardHeight,
-                borderRadius: 18,
-                paddingTop: position === 'first' ? 34 : 30,
-                borderWidth: 2,
-                borderColor: position === 'first' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.3)',
-                shadowColor: position === 'first' ? '#FFD700' : position === 'second' ? '#C0C0C0' : '#CD7F32',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.4,
-                shadowRadius: 12,
-                elevation: 8,
-              },
-            ]}
-          >
-            <View style={styles.topCardDecor} />
-            <Text style={styles.topCardTier}>{getTierLabel(rank)}</Text>
-            <Text style={styles.topCardRankNumber}>{rank}</Text>
-          </LinearGradient>
+        <View style={styles.topCardBadge}>
+          <Ionicons name="people" size={13} color="#ffffff" />
+          <Text style={styles.topCardBadgeText}>{entry.referrals} refs</Text>
         </View>
       </Animated.View>
     );
@@ -461,31 +441,30 @@ const styles = StyleSheet.create({
   crownEmoji: {
     fontSize: 28,
   },
-  topCardContainer: {
-    alignItems: 'center',
-    position: 'relative',
-    marginTop: 12,
-  },
-  topCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    paddingBottom: 12,
-    position: 'relative',
-  },
-  topCardDecor: {
+  rankBadge: {
     position: 'absolute',
-    width: '100%',
-    height: '100%',
-    borderRadius: 16,
-    opacity: 0.15,
-    pointerEvents: 'none',
+    bottom: -8,
+    right: -8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: Colors.white,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  rankBadgeText: {
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: '900',
   },
   topCardBadge: {
-    position: 'absolute',
-    top: 15,
-    alignSelf: 'center',
-    zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -519,8 +498,7 @@ const styles = StyleSheet.create({
     height: '84%',
     borderRadius: 999,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 2,
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   topCardAvatarImage: {
@@ -563,21 +541,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginTop: 6,
-  },
-  topCardTier: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  topCardRankNumber: {
-    fontSize: 64,
-    fontWeight: '900',
-    color: '#ffffff',
-    lineHeight: 64,
-    marginTop: 12,
   },
   rankingsSection: {
     borderTopLeftRadius: 20,
