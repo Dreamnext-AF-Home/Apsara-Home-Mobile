@@ -63,38 +63,52 @@ class LeaderboardWidgetProvider : AppWidgetProvider() {
             val referralData = LeaderboardWidgetService.getReferralData(context)
             Log.d(TAG, "Fetched ${referralData.size} referrers from backend")
 
-            if (referralData.isNotEmpty()) {
-                for (i in 0..4) {
-                    if (i < referralData.size) {
-                        val (name, count) = referralData[i]
-                        val userId = "user_${i + 1}"
-                        val pointsId = "points_${i + 1}"
-
-                        views.setTextViewText(
-                            context.resources.getIdentifier(userId, "id", context.packageName),
-                            name
-                        )
-                        views.setTextViewText(
-                            context.resources.getIdentifier(pointsId, "id", context.packageName),
-                            "$count referrals"
-                        )
-                        Log.d(TAG, "Set user $i: $name - $count referrals")
-                    }
-                }
-                Log.d(TAG, "Real referral data displayed - ${referralData.size} users")
+            val dataToDisplay = if (referralData.isNotEmpty()) {
+                referralData
             } else {
                 Log.w(TAG, "No referral data received from backend - showing sample data")
-                // Show sample data as fallback
-                val sampleData = listOf(
+                listOf(
                     Pair("Maria Garcia", 45),
-                    Pair("Juan Dela Cruz", 38),
-                    Pair("Ana Rodriguez", 32),
+                    Pair("Juan Dela Cruz", 96),
+                    Pair("Ana Rodriguez", 72),
                     Pair("Carlos Santos", 28),
                     Pair("Rosa Fernandez", 24)
                 )
-                for (i in 0..4) {
-                    if (i < sampleData.size) {
-                        val (name, count) = sampleData[i]
+            }
+
+            // Display Top 3 with profile names and counts
+            if (dataToDisplay.isNotEmpty()) {
+                // Top 1 (1st place)
+                if (dataToDisplay.size > 0) {
+                    val (name1, count1) = dataToDisplay[0]
+                    val initial1 = name1.firstOrNull()?.uppercaseChar().toString()
+                    views.setTextViewText(context.resources.getIdentifier("avatar_1", "id", context.packageName), initial1)
+                    views.setTextViewText(context.resources.getIdentifier("top_name_1", "id", context.packageName), name1)
+                    views.setTextViewText(context.resources.getIdentifier("top_count_1", "id", context.packageName), "$count1")
+                }
+
+                // Top 2 (2nd place)
+                if (dataToDisplay.size > 1) {
+                    val (name2, count2) = dataToDisplay[1]
+                    val initial2 = name2.firstOrNull()?.uppercaseChar().toString()
+                    views.setTextViewText(context.resources.getIdentifier("avatar_2", "id", context.packageName), initial2)
+                    views.setTextViewText(context.resources.getIdentifier("top_name_2", "id", context.packageName), name2)
+                    views.setTextViewText(context.resources.getIdentifier("top_count_2", "id", context.packageName), "$count2")
+                }
+
+                // Top 3 (3rd place)
+                if (dataToDisplay.size > 2) {
+                    val (name3, count3) = dataToDisplay[2]
+                    val initial3 = name3.firstOrNull()?.uppercaseChar().toString()
+                    views.setTextViewText(context.resources.getIdentifier("avatar_3", "id", context.packageName), initial3)
+                    views.setTextViewText(context.resources.getIdentifier("top_name_3", "id", context.packageName), name3)
+                    views.setTextViewText(context.resources.getIdentifier("top_count_3", "id", context.packageName), "$count3")
+                }
+
+                // Display rest of rankings (4-5)
+                for (i in 3..4) {
+                    if (i < dataToDisplay.size) {
+                        val (name, count) = dataToDisplay[i]
                         val userId = "user_${i + 1}"
                         val pointsId = "points_${i + 1}"
 
@@ -114,25 +128,22 @@ class LeaderboardWidgetProvider : AppWidgetProvider() {
             // Show sample data on error
             val sampleData = listOf(
                 Pair("Maria Garcia", 45),
-                Pair("Juan Dela Cruz", 38),
-                Pair("Ana Rodriguez", 32),
+                Pair("Juan Dela Cruz", 96),
+                Pair("Ana Rodriguez", 72),
                 Pair("Carlos Santos", 28),
                 Pair("Rosa Fernandez", 24)
             )
-            for (i in 0..4) {
-                if (i < sampleData.size) {
-                    val (name, count) = sampleData[i]
-                    val userId = "user_${i + 1}"
-                    val pointsId = "points_${i + 1}"
 
-                    views.setTextViewText(
-                        context.resources.getIdentifier(userId, "id", context.packageName),
-                        name
-                    )
-                    views.setTextViewText(
-                        context.resources.getIdentifier(pointsId, "id", context.packageName),
-                        "$count referrals"
-                    )
+            // Display Top 3
+            if (sampleData.size > 0) views.setTextViewText(context.resources.getIdentifier("top_name_1", "id", context.packageName), sampleData[0].first)
+            if (sampleData.size > 1) views.setTextViewText(context.resources.getIdentifier("top_name_2", "id", context.packageName), sampleData[1].first)
+            if (sampleData.size > 2) views.setTextViewText(context.resources.getIdentifier("top_name_3", "id", context.packageName), sampleData[2].first)
+
+            // Display rest
+            for (i in 3..4) {
+                if (i < sampleData.size) {
+                    views.setTextViewText(context.resources.getIdentifier("user_${i + 1}", "id", context.packageName), sampleData[i].first)
+                    views.setTextViewText(context.resources.getIdentifier("points_${i + 1}", "id", context.packageName), "${sampleData[i].second} referrals")
                 }
             }
         }
