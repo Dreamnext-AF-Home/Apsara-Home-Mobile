@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="my_orders"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_my_orders_short"
+        android:shortcutLongLabel="@string/shortcut_my_orders_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="purchases://"
+            android:targetPackage="com.afhome.mobile"
+            android:targetClass="com.afhome.mobile.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>
