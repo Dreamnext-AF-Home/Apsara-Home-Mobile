@@ -16,6 +16,7 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { API_CONFIG } from '../config/api';
+import { useAppContext } from '../context/AppContext';
 
 interface LeaderboardEntry {
   id: number;
@@ -23,6 +24,7 @@ interface LeaderboardEntry {
   username: string;
   avatar: string;
   referrals: number;
+  rank?: number;
 }
 
 const MEDAL_COLORS: Record<number, string> = {
@@ -50,12 +52,16 @@ export default function LeaderboardScreen({
   onClose?: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { enrichedUser } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
+  const [showCurrentUserIndicator, setShowCurrentUserIndicator] = useState(true);
   const glow = useRef(new Animated.Value(0)).current;
   const bob = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const colors = {
     bg: isDarkMode ? '#0a0e27' : '#0ea5e9',
@@ -101,15 +107,25 @@ export default function LeaderboardScreen({
       const response = await fetch(`${API_CONFIG.BASE_URL}/public/top-members?sort=referrals&per_page=20`);
       const result = await response.json();
       const formattedData = Array.isArray(result?.data)
-        ? result.data.map((member: any) => ({
+        ? result.data.map((member: any, index: number) => ({
             id: member.id,
             name: member.name,
             username: member.username,
             avatar: member.avatar,
             referrals: Number(member.referrals) || 0,
+            rank: member.rank || (index + 1),
           }))
         : [];
       setLeaderboardData(formattedData);
+
+      if (enrichedUser) {
+        const userRankIndex = formattedData.findIndex(
+          (entry) => entry.id === parseInt(enrichedUser.id)
+        );
+        if (userRankIndex !== -1) {
+          setCurrentUserRank(userRankIndex + 1);
+        }
+      }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     } finally {
@@ -123,6 +139,22 @@ export default function LeaderboardScreen({
     await fetchLeaderboard();
   };
 
+  const handleScroll = (event: any) => {
+    const contentOffsetY = event.nativeEvent.contentOffset.y;
+    // If user has scrolled past the "You" indicator, hide it
+    // The indicator should disappear when user scrolls to see their actual ranking
+    if (currentUserRank && currentUserRank > 3) {
+      // Approximate position where current user row would appear
+      // Adjust threshold based on your layout
+      const threshold = 300;
+      if (contentOffsetY > threshold) {
+        setShowCurrentUserIndicator(false);
+      } else {
+        setShowCurrentUserIndicator(true);
+      }
+    }
+  };
+
   const derivedLeaderboard = useMemo(() => [...leaderboardData], [leaderboardData]);
   const topThree = derivedLeaderboard.slice(0, 3);
   const restRankings = derivedLeaderboard.slice(3);
@@ -132,10 +164,10 @@ export default function LeaderboardScreen({
     const scale = glow.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] });
     const translateY = bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] });
     const avatarTheme = position === 'first'
-      ? { border: '#D4AF37', inner: '#FFF7D6', text: '#8A6500', ring: ['#FFF9E6', '#D4AF37'] as [string, string] }
+      ? { border: '#D4AF37', inner: '#FFF7D6', text: '#8A6500', ring: ['#FFD700', '#D4AF37'] as [string, string] }
       : position === 'second'
         ? { border: '#E0E0E0', inner: '#E8F4FF', text: '#1E40AF', ring: ['#E0F2FE', '#C0C0C0'] as [string, string] }
-        : { border: '#CD7F32', inner: '#FFE8D6', text: '#6B3E0E', ring: ['#FFE8D6', '#CD7F32'] as [string, string] };
+        : { border: '#CD7F32', inner: '#FFE8D6', text: '#6B3E0E', ring: ['#FF9A56', '#CD7F32'] as [string, string] };
     const initials = entry.name
       .split(' ')
       .slice(0, 2)
@@ -151,7 +183,7 @@ export default function LeaderboardScreen({
     return (
       <Animated.View
         key={entry.id}
-        style={[styles.topCardWrapper, { transform: [{ translateY }, { scale: position === 'first' ? Animated.multiply(scale, pulse) : scale }] }]}
+        style={[styles.topCardWrapper, { marginTop: position === 'first' ? -50 : 0, marginLeft: position === 'first' ? 8 : 0, marginRight: position === 'first' ? 8 : 0, transform: [{ translateY }, { scale: position === 'first' ? Animated.multiply(scale, pulse) : scale }] }]}
       >
         <View style={styles.avatarContainer}>
           {position === 'first' && (
@@ -297,9 +329,12 @@ export default function LeaderboardScreen({
       </LinearGradient>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {topThree.length > 0 && (
           <LinearGradient
@@ -319,15 +354,86 @@ export default function LeaderboardScreen({
         {restRankings.length > 0 && (
           <View style={[styles.rankingsSection, { backgroundColor: isDarkMode ? '#0f1b31' : '#f4f8fc', borderColor: colors.border }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
-              <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Leaderboard</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.textSec }]}>Rankings updated in a simple, readable list.</Text>
-              </View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Leaderboard</Text>
             </View>
-            {restRankings.map((entry, idx) => renderLeaderboardRow(entry, idx + 4))}
+            {restRankings.map((entry, idx) => {
+              const isCurrentUser = enrichedUser && entry.id === parseInt(enrichedUser.id);
+              return (
+                <View key={entry.id} style={[styles.rankingItem, isCurrentUser && styles.currentUserHighlight, { borderBottomColor: colors.border }]}>
+                  <View style={styles.rankingItemLeft}>
+                    <View style={[styles.rankingBadge, { borderColor: MEDAL_COLORS[idx + 4] || colors.border }]}>
+                      <View style={styles.rankingBadgeInner}>
+                        <Text style={[styles.rankingBadgeText, { color: '#0369A1' }]}>
+                          {`${idx + 4}`}
+                        </Text>
+                      </View>
+                    </View>
+                    {entry.avatar ? (
+                      <View style={[styles.rankingAvatar, styles.rankingAvatarFallback, { borderColor: MEDAL_COLORS[idx + 4] || colors.border, backgroundColor: colors.cardAlt }]}>
+                        <View style={[styles.rankingAvatarImageWrap, { borderColor: 'rgba(255,255,255,0.18)' }]}>
+                          <Image source={{ uri: entry.avatar }} style={styles.rankingAvatarImage} />
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={[styles.rankingAvatar, styles.rankingAvatarFallback, { backgroundColor: colors.cardAlt, borderColor: MEDAL_COLORS[idx + 4] || colors.border }]}>
+                        <LinearGradient
+                          colors={['#E0F2FE', '#BAE6FD']}
+                          style={styles.rankingAvatarFallbackInner}
+                        >
+                          <Text style={[styles.rankingAvatarEmoji, { color: '#0369A1' }]}>
+                            {entry.name
+                              .split(' ')
+                              .slice(0, 2)
+                              .map((word) => word.charAt(0).toUpperCase())
+                              .join('')}
+                          </Text>
+                        </LinearGradient>
+                      </View>
+                    )}
+                    <View style={styles.rankingInfo}>
+                      <Text style={[styles.rankingName, { color: colors.text }]} numberOfLines={1}>
+                        {entry.name}
+                        {isCurrentUser && ' (You)'}
+                      </Text>
+                      <Text style={[styles.rankingEarnings, { color: colors.textSec }]}>{entry.referrals} referrals</Text>
+                    </View>
+                  </View>
+                  <View style={styles.rankingMeta}>
+                    <Text style={[styles.rankingTrend, { color: colors.textSec }]}>Member</Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
       </ScrollView>
+
+      {currentUserRank && currentUserRank > 3 && enrichedUser && showCurrentUserIndicator && (
+        <TouchableOpacity style={styles.floatingUserIndicator} activeOpacity={0.8}>
+          <View style={styles.floatingAvatarSection}>
+            <View style={styles.floatingUserAvatar}>
+              {enrichedUser.avatar_url ? (
+                <Image source={{ uri: enrichedUser.avatar_url }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <Text style={styles.floatingUserInitial}>
+                  {enrichedUser.name
+                    .split(' ')
+                    .slice(0, 2)
+                    .map((w) => w.charAt(0).toUpperCase())
+                    .join('')}
+                </Text>
+              )}
+            </View>
+            <View style={styles.floatingUserText}>
+              <Text style={styles.floatingUserName} numberOfLines={1}>
+                {enrichedUser.name}
+              </Text>
+              <Text style={styles.floatingUserRank}>#{currentUserRank}</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-down" size={16} color="#0066FF" />
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -410,7 +516,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     marginTop: -34,
     paddingHorizontal: 12,
-    paddingTop: 54,
+    paddingTop: 100,
     paddingBottom: 20,
   },
   topThreeOverlap: {
@@ -420,7 +526,7 @@ const styles = StyleSheet.create({
   topThreeGrid: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: 10,
     width: '100%',
   },
@@ -538,9 +644,11 @@ const styles = StyleSheet.create({
   topCardName: {
     fontWeight: '800',
     textAlign: 'center',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 18,
     marginTop: 6,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   rankingsSection: {
     borderTopLeftRadius: 20,
@@ -669,6 +777,113 @@ const styles = StyleSheet.create({
   rankingTrend: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  currentUserContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbe7f3',
+    backgroundColor: '#E0F2FE',
+    marginVertical: 12,
+    marginHorizontal: 12,
+    borderRadius: 16,
+  },
+  currentUserContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  currentUserAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#0066FF',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#0066FF',
+  },
+  currentUserInitial: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  currentUserInfo: {
+    flex: 1,
+  },
+  currentUserLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0066FF',
+  },
+  currentUserRank: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0369A1',
+    marginTop: 2,
+  },
+  currentUserHighlight: {
+    backgroundColor: '#E0F2FE',
+  },
+  floatingUserIndicator: {
+    position: 'absolute',
+    bottom: 20,
+    left: '50%',
+    marginLeft: -110,
+    width: 220,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#E0F2FE',
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: '#0066FF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+    gap: 10,
+  },
+  floatingAvatarSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  floatingUserAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0066FF',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingUserInitial: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  floatingUserText: {
+    flex: 1,
+  },
+  floatingUserName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0066FF',
+  },
+  floatingUserRank: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0369A1',
+    marginTop: 2,
   },
 });
 

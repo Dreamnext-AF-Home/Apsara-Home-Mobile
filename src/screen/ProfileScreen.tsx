@@ -142,6 +142,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
   const [loadingWallet, setLoadingWallet] = useState(false);
   const [dailyCheckinClaimed, setDailyCheckinClaimed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [userLeaderboardRank, setUserLeaderboardRank] = useState<number | null>(null);
   const photoUrl = user?.avatar_url ?? null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
   const firstName = user?.name?.split(' ')[0] ?? 'User';
@@ -198,8 +199,24 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
       fetchLinkedAccounts();
       fetchSecuritySettings();
       fetchWalletData();
+      fetchUserLeaderboardRank();
     }
   }, [token]);
+
+  const fetchUserLeaderboardRank = async () => {
+    if (!token || !user?.id) return;
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/public/top-members?sort=referrals&per_page=100`);
+      const result = await response.json();
+      const members = Array.isArray(result?.data) ? result.data : [];
+      const userRankIndex = members.findIndex((member: any) => member.id === parseInt(user.id));
+      if (userRankIndex !== -1) {
+        setUserLeaderboardRank(userRankIndex + 1);
+      }
+    } catch (error) {
+      console.error('Error fetching user leaderboard rank:', error);
+    }
+  };
 
   useEffect(() => {
     console.log('[ProfileScreen] linkedAccountsRefreshTrigger changed:', linkedAccountsRefreshTrigger);
@@ -435,6 +452,12 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 )}
                 <View style={styles.usernameDot} />
                 <Text style={[styles.usernamePvText, { color: Colors.white }]}>{user.monthly_activation?.remaining_pv ?? 0} PV</Text>
+                {user?.rank && (
+                  <>
+                    <View style={styles.usernameDot} />
+                    <Text style={[styles.userRankText, { color: Colors.white }]}>Rank #{user.rank}</Text>
+                  </>
+                )}
               </View>
             )}
           </View>
@@ -529,7 +552,7 @@ export default function ProfileScreen({ user, onLogout, onNavigateSettings, onCa
                 <Text style={[styles.pvStatLabel, { color: colors.textSec }]}>Leaderboard</Text>
                 <View style={styles.leaderboardRankDisplay}>
                   <Ionicons name="trophy" size={16} color="#FFD700" />
-                  <Text style={[styles.pvStatValue, { color: Colors.sky }]}>#1</Text>
+                  <Text style={[styles.pvStatValue, { color: Colors.sky }]}>#{userLeaderboardRank ?? '-'}</Text>
                 </View>
               </TouchableOpacity>
               <View style={[styles.pvStatDivider, { backgroundColor: colors.border }]} />
@@ -1206,6 +1229,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textSecondary,
     fontWeight: '600',
+  },
+  userRankText: {
+    fontSize: 11,
+    color: Colors.white,
+    fontWeight: '700',
   },
   headerActions: {
     flexDirection: 'row',
