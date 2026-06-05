@@ -316,6 +316,8 @@ function ProfileTabScreen() {
       onPurchaseItemClick={ctx.onPurchaseItemClick}
       linkedAccountsRefreshTrigger={ctx.linkedAccountsRefreshTrigger}
       onSecuritySettingsPress={ctx.onSecuritySettingsPress}
+      setShowLeaderboard={ctx.setShowLeaderboard}
+      showLeaderboard={ctx.showLeaderboard}
       onShowAFWalletOverview={ctx.onShowAFWalletOverview}
       onShowAFWalletVoucher={ctx.onShowAFWalletVoucher}
       onShowAFWalletRewards={ctx.onShowAFWalletRewards}
