@@ -59,33 +59,17 @@ class MainActivity : ReactActivity() {
   }
 
   private fun handleNotificationIntent(intent: Intent?) {
-    Log.d(TAG, "handleNotificationIntent called with intent: $intent")
-    Log.d(TAG, "Intent action before: ${intent?.action}")
-    Log.d(TAG, "Intent data before: ${intent?.data}")
+    Log.d(TAG, "handleNotificationIntent called")
+    Log.d(TAG, "Intent action: ${intent?.action}")
+    Log.d(TAG, "Intent data: ${intent?.data}")
 
-    val deeplink = intent?.getStringExtra("deeplink")
-    Log.d(TAG, "Deeplink from extras: $deeplink")
-
-    if (!deeplink.isNullOrEmpty()) {
-      Log.d(TAG, "Notification deeplink received: $deeplink")
-      // Create URI from deeplink string - React Navigation will handle it through app.json config
-      val uri = Uri.parse(deeplink)
-      Log.d(TAG, "Parsed URI: $uri")
-      Log.d(TAG, "URI scheme: ${uri.scheme}, host: ${uri.host}, path: ${uri.path}")
-
-      intent?.data = uri
-      intent?.action = Intent.ACTION_VIEW
-      intent?.addCategory(Intent.CATEGORY_BROWSABLE)
-
-      Log.d(TAG, "Intent data after setting: ${intent?.data}")
-      Log.d(TAG, "Intent action after setting: ${intent?.action}")
-
+    if (intent?.data != null) {
+      Log.d(TAG, "Notification deeplink received: ${intent.data}")
+      Log.d(TAG, "URI scheme: ${intent.data?.scheme}, host: ${intent.data?.host}, path: ${intent.data?.path}")
       setIntent(intent)
-
-      Log.d(TAG, "After setIntent - getIntent().data: ${getIntent().data}")
-      Log.d(TAG, "After setIntent - getIntent().action: ${getIntent().action}")
+      Log.d(TAG, "Intent updated in MainActivity")
     } else {
-      Log.d(TAG, "⚠️ No deeplink found in intent extras")
+      Log.d(TAG, "No deeplink found in intent data")
     }
   }
 
