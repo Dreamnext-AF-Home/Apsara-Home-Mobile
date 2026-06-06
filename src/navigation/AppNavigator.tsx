@@ -977,7 +977,38 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
     <View style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['left', 'right']}>
         <View style={styles.body}>
-          {/* Overlay: Product Detail Screen */}
+
+          {/* Overlay: Search Results Screen - always mounted to preserve state and prevent refetch */}
+          {searchQuery && (
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: selectedProductId !== null ? -1 : 1,
+                pointerEvents: selectedProductId !== null ? 'none' : 'auto',
+              }}
+            >
+              <SearchResultScreen
+                token={token}
+                query={searchQuery}
+                isDarkMode={isDarkMode}
+                onBack={() => {
+                  setSearchQuery(null);
+                  setSearchVisible(true);
+                }}
+                onProductPress={(product) => {
+                  setPreviousSearchQuery(searchQuery);
+                  setProductDetailSource('search');
+                  setSelectedProductId(product.id);
+                }}
+              />
+            </View>
+          )}
+
+          {/* Overlay: Product Detail Screen - rendered last so it appears on top */}
           {selectedProductId !== null && (
             <ProductDetailScreen
               productId={selectedProductId}
@@ -989,6 +1020,8 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 setSelectedProductId(null);
                 if (productDetailSource === 'cart') {
                   setShowCart(true);
+                } else if (productDetailSource === 'search') {
+                  // Stay on search results screen - it's already visible
                 }
               }}
               onProductPress={(id) => {
@@ -1047,23 +1080,6 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
                 setShowCheckout(true);
               }}
               isDarkMode={isDarkMode}
-            />
-          )}
-
-          {/* Overlay: Search Results Screen */}
-          {searchQuery && (
-            <SearchResultScreen
-              token={token}
-              query={searchQuery}
-              isDarkMode={isDarkMode}
-              onBack={() => {
-                setSearchQuery(null);
-                setSearchVisible(true);
-              }}
-              onProductPress={(product) => {
-                setPreviousSearchQuery(searchQuery);
-                setSelectedProductId(product.id);
-              }}
             />
           )}
 
@@ -1246,6 +1262,11 @@ export default function AppNavigator({ user, token, onLogout, productSlugFromDee
           onBack={() => {
             setSearchVisible(false);
             setActiveTab(previousTab);
+          }}
+          onProductPress={(productId) => {
+            setProductDetailSource('search');
+            setSelectedProductId(productId);
+            setSearchVisible(false);
           }}
           onSearchSubmit={(query) => {
             setSearchQuery(query);
