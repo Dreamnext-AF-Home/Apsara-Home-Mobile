@@ -32,4 +32,9 @@
 -keep class expo.modules.camera.** { *; }
 -keep interface expo.modules.kotlin.** { *; }
 
+# Suppress warnings for missing expo classes
+-dontwarn expo.modules.kotlin.runtime.Runtime
+-dontwarn expo.modules.kotlin.services.Service
+-dontwarn expo.modules.kotlin.services.ServicesRegistry
+
 # Add any project specific keep options here:
