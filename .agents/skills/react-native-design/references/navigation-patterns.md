@@ -18,41 +18,41 @@ npm install react-native-screens react-native-safe-area-context
 
 ```typescript
 // navigation/types.ts
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { NativeStackScreenProps } from "@react-navigation/native-stack"
+import { BottomTabScreenProps } from "@react-navigation/bottom-tabs"
 import {
   CompositeScreenProps,
   NavigatorScreenParams,
-} from "@react-navigation/native";
+} from "@react-navigation/native"
 
 // Define param lists for each navigator
 export type RootStackParamList = {
-  Main: NavigatorScreenParams<MainTabParamList>;
-  Modal: { title: string };
-  Auth: NavigatorScreenParams<AuthStackParamList>;
-};
+  Main: NavigatorScreenParams<MainTabParamList>
+  Modal: { title: string }
+  Auth: NavigatorScreenParams<AuthStackParamList>
+}
 
 export type MainTabParamList = {
-  Home: undefined;
-  Search: { query?: string };
-  Profile: { userId: string };
-};
+  Home: undefined
+  Search: { query?: string }
+  Profile: { userId: string }
+}
 
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  ForgotPassword: { email?: string };
-};
+  Login: undefined
+  Register: undefined
+  ForgotPassword: { email?: string }
+}
 
 // Screen props helpers
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  NativeStackScreenProps<RootStackParamList, T>;
+  NativeStackScreenProps<RootStackParamList, T>
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> =
   CompositeScreenProps<
     BottomTabScreenProps<MainTabParamList, T>,
     RootStackScreenProps<keyof RootStackParamList>
-  >;
+  >
 
 // Global type declaration
 declare global {
@@ -66,16 +66,16 @@ declare global {
 
 ```typescript
 // hooks/useAppNavigation.ts
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "./types";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
+import { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import { RootStackParamList } from "./types"
 
 export function useAppNavigation() {
-  return useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  return useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 }
 
 export function useTypedRoute<T extends keyof RootStackParamList>() {
-  return useRoute<RouteProp<RootStackParamList, T>>();
+  return useRoute<RouteProp<RootStackParamList, T>>()
 }
 ```
 
@@ -467,39 +467,39 @@ function App() {
 ### Handling Deep Links
 
 ```typescript
-import { useEffect } from "react";
-import { Linking } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useEffect } from "react"
+import { Linking } from "react-native"
+import { useNavigation } from "@react-navigation/native"
 
 function useDeepLinkHandler() {
-  const navigation = useNavigation();
+  const navigation = useNavigation()
 
   useEffect(() => {
     // Handle initial URL
     const handleInitialUrl = async () => {
-      const url = await Linking.getInitialURL();
+      const url = await Linking.getInitialURL()
       if (url) {
-        handleDeepLink(url);
+        handleDeepLink(url)
       }
-    };
+    }
 
     // Handle URL changes
     const subscription = Linking.addEventListener("url", ({ url }) => {
-      handleDeepLink(url);
-    });
+      handleDeepLink(url)
+    })
 
-    handleInitialUrl();
+    handleInitialUrl()
 
-    return () => subscription.remove();
-  }, []);
+    return () => subscription.remove()
+  }, [])
 
   const handleDeepLink = (url: string) => {
     // Parse URL and navigate
-    const route = parseUrl(url);
+    const route = parseUrl(url)
     if (route) {
-      navigation.navigate(route.name, route.params);
+      navigation.navigate(route.name, route.params)
     }
-  };
+  }
 }
 ```
 

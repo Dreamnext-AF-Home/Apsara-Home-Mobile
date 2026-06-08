@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -9,22 +9,30 @@ import {
   Animated,
   Image,
   Modal,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+} from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "../../constants/colors"
 
 interface DailyCheckinProps {
-  isDarkMode?: boolean;
-  onCheckin?: (day: number) => void;
-  onViewMore?: () => void;
+  isDarkMode?: boolean
+  onCheckin?: (day: number) => void
+  onViewMore?: () => void
 }
 
-const CHECKIN_REWARDS = [20, 25, 30, 35, 40, 45, 50]; // PV for each day
-const DAY_LABELS = ['Today', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+const CHECKIN_REWARDS = [20, 25, 30, 35, 40, 45, 50] // PV for each day
+const DAY_LABELS = [
+  "Today",
+  "Day 2",
+  "Day 3",
+  "Day 4",
+  "Day 5",
+  "Day 6",
+  "Day 7",
+]
 
 const ConfettiPiece = ({ delay }: { delay: number }) => {
-  const translateY = new Animated.Value(0);
-  const opacity = new Animated.Value(1);
+  const translateY = new Animated.Value(0)
+  const opacity = new Animated.Value(1)
 
   React.useEffect(() => {
     Animated.sequence([
@@ -42,56 +50,57 @@ const ConfettiPiece = ({ delay }: { delay: number }) => {
           useNativeDriver: true,
         }),
       ]),
-    ]).start();
-  }, []);
+    ]).start()
+  }, [])
 
-  const confettiEmojis = ['🎉', '🎊', '⭐', '✨', '🎈'];
-  const randomEmoji = confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)];
-  const randomLeft = Math.random() * 300 - 150;
+  const confettiEmojis = ["🎉", "🎊", "⭐", "✨", "🎈"]
+  const randomEmoji =
+    confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)]
+  const randomLeft = Math.random() * 300 - 150
 
   return (
     <Animated.Text
       style={[
         styles.confettiPiece,
         {
-          transform: [
-            { translateY },
-            { translateX: randomLeft },
-          ],
+          transform: [{ translateY }, { translateX: randomLeft }],
           opacity,
         },
       ]}
     >
       {randomEmoji}
     </Animated.Text>
-  );
-};
+  )
+}
 
-export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyCheckinProps) {
-  const [checkedInDays, setCheckedInDays] = useState<number[]>([]);
-  const [scaleAnims] = useState(DAY_LABELS.map(() => new Animated.Value(1)));
-  const [showClaimModal, setShowClaimModal] = useState(false);
-  const [claimedReward, setClaimedReward] = useState(0);
-  const [hasError, setHasError] = useState(false);
+export default function DailyCheckin({
+  isDarkMode = false,
+  onCheckin,
+}: DailyCheckinProps) {
+  const [checkedInDays, setCheckedInDays] = useState<number[]>([])
+  const [scaleAnims] = useState(DAY_LABELS.map(() => new Animated.Value(1)))
+  const [showClaimModal, setShowClaimModal] = useState(false)
+  const [claimedReward, setClaimedReward] = useState(0)
+  const [hasError, setHasError] = useState(false)
 
   React.useEffect(() => {
     try {
       // Component initialization
     } catch (error) {
-      setHasError(true);
-      console.log('DailyCheckin error:', error);
+      setHasError(true)
+      console.log("DailyCheckin error:", error)
     }
-  }, []);
+  }, [])
 
   const colors = {
-    bg: isDarkMode ? '#0f172a' : '#f5f5f5',
-    containerBg: isDarkMode ? '#1f2937' : Colors.white,
-    cardBg: isDarkMode ? '#1e293b' : '#f8fafc',
-    text: isDarkMode ? '#f8fafc' : Colors.text,
-    textSec: isDarkMode ? '#94a3b8' : Colors.textSecondary,
-    border: isDarkMode ? '#374151' : '#e5e7eb',
-    borderLight: isDarkMode ? '#475569' : '#f1f5f9',
-  };
+    bg: isDarkMode ? "#0f172a" : "#f5f5f5",
+    containerBg: isDarkMode ? "#1f2937" : Colors.white,
+    cardBg: isDarkMode ? "#1e293b" : "#f8fafc",
+    text: isDarkMode ? "#f8fafc" : Colors.text,
+    textSec: isDarkMode ? "#94a3b8" : Colors.textSecondary,
+    border: isDarkMode ? "#374151" : "#e5e7eb",
+    borderLight: isDarkMode ? "#475569" : "#f1f5f9",
+  }
 
   const handleCheckin = (day: number) => {
     if (!checkedInDays.includes(day)) {
@@ -106,35 +115,41 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
           duration: 100,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start()
 
-      setCheckedInDays([...checkedInDays, day]);
-      setClaimedReward(CHECKIN_REWARDS[day - 1]);
-      setShowClaimModal(true);
+      setCheckedInDays([...checkedInDays, day])
+      setClaimedReward(CHECKIN_REWARDS[day - 1])
+      setShowClaimModal(true)
 
       if (onCheckin) {
-        onCheckin(day);
+        onCheckin(day)
       }
     }
-  };
+  }
 
-
-  const todayReward = CHECKIN_REWARDS[0];
-  const totalPV = CHECKIN_REWARDS.reduce((sum, pv) => sum + pv, 0);
+  const todayReward = CHECKIN_REWARDS[0]
+  const totalPV = CHECKIN_REWARDS.reduce((sum, pv) => sum + pv, 0)
 
   if (hasError) {
     return (
       <View style={styles.section}>
         <Text>Daily Check-In</Text>
       </View>
-    );
+    )
   }
 
   return (
-    <View style={[styles.section, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.section,
+        { backgroundColor: colors.containerBg, borderColor: colors.border },
+      ]}
+    >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.borderLight }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>PV Check In</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          PV Check In
+        </Text>
       </View>
 
       {/* Days Container */}
@@ -145,10 +160,10 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
         style={styles.daysScroll}
       >
         {CHECKIN_REWARDS.map((reward, index) => {
-          const day = index + 1;
-          const isChecked = checkedInDays.includes(day);
-          const scaleAnim = scaleAnims[index];
-          const isToday = day === 1;
+          const day = index + 1
+          const isChecked = checkedInDays.includes(day)
+          const scaleAnim = scaleAnims[index]
+          const isToday = day === 1
 
           return (
             <Animated.View
@@ -165,7 +180,9 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
                   style={[
                     styles.dayCard,
                     {
-                      backgroundColor: isChecked ? Colors.sky + '15' : 'transparent',
+                      backgroundColor: isChecked
+                        ? Colors.sky + "15"
+                        : "transparent",
                       borderColor: isToday ? Colors.sky : colors.border,
                       borderWidth: 1,
                     },
@@ -181,23 +198,36 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
                     </View>
                     {isChecked && (
                       <View style={styles.checkIconContainer}>
-                        <Ionicons name="checkmark-circle" size={16} color={Colors.sky} />
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color={Colors.sky}
+                        />
                       </View>
                     )}
                   </View>
 
                   {/* Coin Image with Glow */}
-                  <View style={[
-                    styles.coinGlowContainer,
-                    {
-                      backgroundColor: isChecked
-                        ? Colors.sky + '35'
-                        : day === 7 ? Colors.sky + '25' : Colors.sky + '10',
-                    }
-                  ]}>
+                  <View
+                    style={[
+                      styles.coinGlowContainer,
+                      {
+                        backgroundColor: isChecked
+                          ? Colors.sky + "35"
+                          : day === 7
+                            ? Colors.sky + "25"
+                            : Colors.sky + "10",
+                      },
+                    ]}
+                  >
                     <View style={styles.coinContainer}>
                       <Image
-                        source={{ uri: day <= 6 ? 'https://res.cloudinary.com/dc05ncs6l/image/upload/v1780879975/coin_1_kpacst.png' : 'https://res.cloudinary.com/dc05ncs6l/image/upload/v1780879975/coin_2_h2taqv.png' }}
+                        source={{
+                          uri:
+                            day <= 6
+                              ? "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780879975/coin_1_kpacst.png"
+                              : "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780879975/coin_2_h2taqv.png",
+                        }}
                         style={styles.coinImage}
                         resizeMode="contain"
                       />
@@ -218,7 +248,7 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
                 </Text>
               </View>
             </Animated.View>
-          );
+          )
         })}
       </ScrollView>
 
@@ -229,7 +259,9 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
         disabled={checkedInDays.includes(1)}
       >
         <Ionicons name="flash" size={16} color={Colors.sky} />
-        <Text style={styles.checkinButtonText}>Claim +{todayReward} PV Points</Text>
+        <Text style={styles.checkinButtonText}>
+          Claim +{todayReward} PV Points
+        </Text>
       </TouchableOpacity>
 
       {/* Claim Modal */}
@@ -241,17 +273,32 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
       >
         <View style={styles.modalOverlay}>
           {/* Confetti */}
-          {showClaimModal && Array.from({ length: 12 }).map((_, i) => (
-            <ConfettiPiece key={i} delay={i * 100} />
-          ))}
+          {showClaimModal &&
+            Array.from({ length: 12 }).map((_, i) => (
+              <ConfettiPiece key={i} delay={i * 100} />
+            ))}
 
-          <View style={[styles.modalContent, { backgroundColor: colors.containerBg, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.containerBg,
+                borderColor: colors.border,
+              },
+            ]}
+          >
             <Text style={styles.modalEmoji}>🎉</Text>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Congratulations!</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Congratulations!
+            </Text>
 
             <View style={styles.modalRewardContainer}>
               <Text style={styles.modalRewardText}>+{claimedReward}</Text>
-              <Text style={[styles.modalRewardLabel, { color: colors.textSec }]}>PV Points Earned</Text>
+              <Text
+                style={[styles.modalRewardLabel, { color: colors.textSec }]}
+              >
+                PV Points Earned
+              </Text>
             </View>
 
             <TouchableOpacity
@@ -265,7 +312,7 @@ export default function DailyCheckin({ isDarkMode = false, onCheckin }: DailyChe
         </View>
       </Modal>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -273,18 +320,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 8,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 20,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.text,
   },
   daysScroll: {
@@ -296,35 +343,35 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   dayWrapper: {
-    alignItems: 'center',
+    alignItems: "center",
     width: 70,
   },
   dayCardWrapper: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     gap: 6,
   },
   dayCard: {
     width: 60,
     height: 95,
     borderRadius: 8,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    justifyContent: "flex-end",
+    alignItems: "center",
     paddingBottom: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   coinGlowContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     width: 50,
     height: 50,
     borderRadius: 50,
     padding: 6,
   },
   coinContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     width: 36,
     height: 36,
     backgroundColor: Colors.white,
@@ -336,15 +383,15 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   rewardBadgeContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 0,
     zIndex: 10,
   },
@@ -352,45 +399,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   rewardBadgeText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.sky,
   },
   checkinButton: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
     gap: 8,
   },
   checkinButtonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.sky,
   },
   checkIconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
     borderRadius: 20,
     padding: 32,
-    alignItems: 'center',
-    width: '85%',
+    alignItems: "center",
+    width: "85%",
     maxWidth: 320,
     borderWidth: 1,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -402,22 +449,22 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   modalRewardContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 24,
   },
   modalRewardText: {
     fontSize: 56,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.sky,
   },
   modalRewardLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 8,
   },
   modalButton: {
@@ -425,12 +472,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 20,
-    width: '100%',
+    width: "100%",
   },
   modalButtonText: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
-    textAlign: 'center',
+    textAlign: "center",
   },
-});
+})

@@ -1,17 +1,22 @@
 // @ts-nocheck
-import React, { useRef, useState } from 'react';
-import { WebView } from 'react-native';
+import React, { useRef, useState } from "react"
+import { WebView } from "react-native"
 
 interface WebAuthnViewProps {
-  challengeToken: string;
-  isDarkMode: boolean;
-  onCredentialCreated: (credential: any) => void;
-  colors: any;
+  challengeToken: string
+  isDarkMode: boolean
+  onCredentialCreated: (credential: any) => void
+  colors: any
 }
 
-export function WebAuthnView({ challengeToken, isDarkMode, onCredentialCreated, colors }: WebAuthnViewProps) {
-  const webViewRef = useRef<WebView>(null);
-  const [loading, setLoading] = useState(true);
+export function WebAuthnView({
+  challengeToken,
+  isDarkMode,
+  onCredentialCreated,
+  colors,
+}: WebAuthnViewProps) {
+  const webViewRef = useRef<WebView>(null)
+  const [loading, setLoading] = useState(true)
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -24,21 +29,21 @@ export function WebAuthnView({ challengeToken, isDarkMode, onCredentialCreated, 
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
           padding: 20px;
           margin: 0;
-          background-color: ${isDarkMode ? '#0f172a' : '#f0f9ff'};
-          color: ${isDarkMode ? '#f8fafc' : '#1a1a1a'};
+          background-color: ${isDarkMode ? "#0f172a" : "#f0f9ff"};
+          color: ${isDarkMode ? "#f8fafc" : "#1a1a1a"};
         }
         .container {
           max-width: 500px;
           margin: 40px auto;
           padding: 20px;
-          background-color: ${isDarkMode ? '#1f2937' : '#ffffff'};
+          background-color: ${isDarkMode ? "#1f2937" : "#ffffff"};
           border-radius: 12px;
-          border: 1px solid ${isDarkMode ? '#374151' : '#e5e7eb'};
+          border: 1px solid ${isDarkMode ? "#374151" : "#e5e7eb"};
         }
         .info {
           margin: 20px 0;
           padding: 12px;
-          background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'};
+          background-color: ${isDarkMode ? "#1e293b" : "#f8fafc"};
           border-radius: 8px;
           font-size: 14px;
           line-height: 1.6;
@@ -182,18 +187,18 @@ export function WebAuthnView({ challengeToken, isDarkMode, onCredentialCreated, 
       </script>
     </body>
     </html>
-  `;
+  `
 
   const handleWebViewMessage = (event: any) => {
     try {
-      const message = JSON.parse(event.nativeEvent.data);
-      if (message.type === 'credential-created') {
-        onCredentialCreated(message.data);
+      const message = JSON.parse(event.nativeEvent.data)
+      if (message.type === "credential-created") {
+        onCredentialCreated(message.data)
       }
     } catch (error) {
-      console.error('WebView message error:', error);
+      console.error("WebView message error:", error)
     }
-  };
+  }
 
   return (
     <WebView
@@ -204,5 +209,5 @@ export function WebAuthnView({ challengeToken, isDarkMode, onCredentialCreated, 
       javaScriptEnabled={true}
       style={{ flex: 1 }}
     />
-  );
+  )
 }

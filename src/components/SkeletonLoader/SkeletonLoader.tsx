@@ -1,19 +1,24 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '../../constants/colors';
+import React from "react"
+import { View, StyleSheet } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import { Colors } from "../../constants/colors"
 
 interface SkeletonProps {
-  width?: string | number;
-  height?: string | number;
-  style?: any;
-  borderRadius?: number;
+  width?: string | number
+  height?: string | number
+  style?: any
+  borderRadius?: number
 }
 
-export function Skeleton({ width = '100%', height = 20, style, borderRadius = 4 }: SkeletonProps) {
+export function Skeleton({
+  width = "100%",
+  height = 20,
+  style,
+  borderRadius = 4,
+}: SkeletonProps) {
   return (
     <LinearGradient
-      colors={['#e5e7eb', '#f3f4f6', '#e5e7eb']}
+      colors={["#e5e7eb", "#f3f4f6", "#e5e7eb"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 0 }}
       style={[
@@ -26,7 +31,7 @@ export function Skeleton({ width = '100%', height = 20, style, borderRadius = 4 
         style,
       ]}
     />
-  );
+  )
 }
 
 export function BannerSkeleton() {
@@ -34,7 +39,7 @@ export function BannerSkeleton() {
     <View style={styles.bannerSkeleton}>
       <Skeleton height={190} borderRadius={24} />
     </View>
-  );
+  )
 }
 
 export function SectionHeaderSkeleton() {
@@ -46,7 +51,7 @@ export function SectionHeaderSkeleton() {
         <Skeleton width={16} height={16} borderRadius={8} />
       </View>
     </View>
-  );
+  )
 }
 
 export function CircleSkeleton() {
@@ -55,30 +60,30 @@ export function CircleSkeleton() {
       <Skeleton width={72} height={72} borderRadius={36} />
       <Skeleton width={60} height={12} style={{ marginTop: 8 }} />
     </View>
-  );
+  )
 }
 
 export function RoomGridSkeleton() {
   return (
     <View style={styles.roomGridSkeleton}>
-      {[1, 2, 3, 4, 5, 6, 7, 8].map(item => (
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
         <View key={item} style={styles.roomItemSkeleton}>
           <Skeleton width={60} height={60} borderRadius={30} />
           <Skeleton width={50} height={10} style={{ marginTop: 6 }} />
         </View>
       ))}
     </View>
-  );
+  )
 }
 
 export function CategoryRowSkeleton() {
   return (
     <View style={styles.categoryRowSkeleton}>
-      {[1, 2, 3, 4, 5].map(item => (
+      {[1, 2, 3, 4, 5].map((item) => (
         <CircleSkeleton key={item} />
       ))}
     </View>
-  );
+  )
 }
 
 export function BrandCardSkeleton() {
@@ -86,7 +91,7 @@ export function BrandCardSkeleton() {
     <View style={styles.brandCardSkeleton}>
       <Skeleton width={170} height={110} borderRadius={18} />
     </View>
-  );
+  )
 }
 
 export function FeaturedProductsSkeleton() {
@@ -94,21 +99,31 @@ export function FeaturedProductsSkeleton() {
     <View style={styles.masonryGridSkeleton}>
       <View style={styles.masonryColumnSkeleton}>
         <Skeleton width="100%" height={220} borderRadius={8} />
-        <Skeleton width="100%" height={260} borderRadius={8} style={{ marginTop: 8 }} />
+        <Skeleton
+          width="100%"
+          height={260}
+          borderRadius={8}
+          style={{ marginTop: 8 }}
+        />
       </View>
       <View style={styles.masonryColumnSkeleton}>
         <Skeleton width="100%" height={260} borderRadius={8} />
-        <Skeleton width="100%" height={220} borderRadius={8} style={{ marginTop: 8 }} />
+        <Skeleton
+          width="100%"
+          height={220}
+          borderRadius={8}
+          style={{ marginTop: 8 }}
+        />
       </View>
     </View>
-  );
+  )
 }
 
 export function HomeScreenSkeleton() {
   return (
     <View style={styles.container}>
       <BannerSkeleton />
-      
+
       <View style={styles.section}>
         <SectionHeaderSkeleton />
         <RoomGridSkeleton />
@@ -122,7 +137,7 @@ export function HomeScreenSkeleton() {
       <View style={styles.section}>
         <SectionHeaderSkeleton />
         <View style={styles.brandRowSkeleton}>
-          {[1, 2, 3].map(item => (
+          {[1, 2, 3].map((item) => (
             <BrandCardSkeleton key={item} />
           ))}
         </View>
@@ -133,19 +148,19 @@ export function HomeScreenSkeleton() {
         <FeaturedProductsSkeleton />
       </View>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fbff',
+    backgroundColor: "#f8fbff",
     padding: 16,
     paddingBottom: 28,
     gap: 16,
   },
   skeleton: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   bannerSkeleton: {
     marginBottom: 10,
@@ -154,34 +169,34 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionHeaderSkeleton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
   sectionHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   circleSkeleton: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
     marginRight: 12,
   },
   roomGridSkeleton: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 4,
   },
   roomItemSkeleton: {
-    width: '25%',
-    alignItems: 'center',
+    width: "25%",
+    alignItems: "center",
     gap: 6,
     paddingVertical: 10,
   },
   masonryGridSkeleton: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   masonryColumnSkeleton: {
@@ -189,15 +204,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryRowSkeleton: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingRight: 4,
   },
   brandCardSkeleton: {
     marginRight: 12,
   },
   brandRowSkeleton: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     paddingRight: 4,
   },
-});
+})

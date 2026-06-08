@@ -1,47 +1,59 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react"
 import {
-  View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, Dimensions,
-  ActivityIndicator, BackHandler, Animated, Modal, PanResponder,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '../../constants/colors';
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+  BackHandler,
+  Animated,
+  Modal,
+  PanResponder,
+} from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Ionicons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
+import { Colors } from "../../constants/colors"
 
 interface CartItem {
-  wishlist_id: number;
-  product_id: number;
+  wishlist_id: number
+  product_id: number
   product: {
-    id: number;
-    name: string;
-    image: string;
-    priceMember: number;
-    priceSrp?: number;
-    qty: number;
+    id: number
+    name: string
+    image: string
+    priceMember: number
+    priceSrp?: number
+    qty: number
     variants?: Array<{
-      id: number;
-      name?: string;
-      color?: string;
-      colorHex?: string;
-      size?: string;
-      images?: string[];
-    }>;
-  };
+      id: number
+      name?: string
+      color?: string
+      colorHex?: string
+      size?: string
+      images?: string[]
+    }>
+  }
 }
 
 interface MultipleItemsCartModalProps {
-  visible: boolean;
-  items: CartItem[];
-  onClose: () => void;
-  onAddToCart: (items: Array<{
-    product_id: number;
-    quantity: number;
-    variant_id?: number;
-  }>) => Promise<void>;
-  loading?: boolean;
-  token?: string | null;
-  onCartUpdate?: () => void;
-  onNavigateToCart?: () => void;
+  visible: boolean
+  items: CartItem[]
+  onClose: () => void
+  onAddToCart: (
+    items: Array<{
+      product_id: number
+      quantity: number
+      variant_id?: number
+    }>
+  ) => Promise<void>
+  loading?: boolean
+  token?: string | null
+  onCartUpdate?: () => void
+  onNavigateToCart?: () => void
 }
 
 export default function MultipleItemsCartModal({
@@ -54,44 +66,59 @@ export default function MultipleItemsCartModal({
   onCartUpdate,
   onNavigateToCart,
 }: MultipleItemsCartModalProps) {
-  const insets = useSafeAreaInsets();
-  const scrollY = useRef(0);
-  const slideAnim = useRef(new Animated.Value(300)).current;
-  const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
-  const [selectedVariants, setSelectedVariants] = useState<{ [key: number]: number | null }>({});
-  const [expandedVariants, setExpandedVariants] = useState<{ [key: number]: boolean }>({});
-  const [displayedImages, setDisplayedImages] = useState<{ [key: number]: string }>({});
-  const [selectedColors, setSelectedColors] = useState<{ [key: number]: string | null }>({});
-  const [selectedSizes, setSelectedSizes] = useState<{ [key: number]: string | null }>({});
-  const [selectedTypes, setSelectedTypes] = useState<{ [key: number]: string | null }>({});
-  const [isProcessing, setIsProcessing] = useState(false);
+  const insets = useSafeAreaInsets()
+  const scrollY = useRef(0)
+  const slideAnim = useRef(new Animated.Value(300)).current
+  const [quantities, setQuantities] = useState<{ [key: number]: number }>({})
+  const [selectedVariants, setSelectedVariants] = useState<{
+    [key: number]: number | null
+  }>({})
+  const [expandedVariants, setExpandedVariants] = useState<{
+    [key: number]: boolean
+  }>({})
+  const [displayedImages, setDisplayedImages] = useState<{
+    [key: number]: string
+  }>({})
+  const [selectedColors, setSelectedColors] = useState<{
+    [key: number]: string | null
+  }>({})
+  const [selectedSizes, setSelectedSizes] = useState<{
+    [key: number]: string | null
+  }>({})
+  const [selectedTypes, setSelectedTypes] = useState<{
+    [key: number]: string | null
+  }>({})
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => scrollY.current === 0,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        if (scrollY.current > 0) return false;
-        return gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        if (scrollY.current > 0) return false
+        return (
+          gestureState.dy > 5 &&
+          Math.abs(gestureState.dy) > Math.abs(gestureState.dx)
+        )
       },
       onPanResponderMove: (evt, gestureState) => {
         if (scrollY.current === 0 && gestureState.dy > 0) {
-          slideAnim.setValue(gestureState.dy);
+          slideAnim.setValue(gestureState.dy)
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
         if (scrollY.current === 0 && gestureState.dy > 100) {
-          onClose();
+          onClose()
         } else {
           Animated.spring(slideAnim, {
             toValue: 0,
             friction: 8,
             tension: 60,
             useNativeDriver: true,
-          }).start();
+          }).start()
         }
       },
     })
-  ).current;
+  ).current
 
   useEffect(() => {
     if (visible) {
@@ -100,85 +127,87 @@ export default function MultipleItemsCartModal({
         friction: 8,
         tension: 60,
         useNativeDriver: true,
-      }).start();
+      }).start()
 
       // Initialize quantities and variants
-      const initialQuantities: { [key: number]: number } = {};
-      const initialVariants: { [key: number]: number | null } = {};
-      const initialImages: { [key: number]: string } = {};
-      const initialColors: { [key: number]: string | null } = {};
-      const initialSizes: { [key: number]: string | null } = {};
-      const initialTypes: { [key: number]: string | null } = {};
-      items.forEach(item => {
-        initialQuantities[item.product_id] = 1;
-        const firstVariant = item.product.variants?.length ? item.product.variants[0] : null;
-        initialVariants[item.product_id] = firstVariant?.id || null;
-        initialColors[item.product_id] = firstVariant?.color || null;
-        initialSizes[item.product_id] = firstVariant?.size || null;
-        initialImages[item.product_id] = item.product.image;
-      });
-      setQuantities(initialQuantities);
-      setSelectedVariants(initialVariants);
-      setSelectedColors(initialColors);
-      setSelectedSizes(initialSizes);
-      setSelectedTypes(initialTypes);
-      setDisplayedImages(initialImages);
+      const initialQuantities: { [key: number]: number } = {}
+      const initialVariants: { [key: number]: number | null } = {}
+      const initialImages: { [key: number]: string } = {}
+      const initialColors: { [key: number]: string | null } = {}
+      const initialSizes: { [key: number]: string | null } = {}
+      const initialTypes: { [key: number]: string | null } = {}
+      items.forEach((item) => {
+        initialQuantities[item.product_id] = 1
+        const firstVariant = item.product.variants?.length
+          ? item.product.variants[0]
+          : null
+        initialVariants[item.product_id] = firstVariant?.id || null
+        initialColors[item.product_id] = firstVariant?.color || null
+        initialSizes[item.product_id] = firstVariant?.size || null
+        initialImages[item.product_id] = item.product.image
+      })
+      setQuantities(initialQuantities)
+      setSelectedVariants(initialVariants)
+      setSelectedColors(initialColors)
+      setSelectedSizes(initialSizes)
+      setSelectedTypes(initialTypes)
+      setDisplayedImages(initialImages)
     } else {
       Animated.timing(slideAnim, {
         toValue: 300,
         duration: 250,
         useNativeDriver: true,
-      }).start();
+      }).start()
     }
-  }, [visible, slideAnim, items]);
+  }, [visible, slideAnim, items])
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) return
 
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      onClose();
-      return true;
-    });
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose()
+      return true
+    })
 
-    return () => sub.remove();
-  }, [visible, onClose]);
+    return () => sub.remove()
+  }, [visible, onClose])
 
   const getTotal = () => {
     return items.reduce((total, item) => {
-      const qty = quantities[item.product_id] || 1;
-      return total + (item.product.priceMember * qty);
-    }, 0);
-  };
+      const qty = quantities[item.product_id] || 1
+      return total + item.product.priceMember * qty
+    }, 0)
+  }
 
   const handleQuantityChange = (productId: number, delta: number) => {
-    const currentQty = quantities[productId] || 1;
-    const newQty = Math.max(1, Math.min(currentQty + delta, 99));
-    setQuantities(prev => ({ ...prev, [productId]: newQty }));
-  };
+    const currentQty = quantities[productId] || 1
+    const newQty = Math.max(1, Math.min(currentQty + delta, 99))
+    setQuantities((prev) => ({ ...prev, [productId]: newQty }))
+  }
 
   const handleAddToCart = async () => {
-    setIsProcessing(true);
+    setIsProcessing(true)
     try {
-      const cartItems = items.map(item => ({
+      const cartItems = items.map((item) => ({
         product_id: item.product_id,
         variant_id: selectedVariants[item.product_id] || null,
         quantity: quantities[item.product_id] || 1,
         selected_color: selectedColors[item.product_id] || null,
         selected_size: selectedSizes[item.product_id] || null,
         selected_type: selectedTypes[item.product_id] || null,
-      }));
+      }))
 
-      await onAddToCart(cartItems);
-      onClose();
-      onNavigateToCart?.();
+      await onAddToCart(cartItems)
+      onClose()
+      onNavigateToCart?.()
     } catch (error) {
-      console.error('Error adding items to cart:', error);
+      console.error("Error adding items to cart:", error)
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
-  if (!visible) return null;
+  if (!visible) return null
 
   return (
     <View style={styles.modalOverlay}>
@@ -188,10 +217,7 @@ export default function MultipleItemsCartModal({
         onPress={onClose}
       />
       <Animated.View
-        style={[
-          styles.shopeeModal,
-          { transform: [{ translateY: slideAnim }] },
-        ]}
+        style={[styles.shopeeModal, { transform: [{ translateY: slideAnim }] }]}
         {...panResponder.panHandlers}
       >
         {/* Drag Handle */}
@@ -210,7 +236,7 @@ export default function MultipleItemsCartModal({
 
         {/* Summary Card */}
         <LinearGradient
-          colors={[Colors.sky, '#0ea5e9']}
+          colors={[Colors.sky, "#0ea5e9"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.summaryCard}
@@ -235,7 +261,9 @@ export default function MultipleItemsCartModal({
           style={styles.itemsList}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.itemsContent}
-          onScroll={(event) => { scrollY.current = event.nativeEvent.contentOffset.y; }}
+          onScroll={(event) => {
+            scrollY.current = event.nativeEvent.contentOffset.y
+          }}
           scrollEventThrottle={16}
         >
           {items.map((item) => (
@@ -243,7 +271,9 @@ export default function MultipleItemsCartModal({
               <View style={styles.itemCard}>
                 {/* Product Image */}
                 <Image
-                  source={{ uri: displayedImages[item.product_id] || item.product.image }}
+                  source={{
+                    uri: displayedImages[item.product_id] || item.product.image,
+                  }}
                   style={styles.itemImage}
                   resizeMode="cover"
                 />
@@ -257,11 +287,12 @@ export default function MultipleItemsCartModal({
                     <Text style={styles.itemPrice}>
                       ₱{item.product.priceMember.toLocaleString()}
                     </Text>
-                    {item.product.priceSrp && item.product.priceSrp > item.product.priceMember && (
-                      <Text style={styles.itemOriginalPrice}>
-                        ₱{item.product.priceSrp.toLocaleString()}
-                      </Text>
-                    )}
+                    {item.product.priceSrp &&
+                      item.product.priceSrp > item.product.priceMember && (
+                        <Text style={styles.itemOriginalPrice}>
+                          ₱{item.product.priceSrp.toLocaleString()}
+                        </Text>
+                      )}
                   </View>
                 </View>
 
@@ -292,22 +323,32 @@ export default function MultipleItemsCartModal({
                 <View style={styles.variantsSection}>
                   <TouchableOpacity
                     style={styles.variantsHeader}
-                    onPress={() => setExpandedVariants(prev => ({
-                      ...prev,
-                      [item.product_id]: !prev[item.product_id]
-                    }))}
+                    onPress={() =>
+                      setExpandedVariants((prev) => ({
+                        ...prev,
+                        [item.product_id]: !prev[item.product_id],
+                      }))
+                    }
                     activeOpacity={0.7}
                   >
                     <View style={styles.variantsLabelRow}>
                       <Text style={styles.variantsLabel}>Variants</Text>
                       <Text style={styles.selectedVariantText}>
-                        {item.product.variants.find(v => v.id === selectedVariants[item.product_id])?.name ||
-                         item.product.variants.find(v => v.id === selectedVariants[item.product_id])?.color ||
-                         'Select variant'}
+                        {item.product.variants.find(
+                          (v) => v.id === selectedVariants[item.product_id]
+                        )?.name ||
+                          item.product.variants.find(
+                            (v) => v.id === selectedVariants[item.product_id]
+                          )?.color ||
+                          "Select variant"}
                       </Text>
                     </View>
                     <Ionicons
-                      name={expandedVariants[item.product_id] ? 'chevron-up' : 'chevron-down'}
+                      name={
+                        expandedVariants[item.product_id]
+                          ? "chevron-up"
+                          : "chevron-down"
+                      }
                       size={18}
                       color={Colors.sky}
                     />
@@ -320,27 +361,28 @@ export default function MultipleItemsCartModal({
                           key={variant.id}
                           style={[
                             styles.variantOption,
-                            selectedVariants[item.product_id] === variant.id && styles.variantOptionSelected,
+                            selectedVariants[item.product_id] === variant.id &&
+                              styles.variantOptionSelected,
                           ]}
                           onPress={() => {
-                            setSelectedVariants(prev => ({
+                            setSelectedVariants((prev) => ({
                               ...prev,
-                              [item.product_id]: variant.id
-                            }));
-                            setSelectedColors(prev => ({
+                              [item.product_id]: variant.id,
+                            }))
+                            setSelectedColors((prev) => ({
                               ...prev,
-                              [item.product_id]: variant.color || null
-                            }));
-                            setSelectedSizes(prev => ({
+                              [item.product_id]: variant.color || null,
+                            }))
+                            setSelectedSizes((prev) => ({
                               ...prev,
-                              [item.product_id]: variant.size || null
-                            }));
+                              [item.product_id]: variant.size || null,
+                            }))
                             // Update displayed image if variant has images
                             if (variant.images && variant.images.length > 0) {
-                              setDisplayedImages(prev => ({
+                              setDisplayedImages((prev) => ({
                                 ...prev,
-                                [item.product_id]: variant.images![0]
-                              }));
+                                [item.product_id]: variant.images![0],
+                              }))
                             }
                           }}
                           activeOpacity={0.7}
@@ -349,15 +391,22 @@ export default function MultipleItemsCartModal({
                             <View
                               style={[
                                 styles.colorDot,
-                                { backgroundColor: variant.colorHex }
+                                { backgroundColor: variant.colorHex },
                               ]}
                             />
                           )}
                           <Text style={styles.variantOptionText}>
-                            {variant.name || variant.color || variant.size || `Variant ${variant.id}`}
+                            {variant.name ||
+                              variant.color ||
+                              variant.size ||
+                              `Variant ${variant.id}`}
                           </Text>
                           {selectedVariants[item.product_id] === variant.id && (
-                            <Ionicons name="checkmark" size={18} color={Colors.sky} />
+                            <Ionicons
+                              name="checkmark"
+                              size={18}
+                              color={Colors.sky}
+                            />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -370,7 +419,12 @@ export default function MultipleItemsCartModal({
         </ScrollView>
 
         {/* Footer */}
-        <View style={[styles.shopeeCheckoutFooter, { paddingBottom: insets.bottom + 12 }]}>
+        <View
+          style={[
+            styles.shopeeCheckoutFooter,
+            { paddingBottom: insets.bottom + 12 },
+          ]}
+        >
           <TouchableOpacity
             style={[styles.saveToCartBtn, isProcessing && { opacity: 0.6 }]}
             onPress={handleAddToCart}
@@ -392,12 +446,12 @@ export default function MultipleItemsCartModal({
         </View>
       </Animated.View>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -405,46 +459,46 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   modalBackdrop: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   shopeeModal: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: Colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
-    flexDirection: 'column',
+    maxHeight: "85%",
+    flexDirection: "column",
   },
   dragHandleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
   },
   dragHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#cbd5e1',
+    backgroundColor: "#cbd5e1",
     borderRadius: 2,
   },
   shopeeModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: "#f1f5f9",
   },
   shopeeModalHeaderText: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.text,
   },
   summaryCard: {
@@ -454,36 +508,36 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   summaryContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingLeft: 6,
   },
   summaryLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
     marginBottom: 4,
   },
   summaryPrice: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.white,
     paddingLeft: 4,
   },
   summaryDivider: {
     width: 1,
     height: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
   },
   itemCountBadge: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   itemCountText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
   },
   itemsList: {
@@ -498,14 +552,14 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   itemCard: {
-    flexDirection: 'row',
-    backgroundColor: '#f9fafb',
+    flexDirection: "row",
+    backgroundColor: "#f9fafb",
     borderRadius: 0,
     padding: 10,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
@@ -521,33 +575,33 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.text,
     lineHeight: 16,
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   itemPrice: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.sky,
   },
   itemOriginalPrice: {
     fontSize: 11,
     color: Colors.textSecondary,
-    textDecorationLine: 'line-through',
-    fontWeight: '500',
+    textDecorationLine: "line-through",
+    fontWeight: "500",
   },
   quantityControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.white,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     paddingHorizontal: 4,
     paddingVertical: 4,
     gap: 6,
@@ -556,53 +610,53 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f3f4f6',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f3f4f6",
   },
   quantityText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.text,
     minWidth: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   shopeeCheckoutFooter: {
     paddingHorizontal: 12,
     paddingTop: 12,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: "#f1f5f9",
   },
   saveToCartBtn: {
-    backgroundColor: '#f97316',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#f97316",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 13,
     borderRadius: 10,
     gap: 8,
   },
   saveToCartBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
     letterSpacing: 0.3,
   },
   variantsSection: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     borderTopWidth: 0,
     marginBottom: 10,
   },
   variantsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -612,13 +666,13 @@ const styles = StyleSheet.create({
   },
   variantsLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.text,
   },
   selectedVariantText: {
     fontSize: 12,
     color: Colors.sky,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   variantsList: {
     paddingHorizontal: 8,
@@ -626,25 +680,25 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   variantOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: Colors.white,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     gap: 8,
   },
   variantOptionSelected: {
-    backgroundColor: '#f0f9ff',
+    backgroundColor: "#f0f9ff",
     borderColor: Colors.sky,
     borderWidth: 2,
   },
   variantOptionText: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: Colors.text,
   },
   colorDot: {
@@ -652,6 +706,6 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
   },
-});
+})

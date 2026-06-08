@@ -1,18 +1,18 @@
 // @ts-nocheck
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as Keychain from 'react-native-keychain';
-import { Platform } from 'react-native';
+import * as LocalAuthentication from "expo-local-authentication"
+import * as Keychain from "react-native-keychain"
+import { Platform } from "react-native"
 
-const BIOMETRIC_CRED_KEY = 'biometric_credential';
-const BIOMETRIC_DEVICE_ID_KEY = 'biometric_device_id';
+const BIOMETRIC_CRED_KEY = "biometric_credential"
+const BIOMETRIC_DEVICE_ID_KEY = "biometric_device_id"
 const keychainStorageOptions = {
   storage: (Keychain.STORAGE_TYPE as any).KC,
-} as any;
+} as any
 
 export interface BiometricCredential {
-  credential_token: string;
-  device_id: string;
-  device_name: string;
+  credential_token: string
+  device_id: string
+  device_name: string
 }
 
 class BiometricUtils {
@@ -20,33 +20,36 @@ class BiometricUtils {
    * Check if device supports biometric authentication
    */
   static async isBiometricAvailable(): Promise<boolean> {
-    if (Platform.OS === 'web') {
-      return false;
+    if (Platform.OS === "web") {
+      return false
     }
 
     try {
-      const compatible = await LocalAuthentication.hasHardwareAsync();
-      return compatible;
+      const compatible = await LocalAuthentication.hasHardwareAsync()
+      return compatible
     } catch (error) {
-      console.error('[Biometric] Hardware check failed:', error);
-      return false;
+      console.error("[Biometric] Hardware check failed:", error)
+      return false
     }
   }
 
   /**
    * Get available biometric types
    */
-  static async getAvailableBiometrics(): Promise<LocalAuthentication.AuthenticationType[]> {
-    if (Platform.OS === 'web') {
-      return [];
+  static async getAvailableBiometrics(): Promise<
+    LocalAuthentication.AuthenticationType[]
+  > {
+    if (Platform.OS === "web") {
+      return []
     }
 
     try {
-      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-      return types;
+      const types =
+        await LocalAuthentication.supportedAuthenticationTypesAsync()
+      return types
     } catch (error) {
-      console.error('[Biometric] Failed to get available types:', error);
-      return [];
+      console.error("[Biometric] Failed to get available types:", error)
+      return []
     }
   }
 
@@ -54,35 +57,41 @@ class BiometricUtils {
    * Check if biometric is enrolled on device
    */
   static async isBiometricEnrolled(): Promise<boolean> {
-    if (Platform.OS === 'web') {
-      return false;
+    if (Platform.OS === "web") {
+      return false
     }
 
     try {
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      return enrolled;
+      const enrolled = await LocalAuthentication.isEnrolledAsync()
+      return enrolled
     } catch (error) {
-      console.error('[Biometric] Enrollment check failed:', error);
-      return false;
+      console.error("[Biometric] Enrollment check failed:", error)
+      return false
     }
   }
 
   /**
    * Save biometric credential to keychain
    */
-  static async saveBiometricCredential(credential: BiometricCredential): Promise<boolean> {
-    if (Platform.OS === 'web') {
-      return false;
+  static async saveBiometricCredential(
+    credential: BiometricCredential
+  ): Promise<boolean> {
+    if (Platform.OS === "web") {
+      return false
     }
 
     try {
-      console.log('[Biometric] Starting credential save', {
+      console.log("[Biometric] Starting credential save", {
         device_id: credential.device_id,
         device_name: credential.device_name,
-      });
+      })
 
-      const credentialJson = JSON.stringify(credential);
-      console.log('[Biometric] Credential serialized, size:', credentialJson.length, 'bytes');
+      const credentialJson = JSON.stringify(credential)
+      console.log(
+        "[Biometric] Credential serialized, size:",
+        credentialJson.length,
+        "bytes"
+      )
 
       const saved = await Keychain.setGenericPassword(
         BIOMETRIC_CRED_KEY,
@@ -91,21 +100,22 @@ class BiometricUtils {
           accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
           ...keychainStorageOptions,
         }
-      );
+      )
 
       if (saved) {
-        console.log('[Biometric] Credential successfully saved to keychain');
-        return true;
+        console.log("[Biometric] Credential successfully saved to keychain")
+        return true
       }
 
-      console.warn('[Biometric] Keychain.setGenericPassword returned false');
-      return false;
+      console.warn("[Biometric] Keychain.setGenericPassword returned false")
+      return false
     } catch (error) {
-      console.error('[Biometric] Failed to save credential to keychain', {
+      console.error("[Biometric] Failed to save credential to keychain", {
         error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
-      });
-      return false;
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
+      })
+      return false
     }
   }
 
@@ -113,41 +123,53 @@ class BiometricUtils {
    * Retrieve biometric credential from keychain
    */
   static async getBiometricCredential(): Promise<BiometricCredential | null> {
-    if (Platform.OS === 'web') {
-      return null;
+    if (Platform.OS === "web") {
+      return null
     }
 
     try {
-      console.log('[Biometric] Retrieving credential from keychain');
+      console.log("[Biometric] Retrieving credential from keychain")
 
       const credentials = await Keychain.getGenericPassword({
         ...keychainStorageOptions,
-      });
+      })
 
       if (credentials && credentials.password) {
         try {
-          const credential = JSON.parse(credentials.password) as BiometricCredential;
-          console.log('[Biometric] Credential retrieved and parsed successfully', {
-            device_id: credential.device_id,
-            device_name: credential.device_name,
-          });
-          return credential;
+          const credential = JSON.parse(
+            credentials.password
+          ) as BiometricCredential
+          console.log(
+            "[Biometric] Credential retrieved and parsed successfully",
+            {
+              device_id: credential.device_id,
+              device_name: credential.device_name,
+            }
+          )
+          return credential
         } catch (parseError) {
-          console.error('[Biometric] Failed to parse credential from keychain', {
-            error: parseError instanceof Error ? parseError.message : String(parseError),
-          });
-          return null;
+          console.error(
+            "[Biometric] Failed to parse credential from keychain",
+            {
+              error:
+                parseError instanceof Error
+                  ? parseError.message
+                  : String(parseError),
+            }
+          )
+          return null
         }
       }
 
-      console.log('[Biometric] No credential found in keychain');
-      return null;
+      console.log("[Biometric] No credential found in keychain")
+      return null
     } catch (error) {
-      console.error('[Biometric] Failed to retrieve credential from keychain', {
+      console.error("[Biometric] Failed to retrieve credential from keychain", {
         error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
-      });
-      return null;
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
+      })
+      return null
     }
   }
 
@@ -155,23 +177,23 @@ class BiometricUtils {
    * Delete biometric credential from keychain
    */
   static async deleteBiometricCredential(): Promise<boolean> {
-    if (Platform.OS === 'web') {
-      return false;
+    if (Platform.OS === "web") {
+      return false
     }
 
     try {
       const deleted = await Keychain.resetGenericPassword({
         ...keychainStorageOptions,
-      });
+      })
 
       if (deleted) {
-        console.log('[Biometric] Credential deleted from keychain');
-        return true;
+        console.log("[Biometric] Credential deleted from keychain")
+        return true
       }
-      return false;
+      return false
     } catch (error) {
-      console.error('[Biometric] Failed to delete credential:', error);
-      return false;
+      console.error("[Biometric] Failed to delete credential:", error)
+      return false
     }
   }
 
@@ -180,11 +202,11 @@ class BiometricUtils {
    */
   static async hasBiometricCredential(): Promise<boolean> {
     try {
-      const credential = await this.getBiometricCredential();
-      return credential !== null;
+      const credential = await this.getBiometricCredential()
+      return credential !== null
     } catch (error) {
-      console.error('[Biometric] Failed to check credential:', error);
-      return false;
+      console.error("[Biometric] Failed to check credential:", error)
+      return false
     }
   }
 
@@ -192,40 +214,41 @@ class BiometricUtils {
    * Authenticate with biometric
    */
   static async authenticate(): Promise<boolean> {
-    if (Platform.OS === 'web') {
-      return false;
+    if (Platform.OS === "web") {
+      return false
     }
 
     try {
-      console.log('[Biometric] Starting authentication prompt');
+      console.log("[Biometric] Starting authentication prompt")
 
       const result = await LocalAuthentication.authenticateAsync({
         disableDeviceFallback: false,
-        fallbackLabel: 'Use passcode',
-      });
+        fallbackLabel: "Use passcode",
+      })
 
       if (result.success) {
-        console.log('[Biometric] Authentication successful');
-        return true;
+        console.log("[Biometric] Authentication successful")
+        return true
       }
 
       if (result.error) {
-        console.warn('[Biometric] Authentication failed', {
+        console.warn("[Biometric] Authentication failed", {
           error: result.error,
           success: result.success,
           warning: result.warning,
-        });
+        })
       } else {
-        console.warn('[Biometric] Authentication cancelled by user');
+        console.warn("[Biometric] Authentication cancelled by user")
       }
 
-      return false;
+      return false
     } catch (error) {
-      console.error('[Biometric] Authentication exception', {
+      console.error("[Biometric] Authentication exception", {
         error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
-      });
-      return false;
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
+      })
+      return false
     }
   }
 
@@ -233,16 +256,16 @@ class BiometricUtils {
    * Generate device ID
    */
   static generateDeviceId(): string {
-    return `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
   /**
    * Get device name
    */
   static getDeviceName(): string {
-    const timestamp = new Date().toLocaleDateString();
-    return `${Platform.OS === 'ios' ? 'iPhone' : 'Android'} - ${timestamp}`;
+    const timestamp = new Date().toLocaleDateString()
+    return `${Platform.OS === "ios" ? "iPhone" : "Android"} - ${timestamp}`
   }
 }
 
-export default BiometricUtils;
+export default BiometricUtils

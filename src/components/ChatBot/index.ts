@@ -1,1 +1,1 @@
-export { default as ChatBotIcon } from './ChatBotIcon';
+export { default as ChatBotIcon } from "./ChatBotIcon"

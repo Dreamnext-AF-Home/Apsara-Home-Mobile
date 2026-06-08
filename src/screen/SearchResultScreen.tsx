@@ -1,30 +1,29 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import {
-  View,
+import React, { useEffect, useState, useCallback, useMemo } from "react"
+import {  View,
   Text,
   ScrollView,
   RefreshControl,
-  StyleSheet,
   Dimensions,
   TouchableOpacity,
   BackHandler,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
-import ItemCard from '../components/Items/ItemCard';
-import Toast from 'react-native-toast-message';
-import { meilisearchService } from '../services/meilisearchService';
-import type { ProductCard } from '../services/productService';
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "../constants/colors"
+import ItemCard from "../components/Items/ItemCard"
+import Toast from "react-native-toast-message"
+import { meilisearchService } from "../services/meilisearchService"
+import type { ProductCard } from "../services/productService"
+import styles from "../styles/SearchResultScreen.styles"
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window")
 
 interface SearchResultScreenProps {
-  token?: string | null;
-  query: string;
-  onBack?: () => void;
-  onProductPress?: (product: ProductCard) => void;
-  isDarkMode?: boolean;
+  token?: string | null
+  query: string
+  onBack?: () => void
+  onProductPress?: (product: ProductCard) => void
+  isDarkMode?: boolean
 }
 
 export default function SearchResultScreen({
@@ -34,97 +33,136 @@ export default function SearchResultScreen({
   onProductPress,
   isDarkMode = false,
 }: SearchResultScreenProps) {
-  const [products, setProducts] = useState<ProductCard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [products, setProducts] = useState<ProductCard[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   const fetchResults = useCallback(async () => {
     if (!query.trim()) {
-      setProducts([]);
-      setLoading(false);
-      setRefreshing(false);
-      return;
+      setProducts([])
+      setLoading(false)
+      setRefreshing(false)
+      return
     }
     try {
-      setLoading(true);
-      const results = await meilisearchService.searchProducts(query.trim(), 50);
+      setLoading(true)
+      const results = await meilisearchService.searchProducts(query.trim(), 50)
 
-      console.log('🔍 Search Results:', {
+      console.log("🔍 Search Results:", {
         count: results.length,
-        firstItem: results[0] && { id: results[0].id, name: results[0].name, hasImage: !!results[0].image },
-      });
-      setProducts(results);
+        firstItem: results[0] && {
+          id: results[0].id,
+          name: results[0].name,
+          hasImage: !!results[0].image,
+        },
+      })
+      setProducts(results)
     } catch (error: any) {
       Toast.show({
-        type: 'error',
-        text1: 'Search Failed',
-        text2: error.message || 'Unable to load search results',
-      });
-      setProducts([]);
+        type: "error",
+        text1: "Search Failed",
+        text2: error.message || "Unable to load search results",
+      })
+      setProducts([])
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setLoading(false)
+      setRefreshing(false)
     }
-  }, [query]);
+  }, [query])
 
   useEffect(() => {
-    fetchResults();
-  }, [fetchResults]);
+    fetchResults()
+  }, [fetchResults])
 
   useEffect(() => {
     const onBackPress = () => {
       if (onBack) {
-        onBack();
-        return true;
+        onBack()
+        return true
       }
-      return false;
-    };
+      return false
+    }
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => backHandler.remove();
-  }, [onBack]);
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress
+    )
+    return () => backHandler.remove()
+  }, [onBack])
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchResults();
-  };
+    setRefreshing(true)
+    fetchResults()
+  }
 
   const masonryColumns = useMemo(() => {
-    const leftColumn: ProductCard[] = [];
-    const rightColumn: ProductCard[] = [];
-    
+    const leftColumn: ProductCard[] = []
+    const rightColumn: ProductCard[] = []
+
     products.forEach((product, index) => {
       if (index % 2 === 0) {
-        leftColumn.push(product);
+        leftColumn.push(product)
       } else {
-        rightColumn.push(product);
+        rightColumn.push(product)
       }
-    });
-    
-    return { leftColumn, rightColumn };
-  }, [products]);
+    })
+
+    return { leftColumn, rightColumn }
+  }, [products])
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, isDarkMode && styles.containerDark]}
+      edges={["top"]}
+    >
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <View style={styles.headerLeft}>
           {onBack && (
             <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#f8fafc' : Colors.text} />
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color={isDarkMode ? "#f8fafc" : Colors.text}
+              />
             </TouchableOpacity>
           )}
           <View style={styles.headerTextContainer}>
-            <Text style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]} numberOfLines={1}>Search Results</Text>
-            <Text style={[styles.headerQuery, isDarkMode && styles.headerQueryDark]} numberOfLines={2}>{`"${query}"`}</Text>
+            <Text
+              style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]}
+              numberOfLines={1}
+            >
+              Search Results
+            </Text>
+            <Text
+              style={[styles.headerQuery, isDarkMode && styles.headerQueryDark]}
+              numberOfLines={2}
+            >{`"${query}"`}</Text>
           </View>
         </View>
-        <Text style={[styles.headerCount, isDarkMode && styles.headerCountDark]}>{products.length} items</Text>
+        <Text
+          style={[styles.headerCount, isDarkMode && styles.headerCountDark]}
+        >
+          {products.length} items
+        </Text>
       </View>
 
       {loading && !refreshing ? (
-        <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
-          <Ionicons name="search-outline" size={48} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} />
-          <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>Searching...</Text>
+        <View
+          style={[
+            styles.loadingContainer,
+            isDarkMode && styles.loadingContainerDark,
+          ]}
+        >
+          <Ionicons
+            name="search-outline"
+            size={48}
+            color={isDarkMode ? "#9ca3af" : Colors.textSecondary}
+          />
+          <Text
+            style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}
+          >
+            Searching...
+          </Text>
         </View>
       ) : (
         <ScrollView
@@ -136,23 +174,46 @@ export default function SearchResultScreen({
           }
         >
           {products.length === 0 ? (
-            <View style={[styles.emptyContainer, isDarkMode && styles.emptyContainerDark]}>
-              <Ionicons name="search-outline" size={48} color={isDarkMode ? '#9ca3af' : Colors.textSecondary} />
-              <Text style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}>No results found for "{query}"</Text>
+            <View
+              style={[
+                styles.emptyContainer,
+                isDarkMode && styles.emptyContainerDark,
+              ]}
+            >
+              <Ionicons
+                name="search-outline"
+                size={48}
+                color={isDarkMode ? "#9ca3af" : Colors.textSecondary}
+              />
+              <Text
+                style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}
+              >
+                No results found for "{query}"
+              </Text>
             </View>
           ) : (
             <View style={styles.masonryGrid}>
               <View style={styles.masonryColumn}>
                 {masonryColumns.leftColumn.map((product) => (
                   <View key={`search-${product.id}`} style={styles.productItem}>
-                    <ItemCard product={product} onPress={onProductPress} token={token} isDarkMode={isDarkMode} />
+                    <ItemCard
+                      product={product}
+                      onPress={onProductPress}
+                      token={token}
+                      isDarkMode={isDarkMode}
+                    />
                   </View>
                 ))}
               </View>
               <View style={styles.masonryColumn}>
                 {masonryColumns.rightColumn.map((product) => (
                   <View key={`search-${product.id}`} style={styles.productItem}>
-                    <ItemCard product={product} onPress={onProductPress} token={token} isDarkMode={isDarkMode} />
+                    <ItemCard
+                      product={product}
+                      onPress={onProductPress}
+                      token={token}
+                      isDarkMode={isDarkMode}
+                    />
                   </View>
                 ))}
               </View>
@@ -161,126 +222,5 @@ export default function SearchResultScreen({
         </ScrollView>
       )}
     </SafeAreaView>
-  );
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  backBtn: {
-    padding: 4,
-    marginLeft: -4,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  headerQuery: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
-    flexWrap: 'wrap',
-    paddingRight: 12,
-  },
-  headerCount: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  scroll: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  listContent: {
-    paddingHorizontal: 8,
-    paddingTop: 16,
-    paddingBottom: 32,
-    flexGrow: 1,
-  },
-  masonryGrid: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  masonryColumn: {
-    flex: 1,
-    gap: 8,
-  },
-  productItem: {
-    width: '100%',
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  // Dark mode styles
-  containerDark: {
-    backgroundColor: '#0f172a',
-  },
-  headerDark: {
-    backgroundColor: '#1f2937',
-    borderBottomColor: '#374151',
-  },
-  headerTitleDark: {
-    color: '#f8fafc',
-  },
-  headerQueryDark: {
-    color: '#9ca3af',
-  },
-  headerCountDark: {
-    color: '#9ca3af',
-  },
-  scrollDark: {
-    backgroundColor: '#0f172a',
-  },
-  loadingContainerDark: {
-    backgroundColor: '#0f172a',
-  },
-  loadingTextDark: {
-    color: '#9ca3af',
-  },
-  emptyContainerDark: {
-    backgroundColor: '#0f172a',
-  },
-  emptyTextDark: {
-    color: '#9ca3af',
-  },
-});

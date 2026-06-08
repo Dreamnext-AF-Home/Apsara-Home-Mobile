@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react"
 import {
   View,
   Text,
@@ -9,31 +9,31 @@ import {
   SafeAreaView,
   Image,
   ScrollView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '../../constants/colors';
+} from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
+import { Colors } from "../../constants/colors"
 
 interface SelectedItem {
-  wishlist_id: number;
-  product_id: number;
+  wishlist_id: number
+  product_id: number
   product: {
-    id: number;
-    name: string;
-    priceMember: number;
-    priceSrp?: number;
-    image?: string;
-  };
+    id: number
+    name: string
+    priceMember: number
+    priceSrp?: number
+    image?: string
+  }
 }
 
 interface SelectedItemsModalProps {
-  visible: boolean;
-  selectedItems: SelectedItem[];
-  selectedCount: number;
-  totalPrice: number;
-  onClose: () => void;
-  onAddToCart: () => void;
-  loading?: boolean;
+  visible: boolean
+  selectedItems: SelectedItem[]
+  selectedCount: number
+  totalPrice: number
+  onClose: () => void
+  onAddToCart: () => void
+  loading?: boolean
 }
 
 export default function SelectedItemsModal({
@@ -45,7 +45,7 @@ export default function SelectedItemsModal({
   onAddToCart,
   loading = false,
 }: SelectedItemsModalProps) {
-  const slideAnim = React.useRef(new Animated.Value(300)).current;
+  const slideAnim = React.useRef(new Animated.Value(300)).current
 
   React.useEffect(() => {
     if (visible) {
@@ -53,15 +53,15 @@ export default function SelectedItemsModal({
         toValue: 0,
         duration: 300,
         useNativeDriver: true,
-      }).start();
+      }).start()
     } else {
       Animated.timing(slideAnim, {
         toValue: 300,
         duration: 300,
         useNativeDriver: true,
-      }).start();
+      }).start()
     }
-  }, [visible, slideAnim]);
+  }, [visible, slideAnim])
 
   return (
     <Modal
@@ -88,7 +88,9 @@ export default function SelectedItemsModal({
           <View style={styles.header}>
             <View>
               <Text style={styles.title}>Ready to Checkout</Text>
-              <Text style={styles.subtitle}>{selectedCount} items selected</Text>
+              <Text style={styles.subtitle}>
+                {selectedCount} items selected
+              </Text>
             </View>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={26} color={Colors.text} />
@@ -97,7 +99,7 @@ export default function SelectedItemsModal({
 
           {/* Summary Card */}
           <LinearGradient
-            colors={[Colors.sky, '#0ea5e9']}
+            colors={[Colors.sky, "#0ea5e9"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.summaryCard}
@@ -143,17 +145,22 @@ export default function SelectedItemsModal({
                     <Text style={styles.itemPrice}>
                       ₱{item.product.priceMember.toLocaleString()}
                     </Text>
-                    {item.product.priceSrp && item.product.priceSrp > item.product.priceMember && (
-                      <Text style={styles.itemOriginalPrice}>
-                        ₱{item.product.priceSrp.toLocaleString()}
-                      </Text>
-                    )}
+                    {item.product.priceSrp &&
+                      item.product.priceSrp > item.product.priceMember && (
+                        <Text style={styles.itemOriginalPrice}>
+                          ₱{item.product.priceSrp.toLocaleString()}
+                        </Text>
+                      )}
                   </View>
                 </View>
 
                 {/* Checkmark */}
                 <View style={styles.itemCheck}>
-                  <Ionicons name="checkmark-circle" size={22} color={Colors.sky} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={22}
+                    color={Colors.sky}
+                  />
                 </View>
               </View>
             ))}
@@ -181,20 +188,20 @@ export default function SelectedItemsModal({
         </SafeAreaView>
       </Animated.View>
     </Modal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -202,8 +209,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     minHeight: 350,
-    maxHeight: '75%',
-    shadowColor: '#000',
+    maxHeight: "75%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -217,21 +224,21 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 4,
   },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.text,
   },
   subtitle: {
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   summaryCard: {
     padding: 14,
@@ -239,35 +246,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   summaryLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
     marginBottom: 4,
   },
   summaryPrice: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.white,
   },
   summaryDivider: {
     width: 1,
     height: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
   },
   savingsInfo: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   savingsText: {
     fontSize: 11,
     color: Colors.white,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   itemsList: {
     flex: 1,
@@ -276,14 +283,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   itemCard: {
-    flexDirection: 'row',
-    backgroundColor: '#f9fafb',
+    flexDirection: "row",
+    backgroundColor: "#f9fafb",
     borderRadius: 12,
     padding: 10,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   itemImage: {
     width: 70,
@@ -297,34 +304,34 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.text,
     lineHeight: 16,
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   itemPrice: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.sky,
   },
   itemOriginalPrice: {
     fontSize: 11,
     color: Colors.textSecondary,
-    textDecorationLine: 'line-through',
-    fontWeight: '500',
+    textDecorationLine: "line-through",
+    fontWeight: "500",
   },
   itemCheck: {
     marginLeft: 8,
   },
   addButton: {
     backgroundColor: Colors.sky,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 13,
     borderRadius: 10,
     gap: 8,
@@ -338,7 +345,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: Colors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.3,
   },
-});
+})

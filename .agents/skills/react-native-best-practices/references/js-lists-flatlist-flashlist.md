@@ -14,7 +14,9 @@ Replace ScrollView with FlatList or FlashList for performant large list renderin
 
 ```jsx
 <ScrollView>
-  {items.map((item) => <Item key={item.id} {...item} />)}
+  {items.map((item) => (
+    <Item key={item.id} {...item} />
+  ))}
 </ScrollView>
 ```
 
@@ -53,6 +55,7 @@ Replace ScrollView with FlatList or FlashList for performant large list renderin
 ![FPS Drop Graph](images/fps-drop-graph.png)
 
 The FPS graph shows a severe performance problem during list rendering:
+
 - FPS starts at ~60 (smooth)
 - Drops to ~3 FPS during heavy list operation
 - Recovers after rendering completes
@@ -67,10 +70,11 @@ const BadList = ({ items }) => (
       </View>
     ))}
   </ScrollView>
-);
+)
 ```
 
 With 5000 items, this creates 5000 views immediately, causing:
+
 - Multi-second freeze
 - FPS drop to 0
 - High memory usage
@@ -78,23 +82,23 @@ With 5000 items, this creates 5000 views immediately, causing:
 ### 2. Replace with FlatList
 
 ```jsx
-import { FlatList } from 'react-native';
+import { FlatList } from "react-native"
 
 const BetterList = ({ items }) => {
   const renderItem = ({ item }) => (
     <View>
       <Text>{item}</Text>
     </View>
-  );
-  
+  )
+
   return (
     <FlatList
       data={items}
       renderItem={renderItem}
       keyExtractor={(item, index) => index.toString()}
     />
-  );
-};
+  )
+}
 ```
 
 FlatList only renders visible items + buffer (windowing).
@@ -104,21 +108,21 @@ FlatList only renders visible items + buffer (windowing).
 For fixed-height items, skip layout measurement:
 
 ```jsx
-const ITEM_HEIGHT = 50;
+const ITEM_HEIGHT = 50
 
 const OptimizedList = ({ items }) => {
   const renderItem = ({ item }) => (
     <View style={{ height: ITEM_HEIGHT }}>
       <Text>{item}</Text>
     </View>
-  );
-  
+  )
+
   const getItemLayout = (_, index) => ({
     length: ITEM_HEIGHT,
     offset: ITEM_HEIGHT * index,
     index,
-  });
-  
+  })
+
   return (
     <FlatList
       data={items}
@@ -126,8 +130,8 @@ const OptimizedList = ({ items }) => {
       keyExtractor={(item, index) => index.toString()}
       getItemLayout={getItemLayout}
     />
-  );
-};
+  )
+}
 ```
 
 ### 4. Upgrade to FlashList (Best Performance)
@@ -137,28 +141,29 @@ npm install @shopify/flash-list
 ```
 
 ```jsx
-import { FlashList } from '@shopify/flash-list';
+import { FlashList } from "@shopify/flash-list"
 
 const BestList = ({ items }) => {
   const renderItem = ({ item }) => (
     <View style={{ height: 50 }}>
       <Text>{item}</Text>
     </View>
-  );
-  
+  )
+
   return (
     <FlashList
       data={items}
       renderItem={renderItem}
       keyExtractor={(item) => item.id}
     />
-  );
-};
+  )
+}
 ```
 
 For FlashList v1, add `estimatedItemSize` with a realistic average item height. For FlashList v2+, skip that prop and focus on stable keys, lightweight item components, and `getItemType` when item shapes differ.
 
 **FlashList advantages:**
+
 - Recycles views instead of creating new ones
 - 78/100 vs 25/100 performance score in benchmarks
 - Smoother scrolling at ~54 FPS vs lower for FlatList
@@ -172,11 +177,7 @@ For FlashList v1, add `estimatedItemSize` with a realistic average item height. 
 // Items are 50px, 100px, 150px
 // Average: (50 + 100 + 150) / 3 = 100px
 
-<FlashList
-  data={items}
-  renderItem={renderItem}
-  estimatedItemSize={100}
-/>
+<FlashList data={items} renderItem={renderItem} estimatedItemSize={100} />
 ```
 
 ### Mixed Item Types
@@ -185,11 +186,11 @@ For FlashList v1, add `estimatedItemSize` with a realistic average item height. 
 <FlashList
   data={items}
   renderItem={({ item }) => {
-    if (item.type === 'header') return <Header {...item} />;
-    if (item.type === 'product') return <Product {...item} />;
-    return <DefaultItem {...item} />;
+    if (item.type === "header") return <Header {...item} />
+    if (item.type === "product") return <Product {...item} />
+    return <DefaultItem {...item} />
   }}
-  getItemType={(item) => item.type}  // Helps recycling
+  getItemType={(item) => item.type} // Helps recycling
 />
 ```
 
@@ -209,27 +210,27 @@ If the project is still on FlashList v1, keep `estimatedItemSize` alongside `get
   windowSize={5}
   // Avoid re-renders
   keyExtractor={(item) => item.id}
-  extraData={selectedId}  // Only when selection changes
+  extraData={selectedId} // Only when selection changes
 />
 ```
 
 ## Performance Comparison
 
-| Component | 5000 Items Load | Scroll FPS | Memory |
-|-----------|-----------------|------------|--------|
-| ScrollView | 1-3 seconds freeze | < 30 | High |
-| FlatList | ~100ms | ~45 | Medium |
-| FlashList | ~50ms | ~54 | Low |
+| Component  | 5000 Items Load    | Scroll FPS | Memory |
+| ---------- | ------------------ | ---------- | ------ |
+| ScrollView | 1-3 seconds freeze | < 30       | High   |
+| FlatList   | ~100ms             | ~45        | Medium |
+| FlashList  | ~50ms              | ~54        | Low    |
 
 ## Decision Matrix
 
-| Scenario | Recommendation |
-|----------|---------------|
-| < 20 static items | ScrollView OK |
-| 20-100 items | FlatList minimum |
-| > 100 items | FlashList |
-| Complex item layouts | FlashList with `getItemType` |
-| Fixed height items | FlatList: `getItemLayout`; FlashList v1: `estimatedItemSize`; FlashList v2+: stable item structure |
+| Scenario             | Recommendation                                                                                     |
+| -------------------- | -------------------------------------------------------------------------------------------------- |
+| < 20 static items    | ScrollView OK                                                                                      |
+| 20-100 items         | FlatList minimum                                                                                   |
+| > 100 items          | FlashList                                                                                          |
+| Complex item layouts | FlashList with `getItemType`                                                                       |
+| Fixed height items   | FlatList: `getItemLayout`; FlashList v1: `estimatedItemSize`; FlashList v2+: stable item structure |
 
 ## Common Pitfalls
 

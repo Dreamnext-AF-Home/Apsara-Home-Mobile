@@ -1,27 +1,37 @@
 // @ts-nocheck
-import React, { useMemo, useCallback } from 'react';
-import { createBottomTabNavigator, useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
-import { useAppContext } from '../context/AppContext';
+import React, { useMemo, useCallback } from "react"
+import {
+  createBottomTabNavigator,
+  useBottomTabBarHeight,
+} from "@react-navigation/bottom-tabs"
+import { useNavigation } from "@react-navigation/native"
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Pressable,
+} from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "../constants/colors"
+import { useAppContext } from "../context/AppContext"
 
-import AppHeader from '../components/AppHeader/AppHeader';
-import HomeScreen from '../screen/HomeScreen';
-import WishlistScreen from '../screen/WishlistScreen';
-import ShopScreen from '../screen/ShopScreen';
-import ShopByBrandScreen from '../screen/ShopByBrandScreen';
-import NotificationsScreen from '../screen/NotificationsScreen';
-import ProfileScreen from '../screen/ProfileScreen';
-import LoadingScreen from '../screen/LoadingScreen';
+import AppHeader from "../components/AppHeader/AppHeader"
+import HomeScreen from "../screen/HomeScreen"
+import WishlistScreen from "../screen/WishlistScreen"
+import ShopScreen from "../screen/ShopScreen"
+import ShopByBrandScreen from "../screen/ShopByBrandScreen"
+import NotificationsScreen from "../screen/NotificationsScreen"
+import ProfileScreen from "../screen/ProfileScreen"
+import LoadingScreen from "../screen/LoadingScreen"
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator()
 
 // Home Tab Screen Wrapper
 function HomeTabScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation()
   const {
     token,
     enrichedUser,
@@ -56,33 +66,63 @@ function HomeTabScreen() {
     setSelectedBrand,
     setPreviousTab,
     activeTab,
-  } = useAppContext();
+  } = useAppContext()
 
-  const handleShopByRoom = useCallback((roomId: number) => {
-    setPreviousTab(activeTab);
-    setSelectedRoomId(roomId);
-    setSelectedCategoryId(null as any);
-    navigation.navigate('shop' as any);
-  }, [navigation, activeTab, setPreviousTab, setSelectedRoomId, setSelectedCategoryId]);
+  const handleShopByRoom = useCallback(
+    (roomId: number) => {
+      setPreviousTab(activeTab)
+      setSelectedRoomId(roomId)
+      setSelectedCategoryId(null as any)
+      navigation.navigate("shop" as any)
+    },
+    [
+      navigation,
+      activeTab,
+      setPreviousTab,
+      setSelectedRoomId,
+      setSelectedCategoryId,
+    ]
+  )
 
-  const handleShopByCategory = useCallback((categoryId: number) => {
-    setPreviousTab(activeTab);
-    setSelectedCategoryId(categoryId);
-    setSelectedRoomId(null as any);
-    navigation.navigate('shop' as any);
-  }, [navigation, activeTab, setPreviousTab, setSelectedCategoryId, setSelectedRoomId]);
+  const handleShopByCategory = useCallback(
+    (categoryId: number) => {
+      setPreviousTab(activeTab)
+      setSelectedCategoryId(categoryId)
+      setSelectedRoomId(null as any)
+      navigation.navigate("shop" as any)
+    },
+    [
+      navigation,
+      activeTab,
+      setPreviousTab,
+      setSelectedCategoryId,
+      setSelectedRoomId,
+    ]
+  )
 
-  const handleShopByBrand = useCallback((brandId: number) => {
-    const brand = homeBrands.find(b => b.id === brandId);
-    setPreviousTab(activeTab);
-    setSelectedBrandId(brandId);
-    setSelectedBrand(brand || null);
-    setSelectedRoomId(null as any);
-    setSelectedCategoryId(null as any);
-    navigation.navigate('shop' as any);
-  }, [navigation, activeTab, homeBrands, setPreviousTab, setSelectedBrandId, setSelectedBrand, setSelectedRoomId, setSelectedCategoryId]);
+  const handleShopByBrand = useCallback(
+    (brandId: number) => {
+      const brand = homeBrands.find((b) => b.id === brandId)
+      setPreviousTab(activeTab)
+      setSelectedBrandId(brandId)
+      setSelectedBrand(brand || null)
+      setSelectedRoomId(null as any)
+      setSelectedCategoryId(null as any)
+      navigation.navigate("shop" as any)
+    },
+    [
+      navigation,
+      activeTab,
+      homeBrands,
+      setPreviousTab,
+      setSelectedBrandId,
+      setSelectedBrand,
+      setSelectedRoomId,
+      setSelectedCategoryId,
+    ]
+  )
 
-  if (!isInitialHomeDataReady) return <LoadingScreen />;
+  if (!isInitialHomeDataReady) return <LoadingScreen />
 
   return (
     <>
@@ -92,7 +132,7 @@ function HomeTabScreen() {
         isDarkMode={isDarkMode}
         onCartPress={onCartPress}
         onCameraPress={() => {
-          console.log('Camera pressed');
+          console.log("Camera pressed")
         }}
         onSearchPress={onSearchPress}
         onProfilePress={() => {
@@ -126,12 +166,26 @@ function HomeTabScreen() {
         onRefresh={refreshHomeData}
       />
     </>
-  );
+  )
 }
 
 // Wishlist Tab Screen Wrapper
 function WishlistTabScreen() {
-  const { token, enrichedUser, isDarkMode, cartCount, wishlistItems, wishlistLoading, wishlistRefreshing, invalidateWishlist, onProductPress, onCartPress, onLogout, onSearchPress, onWishlistChange } = useAppContext();
+  const {
+    token,
+    enrichedUser,
+    isDarkMode,
+    cartCount,
+    wishlistItems,
+    wishlistLoading,
+    wishlistRefreshing,
+    invalidateWishlist,
+    onProductPress,
+    onCartPress,
+    onLogout,
+    onSearchPress,
+    onWishlistChange,
+  } = useAppContext()
 
   return (
     <>
@@ -141,7 +195,7 @@ function WishlistTabScreen() {
         isDarkMode={isDarkMode}
         onCartPress={onCartPress}
         onCameraPress={() => {
-          console.log('Camera pressed');
+          console.log("Camera pressed")
         }}
         onSearchPress={onSearchPress}
         onProfilePress={() => {}}
@@ -161,12 +215,12 @@ function WishlistTabScreen() {
         onNavigateToCart={onCartPress}
       />
     </>
-  );
+  )
 }
 
 // Shop Tab Screen Wrapper
 function ShopTabScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation()
   const {
     token,
     enrichedUser,
@@ -197,12 +251,15 @@ function ShopTabScreen() {
     onSearchPress,
     previousTab,
     setActiveTab,
-  } = useAppContext();
+  } = useAppContext()
 
-  const handleShopProductPress = useCallback((id: number) => {
-    setShopSelectedProductId(id);
-    setShowShopProductDetail(true);
-  }, [setShopSelectedProductId, setShowShopProductDetail]);
+  const handleShopProductPress = useCallback(
+    (id: number) => {
+      setShopSelectedProductId(id)
+      setShowShopProductDetail(true)
+    },
+    [setShopSelectedProductId, setShowShopProductDetail]
+  )
 
   return (
     <View style={{ flex: 1 }}>
@@ -214,17 +271,18 @@ function ShopTabScreen() {
           cartCount={cartCount}
           brandId={selectedBrandId}
           brand={selectedBrand as any}
+          isZqBrand={(selectedBrand as any)?.isZqBrand === true}
           categories={homeCategories}
           onBack={() => {
-            setSelectedBrandId(null);
-            setSelectedBrand(null);
-            setActiveTab(previousTab);
+            setSelectedBrandId(null)
+            setSelectedBrand(null)
+            setActiveTab(previousTab)
             if (shopSourceIsCheckout) {
-              setShopSourceIsCheckout(false);
+              setShopSourceIsCheckout(false)
             } else if (shopSourceIsCart) {
-              setShopSourceIsCart(false);
+              setShopSourceIsCart(false)
             } else if (shopSourceProductId !== null) {
-              setShopSourceProductId(null);
+              setShopSourceProductId(null)
             }
           }}
           onProductPress={handleShopProductPress}
@@ -232,8 +290,8 @@ function ShopTabScreen() {
           wishlistItems={wishlistItems}
           isDarkMode={isDarkMode}
           onWishlistChange={onWishlistChange}
-          />
-        ) : (
+        />
+      ) : (
         <ShopScreen
           token={token}
           user={enrichedUser}
@@ -244,9 +302,9 @@ function ShopTabScreen() {
           categories={homeCategories}
           brands={homeBrands}
           onBack={() => {
-            setSelectedRoomId(null);
-            setSelectedCategoryId(null);
-            setSelectedBrandId(null);
+            setSelectedRoomId(null)
+            setSelectedCategoryId(null)
+            setSelectedBrandId(null)
           }}
           onProductPress={handleShopProductPress}
           onCartPress={onCartPress}
@@ -258,12 +316,23 @@ function ShopTabScreen() {
         />
       )}
     </View>
-  );
+  )
 }
 
 // Notification Tab Screen Wrapper
 function NotificationTabScreen() {
-  const { token, enrichedUser, isDarkMode, cartCount, onCartPress, onLogout, onSearchPress, purchasesStatus, setPurchasesStatus, setPurchasesInitialOrderId } = useAppContext();
+  const {
+    token,
+    enrichedUser,
+    isDarkMode,
+    cartCount,
+    onCartPress,
+    onLogout,
+    onSearchPress,
+    purchasesStatus,
+    setPurchasesStatus,
+    setPurchasesInitialOrderId,
+  } = useAppContext()
 
   return (
     <>
@@ -282,22 +351,38 @@ function NotificationTabScreen() {
         isDarkMode={isDarkMode}
         onNavigateToPurchases={(status, orderId) => {
           // Normalize purchase status
-          const s = String(status || '').trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
-          let normalized: any = 'pending';
-          if (s === 'to_ship') normalized = 'shipped';
-          else if (s === 'out_for_delivery') normalized = 'to_receive';
-          else if (['pending', 'paid', 'processing', 'shipped', 'to_receive', 'delivered', 'cancelled', 'return'].includes(s)) normalized = s;
-          setPurchasesStatus(normalized);
-          setPurchasesInitialOrderId(orderId);
+          const s = String(status || "")
+            .trim()
+            .toLowerCase()
+            .replace(/-/g, "_")
+            .replace(/\s+/g, "_")
+          let normalized: any = "pending"
+          if (s === "to_ship") normalized = "shipped"
+          else if (s === "out_for_delivery") normalized = "to_receive"
+          else if (
+            [
+              "pending",
+              "paid",
+              "processing",
+              "shipped",
+              "to_receive",
+              "delivered",
+              "cancelled",
+              "return",
+            ].includes(s)
+          )
+            normalized = s
+          setPurchasesStatus(normalized)
+          setPurchasesInitialOrderId(orderId)
         }}
       />
     </>
-  );
+  )
 }
 
 // Profile Tab Screen Wrapper
 function ProfileTabScreen() {
-  const ctx = useAppContext();
+  const ctx = useAppContext()
 
   return (
     <ProfileScreen
@@ -305,7 +390,7 @@ function ProfileTabScreen() {
       token={ctx.token}
       onLogout={ctx.onLogout}
       onNavigateSettings={() => {
-        ctx.setShowSettings(true);
+        ctx.setShowSettings(true)
       }}
       onCartPress={ctx.onCartPress}
       cartCount={ctx.cartCount}
@@ -329,56 +414,86 @@ function ProfileTabScreen() {
       onProductPress={ctx.onProductPress}
       onShopNavigate={ctx.onShopNavigate}
     />
-  );
+  )
 }
 
 // Custom Tab Bar - Matches original design exactly
-function CustomTabBar({ state, descriptors, navigation, insets, hideTabBar }: any) {
-  const { isDarkMode, wishlistItems, unreadCount, enrichedUser } = useAppContext() as any;
-  const safeAreaInsets = useSafeAreaInsets();
+function CustomTabBar({
+  state,
+  descriptors,
+  navigation,
+  insets,
+  hideTabBar,
+}: any) {
+  const { isDarkMode, wishlistItems, unreadCount, enrichedUser } =
+    useAppContext() as any
+  const safeAreaInsets = useSafeAreaInsets()
 
   if (hideTabBar) {
-    return null;
+    return null
   }
 
   return (
-    <View style={[styles.navBarContainer, isDarkMode && styles.navBarContainerDark]}>
-      <View style={[styles.navBar, isDarkMode && styles.navBarDark, { paddingBottom: Math.max(8, safeAreaInsets.bottom) }]}>
+    <View
+      style={[styles.navBarContainer, isDarkMode && styles.navBarContainerDark]}
+    >
+      <View
+        style={[
+          styles.navBar,
+          isDarkMode && styles.navBarDark,
+          { paddingBottom: Math.max(8, safeAreaInsets.bottom) },
+        ]}
+      >
         {state.routes.map((route: any, index: number) => {
-          const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
+          const { options } = descriptors[route.key]
+          const isFocused = state.index === index
 
           const onPress = () => {
             const event = navigation.emit({
-              type: 'tabPress',
+              type: "tabPress",
               target: route.key,
               canPreventDefault: true,
-            });
+            })
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
+              navigation.navigate(route.name)
             }
-          };
+          }
 
           // Get badge count
-          const badgeCount = route.name === 'wishlist' ? wishlistItems?.length || 0 : route.name === 'notification' ? (unreadCount || 0) : 0;
+          const badgeCount =
+            route.name === "wishlist"
+              ? wishlistItems?.length || 0
+              : route.name === "notification"
+                ? unreadCount || 0
+                : 0
 
           // Render shop tab differently (diamond logo in center)
-          if (route.name === 'shop') {
+          if (route.name === "shop") {
             return (
               <Pressable key={index} onPress={onPress} style={styles.shopItem}>
                 <View style={styles.indicator}>
                   {isFocused && <View style={styles.indicatorLine} />}
                 </View>
                 <View style={[styles.shopSlot]}>
-                  <View style={[styles.shopDiamond, isFocused && styles.shopDiamondActive]}>
+                  <View
+                    style={[
+                      styles.shopDiamond,
+                      isFocused && styles.shopDiamondActive,
+                    ]}
+                  >
                     <View style={styles.shopDiamondInner}>
-                      <Image source={require('../../assets/home_logo.png')} style={styles.homeLogoImage} resizeMode="contain" tintColor={Colors.white} />
+                      <Image
+                        source={require("../../assets/home_logo.png")}
+                        style={styles.homeLogoImage}
+                        resizeMode="contain"
+                        tintColor={Colors.white}
+                      />
                     </View>
                   </View>
                 </View>
               </Pressable>
-            );
+            )
           }
 
           // Render other tabs (home, wishlist, notification, profile)
@@ -388,22 +503,44 @@ function CustomTabBar({ state, descriptors, navigation, insets, hideTabBar }: an
                 {isFocused && <View style={styles.indicatorLine} />}
               </View>
               <View style={styles.iconWrap}>
-                {route.name === 'home' && (
-                  <Ionicons name={isFocused ? 'home' : 'home-outline'} size={26} color={isFocused ? Colors.sky : Colors.textSecondary} />
+                {route.name === "home" && (
+                  <Ionicons
+                    name={isFocused ? "home" : "home-outline"}
+                    size={26}
+                    color={isFocused ? Colors.sky : Colors.textSecondary}
+                  />
                 )}
-                {route.name === 'wishlist' && (
-                  <Ionicons name={isFocused ? 'heart' : 'heart-outline'} size={24} color={isFocused ? Colors.sky : Colors.textSecondary} />
+                {route.name === "wishlist" && (
+                  <Ionicons
+                    name={isFocused ? "heart" : "heart-outline"}
+                    size={24}
+                    color={isFocused ? Colors.sky : Colors.textSecondary}
+                  />
                 )}
-                {route.name === 'notification' && (
-                  <Ionicons name={isFocused ? 'notifications' : 'notifications-outline'} size={24} color={isFocused ? Colors.sky : Colors.textSecondary} />
+                {route.name === "notification" && (
+                  <Ionicons
+                    name={isFocused ? "notifications" : "notifications-outline"}
+                    size={24}
+                    color={isFocused ? Colors.sky : Colors.textSecondary}
+                  />
                 )}
-                {route.name === 'profile' && (
-                  <View style={[styles.avatar, isFocused && styles.avatarActive]}>
+                {route.name === "profile" && (
+                  <View
+                    style={[styles.avatar, isFocused && styles.avatarActive]}
+                  >
                     {enrichedUser?.avatar_url ? (
-                      <Image source={{ uri: enrichedUser.avatar_url }} style={styles.avatarImage} />
+                      <Image
+                        source={{ uri: enrichedUser.avatar_url }}
+                        style={styles.avatarImage}
+                      />
                     ) : (
-                      <Text style={[styles.avatarInitial, isFocused && styles.avatarInitialActive]}>
-                        {enrichedUser?.name?.charAt(0)?.toUpperCase() || '?'}
+                      <Text
+                        style={[
+                          styles.avatarInitial,
+                          isFocused && styles.avatarInitialActive,
+                        ]}
+                      >
+                        {enrichedUser?.name?.charAt(0)?.toUpperCase() || "?"}
                       </Text>
                     )}
                   </View>
@@ -414,19 +551,36 @@ function CustomTabBar({ state, descriptors, navigation, insets, hideTabBar }: an
                   </View>
                 )}
               </View>
-              <Text style={[styles.navLabel, isFocused && styles.navLabelActive, isDarkMode && styles.navLabelDark, isDarkMode && isFocused && styles.navLabelActiveDark]}>
-                {route.name === 'home' ? 'Home' : route.name === 'wishlist' ? 'Wishlist' : route.name === 'notification' ? 'Notify' : 'Profile'}
+              <Text
+                style={[
+                  styles.navLabel,
+                  isFocused && styles.navLabelActive,
+                  isDarkMode && styles.navLabelDark,
+                  isDarkMode && isFocused && styles.navLabelActiveDark,
+                ]}
+              >
+                {route.name === "home"
+                  ? "Home"
+                  : route.name === "wishlist"
+                    ? "Wishlist"
+                    : route.name === "notification"
+                      ? "Notify"
+                      : "Profile"}
               </Text>
             </Pressable>
-          );
+          )
         })}
       </View>
     </View>
-  );
+  )
 }
 
 // Main TabNavigator Component
-export default function TabNavigator({ hideTabBar = false }: { hideTabBar?: boolean }) {
+export default function TabNavigator({
+  hideTabBar = false,
+}: {
+  hideTabBar?: boolean
+}) {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -442,7 +596,7 @@ export default function TabNavigator({ hideTabBar = false }: { hideTabBar?: bool
       <Tab.Screen name="notification" component={NotificationTabScreen} />
       <Tab.Screen name="profile" component={ProfileTabScreen} />
     </Tab.Navigator>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -450,33 +604,33 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   navBarContainerDark: {
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
   },
   navBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    overflow: 'visible',
+    borderTopColor: "#e5e7eb",
+    overflow: "visible",
     paddingBottom: 8,
   },
   navBarDark: {
-    backgroundColor: '#1f2937',
-    borderTopColor: '#374151',
+    backgroundColor: "#1f2937",
+    borderTopColor: "#374151",
   },
   navItem: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    alignItems: "center",
+    justifyContent: "flex-start",
     gap: 2,
     paddingVertical: 6,
   },
   indicator: {
     height: 3,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginBottom: 2,
   },
   indicatorLine: {
@@ -487,74 +641,74 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   iconWrap: {
-    position: 'relative',
+    position: "relative",
   },
   homeLogoImage: {
     width: 30,
     height: 30,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -6,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
     backgroundColor: Colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 3,
     borderWidth: 1.5,
     borderColor: Colors.white,
   },
   badgeDark: {
-    borderColor: '#111827',
+    borderColor: "#111827",
   },
   badgeText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.white,
     lineHeight: 11,
   },
   navLabel: {
     fontSize: 10,
     color: Colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 12,
   },
   navLabelActive: {
     color: Colors.sky,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   navLabelDark: {
-    color: '#d1d5db',
+    color: "#d1d5db",
   },
   navLabelActiveDark: {
-    color: '#38bdf8',
+    color: "#38bdf8",
   },
   avatar: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   avatarActive: {
     borderColor: Colors.sky,
-    backgroundColor: '#e0f2fe',
+    backgroundColor: "#e0f2fe",
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 13,
   },
   avatarInitial: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textSecondary,
   },
   avatarInitialActive: {
@@ -562,26 +716,26 @@ const styles = StyleSheet.create({
   },
   shopItem: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    alignItems: "center",
+    justifyContent: "flex-start",
     gap: 0,
     paddingBottom: 0,
     paddingTop: -8,
   },
   shopSlot: {
     height: 37,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'visible',
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "visible",
   },
   shopDiamond: {
     width: 48,
     height: 48,
     backgroundColor: Colors.sky,
-    transform: [{ rotate: '45deg' }],
-    alignItems: 'center',
-    justifyContent: 'center',
+    transform: [{ rotate: "45deg" }],
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 10,
     shadowColor: Colors.sky,
     shadowOpacity: 0.45,
@@ -593,11 +747,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.skyDark,
   },
   shopDiamondInner: {
-    transform: [{ rotate: '-45deg' }],
-    alignItems: 'center',
-    justifyContent: 'center',
+    transform: [{ rotate: "-45deg" }],
+    alignItems: "center",
+    justifyContent: "center",
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
-});
+})

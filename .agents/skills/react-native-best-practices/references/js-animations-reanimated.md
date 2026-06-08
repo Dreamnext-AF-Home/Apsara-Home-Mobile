@@ -13,16 +13,16 @@ Use React Native Reanimated for smooth 60+ FPS animations.
 **Incorrect (JS thread - blocks on heavy work):**
 
 ```jsx
-const opacity = useRef(new Animated.Value(0)).current;
-Animated.timing(opacity, { toValue: 1 }).start();
+const opacity = useRef(new Animated.Value(0)).current
+Animated.timing(opacity, { toValue: 1 }).start()
 ```
 
 **Correct (UI thread - smooth even during JS work):**
 
 ```jsx
-const opacity = useSharedValue(0);
-const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-opacity.value = withTiming(1);
+const opacity = useSharedValue(0)
+const style = useAnimatedStyle(() => ({ opacity: opacity.value }))
+opacity.value = withTiming(1)
 ```
 
 ## When to Use
@@ -44,8 +44,8 @@ Add to `babel.config.js`:
 
 ```javascript
 module.exports = {
-  plugins: ['react-native-worklets/plugin'],  // Must be last
-};
+  plugins: ["react-native-worklets/plugin"], // Must be last
+}
 ```
 
 > **Note**: Reanimated 4 requires React Native's **New Architecture** (Fabric + TurboModules). The Legacy Architecture is no longer supported. If upgrading from v3, see the migration notes at the end of this document.
@@ -69,91 +69,87 @@ module.exports = {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withTiming
-} from 'react-native-reanimated';
+  withTiming,
+} from "react-native-reanimated"
 
 const FadeInView = () => {
-  const opacity = useSharedValue(0);
+  const opacity = useSharedValue(0)
 
   // This runs on UI thread - won't be blocked by JS
   const animatedStyle = useAnimatedStyle(() => {
-    return { opacity: opacity.value };
-  });
+    return { opacity: opacity.value }
+  })
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 500 });
-  }, []);
+    opacity.value = withTiming(1, { duration: 500 })
+  }, [])
 
-  return <Animated.View style={[styles.box, animatedStyle]} />;
-};
+  return <Animated.View style={[styles.box, animatedStyle]} />
+}
 ```
 
 ### 2. Run Code on UI Thread with `scheduleOnUI`
 
 ```jsx
-import { scheduleOnUI } from 'react-native-worklets';
+import { scheduleOnUI } from "react-native-worklets"
 
 const triggerAnimation = () => {
   scheduleOnUI(() => {
-    'worklet';
-    console.log('Running on UI thread');
+    "worklet"
+    console.log("Running on UI thread")
     // Direct UI manipulations here
-  });
-};
+  })
+}
 ```
 
 ### 3. Call JS from UI Thread with `scheduleOnRN`
 
 ```jsx
-import { scheduleOnRN } from 'react-native-worklets';
+import { scheduleOnRN } from "react-native-worklets"
 
 // Regular JS function
 const trackAnalytics = (value) => {
-  analytics.track('animation_complete', { value });
-};
+  analytics.track("animation_complete", { value })
+}
 
 const AnimatedComponent = () => {
-  const progress = useSharedValue(0);
+  const progress = useSharedValue(0)
 
   const animatedStyle = useAnimatedStyle(() => {
     // When animation completes, call JS function
     if (progress.value === 1) {
-      scheduleOnRN(trackAnalytics, progress.value);
+      scheduleOnRN(trackAnalytics, progress.value)
     }
-    return { opacity: progress.value };
-  });
+    return { opacity: progress.value }
+  })
 
-  return <Animated.View style={animatedStyle} />;
-};
+  return <Animated.View style={animatedStyle} />
+}
 ```
 
 ### 4. Animation with Callback
 
 ```jsx
-import { scheduleOnRN } from 'react-native-worklets';
+import { scheduleOnRN } from "react-native-worklets"
 
 const AnimatedButton = () => {
-  const scale = useSharedValue(1);
+  const scale = useSharedValue(1)
 
   const onComplete = () => {
-    console.log('Animation finished!');
-  };
+    console.log("Animation finished!")
+  }
 
   const handlePress = () => {
-    scale.value = withTiming(
-      1.2,
-      { duration: 200 },
-      (finished) => {
-        if (finished) {
-          scheduleOnRN(onComplete);
-        }
+    scale.value = withTiming(1.2, { duration: 200 }, (finished) => {
+      if (finished) {
+        scheduleOnRN(onComplete)
       }
-    );
-  };
+    })
+  }
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-  }));
+  }))
 
   return (
     <Pressable onPress={handlePress}>
@@ -161,23 +157,23 @@ const AnimatedButton = () => {
         <Text>Press Me</Text>
       </Animated.View>
     </Pressable>
-  );
-};
+  )
+}
 ```
 
 ## When to Use What
 
-| Thread | Best For |
-|--------|----------|
-| **UI Thread** (worklets) | Visual animations, transforms, gestures |
-| **JS Thread** | State updates, data processing, API calls |
+| Thread                   | Best For                                  |
+| ------------------------ | ----------------------------------------- |
+| **UI Thread** (worklets) | Visual animations, transforms, gestures   |
+| **JS Thread**            | State updates, data processing, API calls |
 
-| Hook/API | Use Case |
-|----------|----------|
-| `useAnimatedStyle` | Animated styles (auto UI thread) |
-| `scheduleOnUI` | Manual UI thread execution (from `react-native-worklets`) |
-| `scheduleOnRN` | Call JS functions from worklets (from `react-native-worklets`) |
-| `useTransition` | Alternative for React state-driven delays |
+| Hook/API           | Use Case                                                       |
+| ------------------ | -------------------------------------------------------------- |
+| `useAnimatedStyle` | Animated styles (auto UI thread)                               |
+| `scheduleOnUI`     | Manual UI thread execution (from `react-native-worklets`)      |
+| `scheduleOnRN`     | Call JS functions from worklets (from `react-native-worklets`) |
+| `useTransition`    | Alternative for React state-driven delays                      |
 
 ## Common Pitfalls
 
@@ -189,14 +185,14 @@ const AnimatedButton = () => {
 ```jsx
 // BAD: Regular function in useAnimatedStyle
 const style = useAnimatedStyle(() => {
-  heavyComputation();  // Blocks UI thread!
-  return { opacity: 1 };
-});
+  heavyComputation() // Blocks UI thread!
+  return { opacity: 1 }
+})
 
 // GOOD: Keep worklets fast
 const style = useAnimatedStyle(() => {
-  return { opacity: opacity.value };  // Just read value
-});
+  return { opacity: opacity.value } // Just read value
+})
 ```
 
 ## Migrating from Reanimated 3.x to 4.x
@@ -207,14 +203,14 @@ If you're upgrading from Reanimated 3.x, here are the key changes.
 
 ### Breaking Changes
 
-| Old API (v3) | New API (v4) | Package |
-|--------------|--------------|---------|
-| `runOnUI(() => {...})()` | `scheduleOnUI(() => {...})` | `react-native-worklets` |
-| `runOnJS(fn)(args)` | `scheduleOnRN(fn, args)` | `react-native-worklets` |
-| `executeOnUIRuntimeSync` | `runOnUISync` | `react-native-worklets` |
-| `runOnRuntime` | `scheduleOnRuntime` | `react-native-worklets` |
-| `useScrollViewOffset` | `useScrollOffset` | `react-native-reanimated` |
-| `useWorkletCallback` | Use `useCallback` with `'worklet';` directive | React |
+| Old API (v3)             | New API (v4)                                  | Package                   |
+| ------------------------ | --------------------------------------------- | ------------------------- |
+| `runOnUI(() => {...})()` | `scheduleOnUI(() => {...})`                   | `react-native-worklets`   |
+| `runOnJS(fn)(args)`      | `scheduleOnRN(fn, args)`                      | `react-native-worklets`   |
+| `executeOnUIRuntimeSync` | `runOnUISync`                                 | `react-native-worklets`   |
+| `runOnRuntime`           | `scheduleOnRuntime`                           | `react-native-worklets`   |
+| `useScrollViewOffset`    | `useScrollOffset`                             | `react-native-reanimated` |
+| `useWorkletCallback`     | Use `useCallback` with `'worklet';` directive | React                     |
 
 ### Removed APIs
 
@@ -230,13 +226,13 @@ withSpring(value, {
   restDisplacementThreshold: 0.01,
   restSpeedThreshold: 0.01,
   duration: 300,
-});
+})
 
 // After (v4)
 withSpring(value, {
-  energyThreshold: 0.01,  // Replaces both threshold parameters
-  duration: 200,          // Duration is now "perceptual" (~1.5x actual time)
-});
+  energyThreshold: 0.01, // Replaces both threshold parameters
+  duration: 200, // Duration is now "perceptual" (~1.5x actual time)
+})
 ```
 
 ### Migration Checklist

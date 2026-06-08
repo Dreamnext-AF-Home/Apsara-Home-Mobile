@@ -14,10 +14,10 @@ Optimize `@gorhom/bottom-sheet` for smooth 60 FPS by keeping gesture/scroll-driv
 
 ```jsx
 const handleAnimate = useCallback((fromIndex, toIndex) => {
-  setIsExpanded(toIndex > 0); // re-renders entire tree
-}, []);
+  setIsExpanded(toIndex > 0) // re-renders entire tree
+}, [])
 
-<BottomSheet onAnimate={handleAnimate}>
+;<BottomSheet onAnimate={handleAnimate}>
   <ExpensiveContent isExpanded={isExpanded} />
 </BottomSheet>
 ```
@@ -75,13 +75,13 @@ Avoid React state for gesture-driven visual state. Update a shared value and con
 **Before:**
 
 ```jsx
-const [shadowOpacity, setShadowOpacity] = useState(0);
+const [shadowOpacity, setShadowOpacity] = useState(0)
 
 const handleAnimate = useCallback((fromIndex, toIndex) => {
-  setShadowOpacity(toIndex > 0 ? 0.3 : 0);
-}, []);
+  setShadowOpacity(toIndex > 0 ? 0.3 : 0)
+}, [])
 
-<BottomSheet onAnimate={handleAnimate}>
+;<BottomSheet onAnimate={handleAnimate}>
   <View style={{ shadowOpacity }}>
     <HeavyContent />
   </View>
@@ -91,13 +91,13 @@ const handleAnimate = useCallback((fromIndex, toIndex) => {
 **After:**
 
 ```jsx
-const animatedIndex = useSharedValue(0);
+const animatedIndex = useSharedValue(0)
 
 const shadowStyle = useAnimatedStyle(() => ({
   shadowOpacity: withTiming(animatedIndex.value > 0 ? 0.3 : 0),
-}));
+}))
 
-<BottomSheet animatedIndex={animatedIndex}>
+;<BottomSheet animatedIndex={animatedIndex}>
   <Animated.View style={shadowStyle}>
     <HeavyContent />
   </Animated.View>
@@ -111,44 +111,48 @@ Toggling content based on sheet index via `{showFooter && <Footer/>}` causes mou
 **Before:**
 
 ```jsx
-const [showFooter, setShowFooter] = useState(false);
+const [showFooter, setShowFooter] = useState(false)
 
 // re-mounts footer on every toggle
-{showFooter && <Footer />}
+{
+  showFooter && <Footer />
+}
 ```
 
 **After:**
 
 ```jsx
 const SheetVisibilityWrapper = ({ animatedIndex, threshold = 1, children }) => {
-  const [isInteractive, setIsInteractive] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(false)
 
   const style = useAnimatedStyle(() => ({
     opacity: withTiming(animatedIndex.value >= threshold ? 1 : 0),
-    transform: [{ translateY: withTiming(animatedIndex.value >= threshold ? 0 : 50) }],
-  }));
+    transform: [
+      { translateY: withTiming(animatedIndex.value >= threshold ? 0 : 50) },
+    ],
+  }))
 
   useAnimatedReaction(
     () => animatedIndex.value >= threshold,
     (visible, prev) => {
-      if (visible !== prev) runOnJS(setIsInteractive)(visible);
+      if (visible !== prev) runOnJS(setIsInteractive)(visible)
     }
-  );
+  )
 
   return (
     <Animated.View
       style={style}
-      pointerEvents={isInteractive ? 'auto' : 'none'}
+      pointerEvents={isInteractive ? "auto" : "none"}
       accessibilityElementsHidden={!isInteractive}
-      importantForAccessibility={isInteractive ? 'auto' : 'no-hide-descendants'}
+      importantForAccessibility={isInteractive ? "auto" : "no-hide-descendants"}
     >
       {children}
     </Animated.View>
-  );
-};
+  )
+}
 
 // Usage:
-<SheetVisibilityWrapper animatedIndex={animatedIndex}>
+;<SheetVisibilityWrapper animatedIndex={animatedIndex}>
   <Footer />
 </SheetVisibilityWrapper>
 ```
@@ -159,10 +163,10 @@ const SheetVisibilityWrapper = ({ animatedIndex, threshold = 1, children }) => {
 
 ```jsx
 const scrollHandler = useAnimatedScrollHandler((event) => {
-  scrollY.value = event.contentOffset.y;
-});
+  scrollY.value = event.contentOffset.y
+})
 
-<BottomSheetScrollView onScroll={scrollHandler}>
+;<BottomSheetScrollView onScroll={scrollHandler}>
   <Content />
 </BottomSheetScrollView>
 ```
@@ -176,16 +180,16 @@ import {
   BottomSheetScrollView,
   BottomSheetFlatList,
   BottomSheetSectionList,
-} from '@gorhom/bottom-sheet';
+} from "@gorhom/bottom-sheet"
 
 // FlashList v2: BottomSheetFlashList is deprecated.
 // Create the scroll component, then pass it to FlashList.
-import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet';
-import { FlashList } from '@shopify/flash-list';
+import { useBottomSheetScrollableCreator } from "@gorhom/bottom-sheet"
+import { FlashList } from "@shopify/flash-list"
 
-const BottomSheetFlashListScrollComponent = useBottomSheetScrollableCreator();
+const BottomSheetFlashListScrollComponent = useBottomSheetScrollableCreator()
 
-<BottomSheet snapPoints={snapPoints} enableDynamicSizing={false}>
+;<BottomSheet snapPoints={snapPoints} enableDynamicSizing={false}>
   <FlashList
     data={data}
     keyExtractor={(item) => item.id}
@@ -197,14 +201,14 @@ const BottomSheetFlashListScrollComponent = useBottomSheetScrollableCreator();
 
 **Key props:**
 
-| Prop | Purpose |
-|------|---------|
-| `containerHeight` | Provide to skip extra measurement re-render on mount |
-| `enableDynamicSizing={false}` | Use when you want fixed snap-point indexing and do not want a dynamic content-height snap point inserted |
-| `animatedIndex` | SharedValue for continuous index tracking on UI thread |
-| `animatedPosition` | SharedValue for continuous position tracking on UI thread |
-| `onChange` | Fires on snap **completion** only (discrete) — use for analytics/side effects |
-| `onAnimate` | Fires before each animation start/retarget — use sparingly, because it can run repeatedly during interaction |
+| Prop                          | Purpose                                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `containerHeight`             | Provide to skip extra measurement re-render on mount                                                         |
+| `enableDynamicSizing={false}` | Use when you want fixed snap-point indexing and do not want a dynamic content-height snap point inserted     |
+| `animatedIndex`               | SharedValue for continuous index tracking on UI thread                                                       |
+| `animatedPosition`            | SharedValue for continuous position tracking on UI thread                                                    |
+| `onChange`                    | Fires on snap **completion** only (discrete) — use for analytics/side effects                                |
+| `onAnimate`                   | Fires before each animation start/retarget — use sparingly, because it can run repeatedly during interaction |
 
 ### 5. BottomSheetModal Setup
 
@@ -212,7 +216,7 @@ const BottomSheetFlashListScrollComponent = useBottomSheetScrollableCreator();
 import {
   BottomSheetModal,
   BottomSheetModalProvider,
-} from '@gorhom/bottom-sheet';
+} from "@gorhom/bottom-sheet"
 
 const App = () => (
   <BottomSheetModalProvider>
@@ -224,7 +228,7 @@ const App = () => (
       <Content />
     </BottomSheetModal>
   </BottomSheetModalProvider>
-);
+)
 ```
 
 **iOS layering fix** — use `FullWindowOverlay` to render above native navigation:
@@ -243,22 +247,19 @@ import { FullWindowOverlay } from 'react-native-screens';
 <BottomSheet
   snapPoints={snapPoints}
   enableDynamicSizing={false}
-  keyboardBehavior="interactive"    // 'extend' | 'fillParent' | 'interactive'
-  keyboardBlurBehavior="restore"    // reset sheet position when keyboard dismisses
+  keyboardBehavior="interactive" // 'extend' | 'fillParent' | 'interactive'
+  keyboardBlurBehavior="restore" // reset sheet position when keyboard dismisses
   enableBlurKeyboardOnGesture={true} // dismiss keyboard on drag
 >
-  <BottomSheetTextInput
-    placeholder="Type here..."
-    style={styles.input}
-  />
+  <BottomSheetTextInput placeholder="Type here..." style={styles.input} />
 </BottomSheet>
 ```
 
-| `keyboardBehavior` | Effect |
-|--------------------|--------|
-| `extend` | Sheet grows to accommodate keyboard |
-| `fillParent` | Sheet fills parent when keyboard appears |
-| `interactive` | Sheet follows keyboard position interactively |
+| `keyboardBehavior` | Effect                                        |
+| ------------------ | --------------------------------------------- |
+| `extend`           | Sheet grows to accommodate keyboard           |
+| `fillParent`       | Sheet fills parent when keyboard appears      |
+| `interactive`      | Sheet follows keyboard position interactively |
 
 > Prefer `BottomSheetTextInput` inside a bottom sheet. If you need a custom input, copy the focus/blur handlers from the library's `BottomSheetTextInput` implementation so keyboard handling still works correctly.
 
@@ -288,12 +289,12 @@ const backdropStyle = useAnimatedStyle(() => ({
 
 If your app already runs on **New Architecture (Fabric)**, consider `@lodev09/react-native-true-sheet` — a fully native bottom sheet that sidesteps JS re-render problems entirely.
 
-| Scenario | Recommendation |
-|----------|---------------|
-| Need deep JS customization (custom gestures, animated derived UI) | `@gorhom/bottom-sheet` |
-| Standard sheet with native feel + accessibility | `react-native-true-sheet` |
-| Legacy Architecture (no Fabric) | `@gorhom/bottom-sheet` (true-sheet v3+ requires Fabric) |
-| Web support needed | Either (true-sheet uses `@gorhom/bottom-sheet` on web internally) |
+| Scenario                                                          | Recommendation                                                    |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Need deep JS customization (custom gestures, animated derived UI) | `@gorhom/bottom-sheet`                                            |
+| Standard sheet with native feel + accessibility                   | `react-native-true-sheet`                                         |
+| Legacy Architecture (no Fabric)                                   | `@gorhom/bottom-sheet` (true-sheet v3+ requires Fabric)           |
+| Web support needed                                                | Either (true-sheet uses `@gorhom/bottom-sheet` on web internally) |
 
 **Advantages**: zero JS overhead (sheet lives in native land — no SharedValue plumbing needed), built-in keyboard handling, native screen reader support, side sheet on tablets, iOS 26+ Liquid Glass support, React Navigation sheet navigator integration.
 

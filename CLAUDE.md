@@ -20,11 +20,12 @@
 
 Before doing deep research on the codebase, read these docs in `docs/guide.md` for reference links:
 
-| Document | Covers |
-|---|---|
+| Document        | Covers                                            |
+| --------------- | ------------------------------------------------- |
 | `docs/guide.md` | Overview index linking to all documentation below |
 
 The detailed documentation artifacts were generated and live in the conversation artifacts directory. Key reference docs:
+
 - **01-project-overview.md** — Tech stack, folder structure, high-level flow
 - **02-screens-guide.md** — All 53 screens explained (what/why)
 - **03-api-reference.md** — All 60+ API endpoints (method, path, payload, response)
@@ -83,24 +84,29 @@ src/
 ## Code Conventions
 
 ### Imports
+
 - Use **direct imports** from source files — avoid barrel exports (see performance notes below)
 - Services are imported inline in some screens: `const { authService } = require('../services/authService')`
 
 ### Styling
+
 - Use `StyleSheet.create({})` — never inline style objects in render
 - Color constants from `src/constants/colors.ts` (`Colors.sky`, `Colors.cream`, etc.)
 - Dark mode: every screen receives `isDarkMode` and defines a local `colors` object
 
 ### Types
+
 - `@ts-nocheck` is used in several files — do NOT add it to new files
 - Define interfaces for props, API responses, and data models
 - The `AuthUser` interface in `App.tsx` is the canonical user type
 
 ### Error Handling
+
 - Services throw structured errors: `{ message, details, status }`
 - Screens show errors via `react-native-toast-message` (`Toast.show()`)
 
 ### API Calls
+
 - All authenticated requests: `headers: { Authorization: \`Bearer ${token}\` }`
 - Response normalization: always handle multiple shapes (`data.data`, `data.products`, `data.items`, raw array)
 
@@ -142,10 +148,10 @@ src/
 
 ```typescript
 // ❌ BAD — barrel import pulls entire library
-import { something } from '../components';
+import { something } from "../components"
 
 // ✅ GOOD — direct import, tree-shakeable
-import { something } from '../components/Something/Something';
+import { something } from "../components/Something/Something"
 ```
 
 ### 🟡 HIGH — Performance
@@ -167,9 +173,9 @@ import { something } from '../components/Something/Something';
 ```typescript
 // ✅ GOOD — proper cleanup
 useEffect(() => {
-  const subscription = AppState.addEventListener('change', handler);
-  return () => subscription.remove();
-}, []);
+  const subscription = AppState.addEventListener("change", handler)
+  return () => subscription.remove()
+}, [])
 ```
 
 ### 🟢 MEDIUM — UI Patterns
@@ -335,18 +341,18 @@ EXPO_PUBLIC_PUSHER_APP_CLUSTER=       # Pusher cluster (ap3)
 
 When working on specific problem areas, read the relevant skill files for detailed patterns:
 
-| Problem | Skill File |
-|---|---|
+| Problem              | Skill File                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------- |
 | Slow/janky scrolling | `.agents/skills/react-native-best-practices/references/js-lists-flatlist-flashlist.md` |
-| Too many re-renders | `.agents/skills/react-native-best-practices/references/js-profile-react.md` |
-| Animation jank | `.agents/skills/react-native-best-practices/references/js-animations-reanimated.md` |
-| Memory leaks | `.agents/skills/react-native-best-practices/references/js-memory-leaks.md` |
-| Large bundle size | `.agents/skills/react-native-best-practices/references/bundle-analyze-js.md` |
-| Slow app startup | `.agents/skills/react-native-best-practices/references/native-measure-tti.md` |
-| Bottom sheet issues | `.agents/skills/react-native-best-practices/references/js-bottomsheet.md` |
-| TextInput lag | `.agents/skills/react-native-best-practices/references/js-uncontrolled-components.md` |
-| Full Vercel rules | `.agents/skills/vercel-react-native-skills/AGENTS.md` |
-| Design patterns | `.agents/skills/react-native-design/SKILL.md` |
+| Too many re-renders  | `.agents/skills/react-native-best-practices/references/js-profile-react.md`            |
+| Animation jank       | `.agents/skills/react-native-best-practices/references/js-animations-reanimated.md`    |
+| Memory leaks         | `.agents/skills/react-native-best-practices/references/js-memory-leaks.md`             |
+| Large bundle size    | `.agents/skills/react-native-best-practices/references/bundle-analyze-js.md`           |
+| Slow app startup     | `.agents/skills/react-native-best-practices/references/native-measure-tti.md`          |
+| Bottom sheet issues  | `.agents/skills/react-native-best-practices/references/js-bottomsheet.md`              |
+| TextInput lag        | `.agents/skills/react-native-best-practices/references/js-uncontrolled-components.md`  |
+| Full Vercel rules    | `.agents/skills/vercel-react-native-skills/AGENTS.md`                                  |
+| Design patterns      | `.agents/skills/react-native-design/SKILL.md`                                          |
 
 ---
 

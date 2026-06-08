@@ -5,6 +5,7 @@
 **Apsara Home (AFHome)** is an **e-commerce mobile application** for a Philippine-based furniture/home-goods company. It is built with **React Native + Expo** and talks to a Laravel backend at `https://backend.afhome.ph/api`.
 
 The app allows users to:
+
 - Browse, search, and purchase furniture & home products
 - Manage a cart and wishlist
 - Check out via online payment (with PayMongo integration)
@@ -16,21 +17,21 @@ The app allows users to:
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | **React Native 0.81** via **Expo SDK 54** |
-| Language | **TypeScript** |
-| Navigation | `@react-navigation/native` v7 + `@react-navigation/bottom-tabs` v7 |
-| State / Data | `@tanstack/react-query` v5, React Context, local `useState` |
-| HTTP Client | **Axios** |
-| Search Engine | **Meilisearch** (hosted at `search.afhome.ph`) |
-| Real-time | **Pusher** (private channels per user) |
-| Push Notifications | **Firebase Cloud Messaging** + **OneSignal** |
-| Auth Persistence | `expo-secure-store` (encrypted key-value) |
-| Social Login | `@react-native-google-signin/google-signin` |
-| Payment | **PayMongo** (via backend, rendered in a WebView) |
-| Biometrics | `expo-local-authentication` |
-| Styling | React Native `StyleSheet` with a custom `Colors` constant |
+| Layer              | Technology                                                         |
+| ------------------ | ------------------------------------------------------------------ |
+| Framework          | **React Native 0.81** via **Expo SDK 54**                          |
+| Language           | **TypeScript**                                                     |
+| Navigation         | `@react-navigation/native` v7 + `@react-navigation/bottom-tabs` v7 |
+| State / Data       | `@tanstack/react-query` v5, React Context, local `useState`        |
+| HTTP Client        | **Axios**                                                          |
+| Search Engine      | **Meilisearch** (hosted at `search.afhome.ph`)                     |
+| Real-time          | **Pusher** (private channels per user)                             |
+| Push Notifications | **Firebase Cloud Messaging** + **OneSignal**                       |
+| Auth Persistence   | `expo-secure-store` (encrypted key-value)                          |
+| Social Login       | `@react-native-google-signin/google-signin`                        |
+| Payment            | **PayMongo** (via backend, rendered in a WebView)                  |
+| Biometrics         | `expo-local-authentication`                                        |
+| Styling            | React Native `StyleSheet` with a custom `Colors` constant          |
 
 ---
 

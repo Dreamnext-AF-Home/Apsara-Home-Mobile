@@ -44,12 +44,14 @@ graph LR
 ## Service Files Explained
 
 ### [authService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/authService.ts)
+
 **Responsibility**: All authentication + some miscellaneous data fetching.
 
 > [!WARNING]
 > This file also handles non-auth concerns like `getSearchHistory()`, `getBrands()`, `getBrandProfile()`, and `getShopByCategories()`. This is a historical design decision — these could be refactored into their own services.
 
 Key methods:
+
 - `login()` — Email/password login with full error handling (401, 403, 2FA, MFA)
 - `mobileRegister()` — New user registration
 - `verifyRegisterOtp()` — OTP verification after signup
@@ -62,9 +64,11 @@ Key methods:
 ---
 
 ### [productService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/productService.ts)
+
 **Responsibility**: Product CRUD and shop data.
 
 Key features:
+
 - **Response normalization**: Handles multiple response shapes (`data.products`, `data.data`, `data.items`, or raw array)
 - `toProductCard()` — Transforms full `Product` into lightweight `ProductCard`
 - Wishlist fetching: `getWishlist()`
@@ -73,6 +77,7 @@ Key features:
 ---
 
 ### [orderService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/orderService.ts)
+
 **Responsibility**: Order counts, notifications, cart clearing.
 
 Small but important — provides `getOrderCounts()` used by the Profile screen's order summary.
@@ -80,6 +85,7 @@ Small but important — provides `getOrderCounts()` used by the Profile screen's
 ---
 
 ### [referralService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/referralService.ts)
+
 **Responsibility**: Referral tree and public profile lookup.
 
 - `getReferralTree()` — Authenticated, returns the user's full downline tree
@@ -88,6 +94,7 @@ Small but important — provides `getOrderCounts()` used by the Profile screen's
 ---
 
 ### [accountService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/accountService.ts)
+
 **Responsibility**: Account snapshot with loyalty/tier data.
 
 Single method: `getAccountSnapshot()` returns rank, tier, PV, and member counts.
@@ -95,6 +102,7 @@ Single method: `getAccountSnapshot()` returns rank, tier, PV, and member counts.
 ---
 
 ### [meilisearchService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/meilisearchService.ts)
+
 **Responsibility**: Product search via Meilisearch.
 
 - `liveSearch()` — Quick search for autocomplete suggestions (limit 10)
@@ -106,6 +114,7 @@ Single method: `getAccountSnapshot()` returns rank, tier, PV, and member counts.
 ---
 
 ### [userBehaviorService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/userBehaviorService.ts)
+
 **Responsibility**: User behavior tracking for personalized recommendations.
 
 Tracks events like `product_view`, `cart_add`, `wishlist_add`, `purchase`, `search`, then uses that data to serve `getRecommendations()`.
@@ -113,9 +122,11 @@ Tracks events like `product_view`, `cart_add`, `wishlist_add`, `purchase`, `sear
 ---
 
 ### [storageService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/storageService.ts)
+
 **Responsibility**: Encrypted local storage for auth data.
 
 Uses `expo-secure-store` (not `AsyncStorage`) for security. Key behaviors:
+
 - **Token expiry**: Tokens are considered expired after **7 days** (checked via stored timestamp)
 - **Auto-cleanup**: Expired tokens are automatically cleared
 - **Session extension**: `refreshTokenTimestamp()` resets the 7-day timer
@@ -132,9 +143,11 @@ Stored keys:
 ---
 
 ### [pusherService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/pusherService.ts)
+
 **Responsibility**: WebSocket connection for real-time notifications.
 
 Key design decisions:
+
 - **Singleton** pattern — one `PusherService` instance for the whole app
 - **Private channels** — subscribes to `private-customer-{userId}`
 - **Auto-reconnect** — exponential backoff up to 5 attempts
@@ -144,6 +157,7 @@ Key design decisions:
 ---
 
 ### [googleSignInService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/googleSignInService.ts)
+
 **Responsibility**: Google Sign-In wrapper.
 
 Flow: `GoogleSignin.signIn()` → get `idToken` → `authService.googleLogin(idToken)` → save token + user.
@@ -151,6 +165,7 @@ Flow: `GoogleSignin.signIn()` → get `idToken` → `authService.googleLogin(idT
 ---
 
 ### [notificationService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/notificationService.ts) & [oneSignalNotificationService.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/services/oneSignalNotificationService.ts)
+
 **Responsibility**: Notification tap handling and OneSignal initialization.
 
 Both services parse the `href` field from notifications using the pattern: `{scheme}://{status}/{identifier}` (e.g., `purchases://delivered/cs_abc123`) and navigate to the appropriate screen.
@@ -162,7 +177,9 @@ Both services parse the `href` field from notifications using the pattern: `{sch
 Hooks in `src/hooks/` wrap services with React lifecycle integration:
 
 ### [useNotifications.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/hooks/useNotifications.ts)
+
 Manages the Pusher connection lifecycle and provides:
+
 - `notifications` — live notification array
 - `unreadCount` — real-time badge count
 - `markAsRead()` / `clearNotifications()`
@@ -170,18 +187,23 @@ Manages the Pusher connection lifecycle and provides:
 Handles app state changes (background/foreground) to disconnect/reconnect Pusher.
 
 ### [useWishlist.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/hooks/useWishlist.ts)
+
 React Query wrapper for `productService.getWishlist()` — provides cached, auto-refetching wishlist data.
 
 ### [useRecommendations.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/hooks/useRecommendations.ts)
+
 Wraps `userBehaviorService.getRecommendations()` with loading/error state.
 
 ### [useDeviceRegistration.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/hooks/useDeviceRegistration.ts)
+
 Automatically registers the device for push notifications when `token` and `userId` become available. Creates a persistent UUID device ID in SecureStore.
 
 ### [useFirebaseMessaging.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/hooks/useFirebaseMessaging.ts)
+
 Handles Firebase Cloud Messaging (FCM) token retrieval and foreground notification display.
 
 ### [useTokenRefresh.ts](file:///d:/PROJECTS/Apsara-Home-Mobile/src/hooks/useTokenRefresh.ts)
+
 Validates tokens and triggers refresh when needed.
 
 ---
@@ -220,6 +242,7 @@ graph TD
 ```
 
 ### AppContext (Global State)
+
 [AppContext.tsx](file:///d:/PROJECTS/Apsara-Home-Mobile/src/context/AppContext.tsx) provides **~40+ values** to all tab screens via React Context. This includes:
 
 - Auth data (`token`, `enrichedUser`)
@@ -231,6 +254,7 @@ graph TD
 > The `AppNavigator.tsx` is the **true state owner**. It creates all state variables and passes them down through `AppContextProvider`. The `AppContext` is just the plumbing — `AppNavigator` is where the logic lives.
 
 ### AppNavigator as State Machine
+
 [AppNavigator.tsx](file:///d:/PROJECTS/Apsara-Home-Mobile/src/navigation/AppNavigator.tsx) (~2500 lines, 96KB) is the heart of the app. It manages:
 
 1. **All modal screens** via boolean states (`showCart`, `showCheckout`, `showPurchases`, etc.)
@@ -240,6 +264,7 @@ graph TD
 5. **Dark mode** — persisted in `AsyncStorage`, restored on mount
 
 ### Caching Strategy
+
 ```
 App Mount
   ├── Read AsyncStorage cache (categories, brands, rooms, products, dark mode)
@@ -297,7 +322,7 @@ sequenceDiagram
     U->>LS: Enters email + password
     LS->>AUTH: authService.login(email, password)
     AUTH->>API: POST /auth/mobile/login
-    
+
     alt Success
         API-->>AUTH: { user, token }
         AUTH-->>LS: LoginResponse
@@ -323,41 +348,50 @@ sequenceDiagram
 ## Key Design Patterns
 
 ### 1. Response Normalization
+
 Many services handle multiple response formats from the backend:
+
 ```typescript
 // productService.ts handles 4 possible shapes:
-if (Array.isArray(response.data)) products = response.data;
-else if (response.data.data) products = response.data.data;
-else if (response.data.products) products = response.data.products;
-else if (response.data.items) products = response.data.items;
+if (Array.isArray(response.data)) products = response.data
+else if (response.data.data) products = response.data.data
+else if (response.data.products) products = response.data.products
+else if (response.data.items) products = response.data.items
 ```
 
 ### 2. Optimistic Updates
+
 Cart and wishlist use optimistic UI updates — the UI changes immediately and reverts on API error:
+
 ```typescript
 // CartScreen: optimistic quantity update
 snapshot = { ...cartItem };
 updateCartItemInState(crtId, item => ({ ...item, crt_quantity: newQuantity }));
-try { await axios.put(...); } 
+try { await axios.put(...); }
 catch { updateCartItemInState(crtId, () => snapshot); }
 ```
 
 ### 3. Error Handling Pattern
+
 Services throw structured error objects:
+
 ```typescript
 throw {
-  message: error.response?.data?.message || 'Fallback message',
+  message: error.response?.data?.message || "Fallback message",
   details: error.response?.data,
   status: error.response?.status,
-} as AuthError;
+} as AuthError
 ```
 
 ### 4. Token-Guarded Requests
+
 All authenticated requests pass the token via header:
+
 ```typescript
-const headers = token ? { Authorization: `Bearer ${token}` } : {};
-const response = await api.get('/endpoint', { headers });
+const headers = token ? { Authorization: `Bearer ${token}` } : {}
+const response = await api.get("/endpoint", { headers })
 ```
 
 ### 5. Screen-Level API Calls
+
 Some screens (CartScreen, ProductDetailScreen, SecurityScreen) make **direct axios calls** instead of going through services. This is an inconsistency — ideally all API calls should be in the service layer.

@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
   },
-});
+})
 ```
 
 ### 3. React Navigation Setup
@@ -279,7 +279,7 @@ function DraggableCard() {
 ### 5. Platform-Specific Styling
 
 ```typescript
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native"
 
 const styles = StyleSheet.create({
   container: {
@@ -300,9 +300,9 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "SF Pro Text" : "Roboto",
     fontSize: 16,
   },
-});
+})
 
 // Platform-specific components
-import { Platform } from "react-native";
-const StatusBarHeight = Platform.OS === "ios" ? 44 : 0;
+import { Platform } from "react-native"
+const StatusBarHeight = Platform.OS === "ios" ? 44 : 0
 ```

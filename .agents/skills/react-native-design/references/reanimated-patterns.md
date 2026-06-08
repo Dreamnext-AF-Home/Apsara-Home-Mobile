@@ -716,11 +716,11 @@ const animatedStyle = useAnimatedStyle(
   () => ({
     transform: [{ translateX: translateX.value }],
   }),
-  [],
-); // Empty deps if no external dependencies
+  []
+) // Empty deps if no external dependencies
 
 // Use useMemo for complex calculations outside worklets
-const threshold = useMemo(() => calculateThreshold(screenWidth), [screenWidth]);
+const threshold = useMemo(() => calculateThreshold(screenWidth), [screenWidth])
 ```
 
 ### Worklet Best Practices
@@ -728,24 +728,24 @@ const threshold = useMemo(() => calculateThreshold(screenWidth), [screenWidth]);
 ```typescript
 // Do: Keep worklets simple
 const simpleWorklet = () => {
-  "worklet";
-  return scale.value * 2;
-};
+  "worklet"
+  return scale.value * 2
+}
 
 // Don't: Complex logic in worklets
 // Move complex logic to JS with runOnJS
 
 // Do: Use runOnJS for callbacks
 const onComplete = () => {
-  setIsAnimating(false);
-};
+  setIsAnimating(false)
+}
 
 opacity.value = withTiming(1, {}, (finished) => {
-  "worklet";
+  "worklet"
   if (finished) {
-    runOnJS(onComplete)();
+    runOnJS(onComplete)()
   }
-});
+})
 ```
 
 ### Cancel Animations

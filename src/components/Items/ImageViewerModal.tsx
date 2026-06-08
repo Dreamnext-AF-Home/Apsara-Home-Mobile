@@ -1,66 +1,72 @@
 // @ts-nocheck
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect } from "react"
 import {
-  View, Image, Text, TouchableOpacity, ScrollView, StyleSheet,
-  Dimensions, RefreshControl,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  RefreshControl,
+} from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "../../constants/colors"
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH = Dimensions.get("window").width
 
 interface Product {
-  id: number;
-  name: string;
-  brand?: string;
-  prodpv: number;
-  image?: string;
-  images?: string[];
-  priceMember?: number;
-  priceSrp?: number;
-  soldCount: number;
+  id: number
+  name: string
+  brand?: string
+  prodpv: number
+  image?: string
+  images?: string[]
+  priceMember?: number
+  priceSrp?: number
+  soldCount: number
   variants?: Array<{
-    id: number;
-    color?: string;
-    name?: string;
-    colorHex?: string;
-    images?: string[];
-    priceMember?: number;
-    priceSrp?: number;
-  }>;
+    id: number
+    color?: string
+    name?: string
+    colorHex?: string
+    images?: string[]
+    priceMember?: number
+    priceSrp?: number
+  }>
 }
 
 interface BrandProfile {
-  profile_picture?: string;
-  overall_rating?: number;
+  profile_picture?: string
+  overall_rating?: number
 }
 
 interface ImageWithVariant {
-  image: string;
-  variantId: number | null;
+  image: string
+  variantId: number | null
 }
 
 interface ImageViewerModalProps {
-  visible: boolean;
-  product: Product | null;
-  brandProfile?: BrandProfile;
-  images: string[];
-  imagesWithVariants: ImageWithVariant[];
-  selectedVariant: number | null;
-  imageViewerIndex: number;
-  onClose: () => void;
-  onAddToCart: () => void;
-  onBuyNow: () => void;
-  onSelectVariant: (variantId: number) => void;
-  onImageIndexChange: (index: number) => void;
-  onProductPress?: (productId: number) => void;
-  hasDiscount: boolean;
-  cartCount?: number;
-  isWishlisted?: boolean;
-  onWishlistToggle?: () => void;
-  wishlistLoading?: boolean;
+  visible: boolean
+  product: Product | null
+  brandProfile?: BrandProfile
+  images: string[]
+  imagesWithVariants: ImageWithVariant[]
+  selectedVariant: number | null
+  imageViewerIndex: number
+  onClose: () => void
+  onAddToCart: () => void
+  onBuyNow: () => void
+  onSelectVariant: (variantId: number) => void
+  onImageIndexChange: (index: number) => void
+  onProductPress?: (productId: number) => void
+  hasDiscount: boolean
+  cartCount?: number
+  isWishlisted?: boolean
+  onWishlistToggle?: () => void
+  wishlistLoading?: boolean
 }
 
 export default function ImageViewerModal({
@@ -83,8 +89,8 @@ export default function ImageViewerModal({
   onWishlistToggle,
   wishlistLoading = false,
 }: ImageViewerModalProps) {
-  const insets = useSafeAreaInsets();
-  const imageViewerScrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets()
+  const imageViewerScrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
     if (visible && imageViewerScrollRef.current && images.length > 0) {
@@ -94,19 +100,19 @@ export default function ImageViewerModal({
           x: imageViewerIndex * SCREEN_WIDTH,
           y: 0,
           animated: false,
-        });
-      }, 100);
-      return () => clearTimeout(timer);
+        })
+      }, 100)
+      return () => clearTimeout(timer)
     }
-  }, [visible, imageViewerIndex, images.length]);
+  }, [visible, imageViewerIndex, images.length])
 
-  if (!visible || !product) return null;
+  if (!visible || !product) return null
 
   return (
     <View style={styles.slideshowOverlay}>
       {/* Header with Brand Info and Close */}
       <LinearGradient
-        colors={['rgba(14,165,233,0.18)', 'rgba(255,255,255,0)']}
+        colors={["rgba(14,165,233,0.18)", "rgba(255,255,255,0)"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={[styles.slideshowHeader, { paddingTop: insets.top + 8 }]}
@@ -124,12 +130,16 @@ export default function ImageViewerModal({
           style={styles.slideshowBrandInfo}
           activeOpacity={0.7}
           onPress={() => {
-            console.log('Visit brand profile');
+            console.log("Visit brand profile")
           }}
         >
           <View style={styles.slideshowBrandImageContainer}>
             <Image
-              source={{ uri: brandProfile?.profile_picture || 'https://via.placeholder.com/32' }}
+              source={{
+                uri:
+                  brandProfile?.profile_picture ||
+                  "https://via.placeholder.com/32",
+              }}
               style={styles.slideshowBrandImage}
               resizeMode="contain"
             />
@@ -137,9 +147,13 @@ export default function ImageViewerModal({
           <View style={styles.slideshowBrandTextContainer}>
             <View style={styles.slideshowBrandNameRow}>
               <Text style={styles.slideshowBrandName} numberOfLines={1}>
-                {product.brand || 'Store'}
+                {product.brand || "Store"}
               </Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={Colors.textSecondary}
+              />
             </View>
             {brandProfile && (
               <View style={styles.slideshowRatingRow}>
@@ -166,9 +180,9 @@ export default function ImageViewerModal({
               </View>
             ) : (
               <Ionicons
-                name={isWishlisted ? 'heart' : 'heart-outline'}
+                name={isWishlisted ? "heart" : "heart-outline"}
                 size={20}
-                color={isWishlisted ? '#ef4444' : Colors.text}
+                color={isWishlisted ? "#ef4444" : Colors.text}
               />
             )}
           </TouchableOpacity>
@@ -176,10 +190,14 @@ export default function ImageViewerModal({
             style={styles.slideshowIconBtn}
             activeOpacity={0.7}
             onPress={() => {
-              console.log('Share product');
+              console.log("Share product")
             }}
           >
-            <Ionicons name="share-social-outline" size={20} color={Colors.text} />
+            <Ionicons
+              name="share-social-outline"
+              size={20}
+              color={Colors.text}
+            />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -192,14 +210,16 @@ export default function ImageViewerModal({
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
-          onMomentumScrollEnd={e => {
-            const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-            onImageIndexChange(index);
+          onMomentumScrollEnd={(e) => {
+            const index = Math.round(
+              e.nativeEvent.contentOffset.x / SCREEN_WIDTH
+            )
+            onImageIndexChange(index)
             // Auto-select variant based on image index
             if (imagesWithVariants.length > index) {
-              const item = imagesWithVariants[index];
+              const item = imagesWithVariants[index]
               if (item.variantId !== null) {
-                onSelectVariant(item.variantId);
+                onSelectVariant(item.variantId)
               }
             }
           }}
@@ -227,7 +247,7 @@ export default function ImageViewerModal({
 
       {/* Bottom Product Card */}
       <LinearGradient
-        colors={['rgba(255, 255, 255, 0)', Colors.white]}
+        colors={["rgba(255, 255, 255, 0)", Colors.white]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.slideshowProductCard}
@@ -247,7 +267,7 @@ export default function ImageViewerModal({
               style={styles.slideshowProductNameRow}
               onPress={() => {
                 if (onProductPress && product) {
-                  onProductPress(product.id);
+                  onProductPress(product.id)
                 }
               }}
               activeOpacity={0.7}
@@ -261,28 +281,39 @@ export default function ImageViewerModal({
             {/* Variant Label */}
             {selectedVariant && product.variants && (
               <Text style={styles.slideshowVariantLabelText} numberOfLines={1}>
-                {product.variants.find(v => v.id === selectedVariant)?.color ||
-                 product.variants.find(v => v.id === selectedVariant)?.name ||
-                 'Variant'}
+                {product.variants.find((v) => v.id === selectedVariant)
+                  ?.color ||
+                  product.variants.find((v) => v.id === selectedVariant)
+                    ?.name ||
+                  "Variant"}
               </Text>
             )}
 
             {/* Pricing */}
             <View style={styles.slideshowCardPricing}>
               <Text style={styles.slideshowCardPrice}>
-                ₱{(selectedVariant
-                  ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? product.priceMember)
-                  : product.priceMember).toLocaleString()}
+                ₱
+                {(selectedVariant
+                  ? (product.variants?.find((v) => v.id === selectedVariant)
+                      ?.priceMember ?? product.priceMember)
+                  : product.priceMember
+                ).toLocaleString()}
               </Text>
               {(selectedVariant
-                ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                : product.priceSrp) > (selectedVariant
-                  ? (product.variants?.find(v => v.id === selectedVariant)?.priceMember ?? 0)
+                ? (product.variants?.find((v) => v.id === selectedVariant)
+                    ?.priceSrp ?? 0)
+                : product.priceSrp) >
+                (selectedVariant
+                  ? (product.variants?.find((v) => v.id === selectedVariant)
+                      ?.priceMember ?? 0)
                   : product.priceMember) && (
                 <Text style={styles.slideshowCardOriginalPrice}>
-                  ₱{(selectedVariant
-                    ? (product.variants?.find(v => v.id === selectedVariant)?.priceSrp ?? 0)
-                    : product.priceSrp).toLocaleString()}
+                  ₱
+                  {(selectedVariant
+                    ? (product.variants?.find((v) => v.id === selectedVariant)
+                        ?.priceSrp ?? 0)
+                    : product.priceSrp
+                  ).toLocaleString()}
                 </Text>
               )}
             </View>
@@ -299,7 +330,11 @@ export default function ImageViewerModal({
               )}
               {product.soldCount > 0 && (
                 <View style={styles.slideshowCardMeta}>
-                  <Ionicons name="bag-check-outline" size={12} color={Colors.textSecondary} />
+                  <Ionicons
+                    name="bag-check-outline"
+                    size={12}
+                    color={Colors.textSecondary}
+                  />
                   <Text style={styles.slideshowCardMetaText}>
                     {product.soldCount} sold
                   </Text>
@@ -319,25 +354,33 @@ export default function ImageViewerModal({
               contentContainerStyle={styles.shopeeVariantsContainer}
             >
               {product.variants.map((variant, index) => {
-                const isSize = variant.size && !variant.images;
+                const isSize = variant.size && !variant.images
 
                 return (
                   <View key={variant.id}>
                     <TouchableOpacity
                       style={[
                         styles.shopeeVariantItem,
-                        selectedVariant === variant.id && styles.shopeeVariantItemSelected,
-                        { borderColor: selectedVariant === variant.id ? Colors.sky : '#e5e7eb' }
+                        selectedVariant === variant.id &&
+                          styles.shopeeVariantItemSelected,
+                        {
+                          borderColor:
+                            selectedVariant === variant.id
+                              ? Colors.sky
+                              : "#e5e7eb",
+                        },
                       ]}
                       onPress={() => {
-                        onSelectVariant(variant.id);
-                        const variantIndex = imagesWithVariants.findIndex(item => item.variantId === variant.id);
+                        onSelectVariant(variant.id)
+                        const variantIndex = imagesWithVariants.findIndex(
+                          (item) => item.variantId === variant.id
+                        )
                         if (variantIndex >= 0) {
-                          onImageIndexChange(variantIndex);
+                          onImageIndexChange(variantIndex)
                           imageViewerScrollRef.current?.scrollTo({
                             x: variantIndex * SCREEN_WIDTH,
                             animated: true,
-                          });
+                          })
                         }
                       }}
                       activeOpacity={0.7}
@@ -352,31 +395,52 @@ export default function ImageViewerModal({
                         <View
                           style={[
                             styles.shopeeVariantColor,
-                            { backgroundColor: variant.colorHex }
+                            { backgroundColor: variant.colorHex },
                           ]}
                         />
                       ) : isSize ? (
-                        <Text style={[styles.shopeeVariantSizeText, { color: Colors.text }]}>
+                        <Text
+                          style={[
+                            styles.shopeeVariantSizeText,
+                            { color: Colors.text },
+                          ]}
+                        >
                           {variant.size}
                         </Text>
                       ) : (
-                        <Text style={[styles.shopeeVariantText, { color: Colors.text }]}>
+                        <Text
+                          style={[
+                            styles.shopeeVariantText,
+                            { color: Colors.text },
+                          ]}
+                        >
                           {variant.name}
                         </Text>
                       )}
                       {selectedVariant === variant.id && (
                         <View style={styles.shopeeVariantCheck}>
-                          <Ionicons name="checkmark" size={12} color={Colors.white} />
+                          <Ionicons
+                            name="checkmark"
+                            size={12}
+                            color={Colors.white}
+                          />
                         </View>
                       )}
                     </TouchableOpacity>
-                    {selectedVariant === variant.id && variant.colorHex && !variant.images?.length && (
-                      <Text style={[styles.shopeeVariantLabel, { color: Colors.text }]}>
-                        {variant.color || variant.name}
-                      </Text>
-                    )}
+                    {selectedVariant === variant.id &&
+                      variant.colorHex &&
+                      !variant.images?.length && (
+                        <Text
+                          style={[
+                            styles.shopeeVariantLabel,
+                            { color: Colors.text },
+                          ]}
+                        >
+                          {variant.color || variant.name}
+                        </Text>
+                      )}
                   </View>
-                );
+                )
               })}
             </ScrollView>
           </View>
@@ -385,7 +449,7 @@ export default function ImageViewerModal({
 
       {/* Buy Now Button Container */}
       <LinearGradient
-        colors={['#f0f9ff', '#f0fdf4']}
+        colors={["#f0f9ff", "#f0fdf4"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.buyNowContainer, { paddingBottom: insets.bottom || 4 }]}
@@ -416,9 +480,15 @@ export default function ImageViewerModal({
                   <Ionicons name="flash" size={18} color={Colors.white} />
                   <View style={styles.buyNowTextContainer}>
                     <Text style={styles.buyNowTitle}>Buy Now</Text>
-                    <Text style={styles.buyNowSubtitle}>Limited stock • Fast shipping</Text>
+                    <Text style={styles.buyNowSubtitle}>
+                      Limited stock • Fast shipping
+                    </Text>
                   </View>
-                  <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={Colors.white}
+                  />
                 </View>
               </TouchableOpacity>
             </View>
@@ -426,49 +496,49 @@ export default function ImageViewerModal({
         </View>
       </LinearGradient>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   slideshowOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     zIndex: 2000,
-    flexDirection: 'column',
+    flexDirection: "column",
     flex: 1,
   },
   slideshowHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
   },
   slideshowIconBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
   },
   slideshowHeaderActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   slideshowBrandInfo: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     paddingLeft: 12,
   },
@@ -476,44 +546,44 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: "#f1f5f9",
     borderWidth: 2,
     borderColor: Colors.sky,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   slideshowBrandImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   slideshowBrandTextContainer: {
     flex: 1,
   },
   slideshowBrandNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   slideshowBrandName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.text,
   },
   slideshowRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginTop: 2,
   },
   slideshowRating: {
     fontSize: 11,
     color: Colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   slideshowImageWrapper: {
     flex: 1,
-    position: 'relative',
+    position: "relative",
   },
   slideshowImageScroll: {
     flex: 1,
@@ -521,29 +591,29 @@ const styles = StyleSheet.create({
   slideshowImageContainer: {
     width: SCREEN_WIDTH,
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    overflow: "hidden",
     backgroundColor: Colors.white,
   },
   slideshowImage: {
-    width: '90%',
-    height: '85%',
+    width: "90%",
+    height: "85%",
     zIndex: 10,
   },
   slideshowPageIndicator: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 12,
     right: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
   slideshowPageText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.white,
     letterSpacing: 0.3,
   },
@@ -556,53 +626,53 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: "#e5e7eb",
   },
   slideshowCardContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   slideshowCardImage: {
     width: 100,
     height: 100,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: "#f1f5f9",
   },
   slideshowCardDetails: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   slideshowProductNameRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
   },
   slideshowCardName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.text,
     lineHeight: 18,
     flex: 1,
     flexShrink: 1,
   },
   slideshowCardPricing: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   slideshowCardPrice: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.sky,
   },
   slideshowCardOriginalPrice: {
     fontSize: 12,
     color: Colors.textSecondary,
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
   },
   slideshowCardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   slideshowCardMetaText: {
@@ -610,7 +680,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   slideshowCardMetaRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginTop: 6,
   },
@@ -618,7 +688,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: "#e5e7eb",
   },
   slideshowVariantsScroll: {
     marginHorizontal: -12,
@@ -629,20 +699,20 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 8,
-    backgroundColor: '#f8fafc',
-    overflow: 'hidden',
+    backgroundColor: "#f8fafc",
+    overflow: "hidden",
   },
   slideshowVariantOptionSelected: {
     borderColor: Colors.sky,
     backgroundColor: Colors.sky,
   },
   slideshowVariantImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   slideshowVariantColor: {
     width: 44,
@@ -650,19 +720,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   slideshowVariantCheck: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -2,
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: Colors.sky,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   slideshowVariantLabelText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: Colors.textSecondary,
     marginTop: 4,
   },
@@ -671,8 +741,8 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   buttonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 0,
     paddingHorizontal: 0,
   },
@@ -681,66 +751,66 @@ const styles = StyleSheet.create({
     height: 52,
     borderTopLeftRadius: 6,
     borderBottomLeftRadius: 6,
-    backgroundColor: '#f97316',
+    backgroundColor: "#f97316",
     borderWidth: 1.5,
-    borderColor: '#f97316',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#f97316",
+    alignItems: "center",
+    justifyContent: "center",
   },
   addToCartContent: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 3,
   },
   addToCartText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
     lineHeight: 13,
-    textAlign: 'center',
+    textAlign: "center",
   },
   buyNowButtonContainer: {
     flex: 1,
-    position: 'relative',
+    position: "relative",
   },
   buyNowButton: {
     backgroundColor: Colors.sky,
     height: 52,
     borderTopRightRadius: 6,
     borderBottomRightRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   buyNowContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
     paddingHorizontal: 16,
     gap: 8,
   },
   buyNowTextContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   buyNowTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
     letterSpacing: 0.3,
   },
   buyNowSubtitle: {
     fontSize: 11,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: "500",
+    color: "rgba(255, 255, 255, 0.85)",
     marginTop: 2,
   },
   // Shopee-style variants
   shopeeVariantsBar: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
   },
   shopeeVariantsScroll: {
     paddingHorizontal: 8,
@@ -755,13 +825,13 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    position: 'relative',
+    borderColor: "#e5e7eb",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    position: "relative",
     padding: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   shopeeVariantItemSelected: {
     borderColor: Colors.sky,
@@ -772,41 +842,41 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: "rgba(0, 0, 0, 0.1)",
   },
   shopeeVariantImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 6,
   },
   shopeeVariantText: {
     fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     paddingHorizontal: 4,
   },
   shopeeVariantSizeText: {
     fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
   },
   shopeeVariantCheck: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -8,
     right: -8,
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: Colors.sky,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: "#ffffff",
   },
   shopeeVariantLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     marginTop: 2,
   },
-});
+})

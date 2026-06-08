@@ -5,13 +5,13 @@
 ### Creating Styles
 
 ```typescript
-import { StyleSheet, ViewStyle, TextStyle, ImageStyle } from "react-native";
+import { StyleSheet, ViewStyle, TextStyle, ImageStyle } from "react-native"
 
 // Typed styles for better IDE support
 interface Styles {
-  container: ViewStyle;
-  title: TextStyle;
-  image: ImageStyle;
+  container: ViewStyle
+  title: TextStyle
+  image: ImageStyle
 }
 
 const styles = StyleSheet.create<Styles>({
@@ -30,7 +30,7 @@ const styles = StyleSheet.create<Styles>({
     height: 100,
     borderRadius: 8,
   },
-});
+})
 ```
 
 ### Combining Styles
@@ -425,11 +425,11 @@ export function Spacer({ size, flex }: SpacerProps) {
 ### Cross-Platform Shadows
 
 ```typescript
-import { Platform, ViewStyle } from "react-native";
+import { Platform, ViewStyle } from "react-native"
 
 export function createShadow(elevation: number, color = "#000000"): ViewStyle {
   if (Platform.OS === "android") {
-    return { elevation };
+    return { elevation }
   }
 
   // iOS shadow mapping based on elevation
@@ -464,9 +464,9 @@ export function createShadow(elevation: number, color = "#000000"): ViewStyle {
       shadowOpacity: 0.3,
       shadowRadius: 16,
     },
-  };
+  }
 
-  return shadowMap[elevation] || shadowMap[4];
+  return shadowMap[elevation] || shadowMap[4]
 }
 
 // Predefined shadow styles
@@ -475,7 +475,7 @@ export const shadows = {
   md: createShadow(4),
   lg: createShadow(8),
   xl: createShadow(16),
-};
+}
 
 // Usage
 const styles = StyleSheet.create({
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     padding: 16,
     ...shadows.md,
   },
-});
+})
 ```
 
 ## Typography System

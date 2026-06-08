@@ -7,83 +7,83 @@ export class NotificationService {
   static handleNotificationPress(data: any, navigation: any): void {
     try {
       // Prioritize href from backend (on_href from OrderNotification table)
-      const href = data.href;
-      const title = data.title || 'Notification';
-      const body = data.body || '';
+      const href = data.href
+      const title = data.title || "Notification"
+      const body = data.body || ""
 
-      console.log('🧭 Navigating with href:', {
+      console.log("🧭 Navigating with href:", {
         href,
         title,
         body,
         data,
-      });
+      })
 
       if (!href) {
-        console.warn('⚠️ No href provided in notification data');
-        navigation.navigate?.('Orders');
-        return;
+        console.warn("⚠️ No href provided in notification data")
+        navigation.navigate?.("Orders")
+        return
       }
 
       // Parse href: format is "purchases://status/identifier"
       // e.g., "purchases://delivered/cs_c9c78aa27c0dd63e99e22c2e"
-      const hrefRegex = /^(\w+):\/\/([^\/]+)(?:\/(.+))?$/;
-      const match = href.match(hrefRegex);
+      const hrefRegex = /^(\w+):\/\/([^\/]+)(?:\/(.+))?$/
+      const match = href.match(hrefRegex)
 
       if (!match) {
-        console.warn('⚠️ Invalid href format:', href);
-        navigation.navigate?.('Orders');
-        return;
+        console.warn("⚠️ Invalid href format:", href)
+        navigation.navigate?.("Orders")
+        return
       }
 
-      const [, scheme, status, identifier] = match;
+      const [, scheme, status, identifier] = match
 
-      console.log('📋 Parsed href:', {
+      console.log("📋 Parsed href:", {
         scheme,
         status,
         identifier,
-      });
+      })
 
       // Route based on scheme
       switch (scheme) {
-        case 'purchases':
-        case 'orders':
+        case "purchases":
+        case "orders":
           // Navigate to Orders/Purchases with status and identifier
-          navigation.navigate?.('Orders', {
+          navigation.navigate?.("Orders", {
             status: status,
             orderId: identifier,
             checkoutId: identifier,
-          });
-          break;
+          })
+          break
 
-        case 'wallet':
-          navigation.navigate?.('Wallet', {
+        case "wallet":
+          navigation.navigate?.("Wallet", {
             status: status,
-          });
-          break;
+          })
+          break
 
-        case 'profile':
-          navigation.navigate?.('Profile', {
+        case "profile":
+          navigation.navigate?.("Profile", {
             section: status,
-          });
-          break;
+          })
+          break
 
-        case 'referral':
-          navigation.navigate?.('Profile', {
-            section: 'referrals',
-          });
-          break;
+        case "referral":
+          navigation.navigate?.("Profile", {
+            section: "referrals",
+          })
+          break
 
         default:
-          console.log('📦 Unknown scheme, defaulting to Orders:', scheme);
-          navigation.navigate?.('Orders', {
+          console.log("📦 Unknown scheme, defaulting to Orders:", scheme)
+          navigation.navigate?.("Orders", {
             status: status,
             orderId: identifier,
-          });
+          })
       }
     } catch (error) {
-      console.error('Error handling notification press:', error);
+      console.error("Error handling notification press:", error)
       // Fallback to Orders screen
-      navigation?.navigate?.('Orders');
+      navigation?.navigate?.("Orders")
     }
   }
 
@@ -94,26 +94,30 @@ export class NotificationService {
    */
   static async handleInitialNotification(navigation: any) {
     try {
-      const notification = await Notifications.getLastNotificationResponseAsync();
+      const notification =
+        await Notifications.getLastNotificationResponseAsync()
 
       if (notification) {
-        const notificationId = notification.notification.request.identifier;
+        const notificationId = notification.notification.request.identifier
 
         // Skip if we've already processed this notification
         if (processedNotificationIds.has(notificationId)) {
-          console.log('⏭️ Notification already processed, skipping:', notificationId);
-          return;
+          console.log(
+            "⏭️ Notification already processed, skipping:",
+            notificationId
+          )
+          return
         }
 
         // Mark this notification as processed
-        processedNotificationIds.add(notificationId);
+        processedNotificationIds.add(notificationId)
 
-        console.log('📲 App opened from notification:', notificationId);
-        const data = notification.notification.request.content.data;
-        this.handleNotificationPress(data, navigation);
+        console.log("📲 App opened from notification:", notificationId)
+        const data = notification.notification.request.content.data
+        this.handleNotificationPress(data, navigation)
       }
     } catch (error) {
-      console.error('Error handling initial notification:', error);
+      console.error("Error handling initial notification:", error)
     }
   }
 }
