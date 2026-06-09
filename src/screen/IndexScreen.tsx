@@ -359,7 +359,7 @@ export default function IndexScreen({
                     color={Colors.white}
                   />
                   <Text style={styles.biometricButtonText}>
-                    Login with Biometric / Test Credential
+                    Login with Biometric
                   </Text>
                 </>
               )}
