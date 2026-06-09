@@ -550,7 +550,7 @@ function HomeScreen({
     return [
       {
         type: "video" as const,
-        videoSource: require("../../assets/login/home-login.mp4"),
+        videoSource: "https://res.cloudinary.com/dc05ncs6l/video/upload/v1780969092/home-login_dja56x.mp4",
         eyebrow: "Welcome",
         title: "Discover Your Dream Home",
         subtitle: "Explore our curated collection of premium home essentials.",
@@ -717,7 +717,9 @@ function HomeScreen({
                 })()
               ) : (
                 <Image
-                  source={require("../../assets/af_home_logo.png")}
+                  source={{
+                  uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969765/af_home_logo_hh2qjv.png"
+                }}
                   style={[
                     styles.rankingBadgeImage,
                     { tintColor: "#9ca3af", opacity: 0.7 },
@@ -747,7 +749,9 @@ function HomeScreen({
 
             <View style={styles.badgeLogoContainer}>
               <Image
-                source={require("../../assets/af_home_logo.png")}
+                source={{
+                  uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969765/af_home_logo_hh2qjv.png"
+                }}
                 style={styles.badgeLogo}
                 resizeMode="contain"
               />
