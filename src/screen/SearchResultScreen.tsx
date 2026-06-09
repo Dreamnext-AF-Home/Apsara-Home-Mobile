@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import {  View,
   Text,
-  ScrollView,
   RefreshControl,
-  Dimensions,
   TouchableOpacity,
   BackHandler,
 } from "react-native"
+import { FlashList } from "@shopify/flash-list"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../constants/colors"
@@ -15,8 +14,6 @@ import Toast from "react-native-toast-message"
 import { meilisearchService } from "../services/meilisearchService"
 import type { ProductCard } from "../services/productService"
 import styles from "../styles/SearchResultScreen.styles"
-
-const { width } = Dimensions.get("window")
 
 interface SearchResultScreenProps {
   token?: string | null
@@ -95,20 +92,42 @@ export default function SearchResultScreen({
     fetchResults()
   }
 
-  const masonryColumns = useMemo(() => {
-    const leftColumn: ProductCard[] = []
-    const rightColumn: ProductCard[] = []
+  const renderItem = useCallback(
+    ({ item }: { item: ProductCard }) => (
+      <View style={styles.gridItem}>
+        <ItemCard
+          product={item}
+          onPress={onProductPress}
+          token={token}
+          isDarkMode={isDarkMode}
+        />
+      </View>
+    ),
+    [onProductPress, token, isDarkMode]
+  )
 
-    products.forEach((product, index) => {
-      if (index % 2 === 0) {
-        leftColumn.push(product)
-      } else {
-        rightColumn.push(product)
-      }
-    })
+  const keyExtractor = useCallback(
+    (item: ProductCard) => `search-${item.id}`,
+    []
+  )
 
-    return { leftColumn, rightColumn }
-  }, [products])
+  const renderEmpty = useCallback(
+    () => (
+      <View
+        style={[styles.emptyContainer, isDarkMode && styles.emptyContainerDark]}
+      >
+        <Ionicons
+          name="search-outline"
+          size={48}
+          color={isDarkMode ? "#9ca3af" : Colors.textSecondary}
+        />
+        <Text style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}>
+          No results found for "{query}"
+        </Text>
+      </View>
+    ),
+    [isDarkMode, query]
+  )
 
   return (
     <SafeAreaView
@@ -165,61 +184,20 @@ export default function SearchResultScreen({
           </Text>
         </View>
       ) : (
-        <ScrollView
-          style={[styles.scroll, isDarkMode && styles.scrollDark]}
+        <FlashList
+          masonry
+          numColumns={2}
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
+          style={isDarkMode ? styles.scrollDark : styles.scroll}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmpty}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-        >
-          {products.length === 0 ? (
-            <View
-              style={[
-                styles.emptyContainer,
-                isDarkMode && styles.emptyContainerDark,
-              ]}
-            >
-              <Ionicons
-                name="search-outline"
-                size={48}
-                color={isDarkMode ? "#9ca3af" : Colors.textSecondary}
-              />
-              <Text
-                style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}
-              >
-                No results found for "{query}"
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.masonryGrid}>
-              <View style={styles.masonryColumn}>
-                {masonryColumns.leftColumn.map((product) => (
-                  <View key={`search-${product.id}`} style={styles.productItem}>
-                    <ItemCard
-                      product={product}
-                      onPress={onProductPress}
-                      token={token}
-                      isDarkMode={isDarkMode}
-                    />
-                  </View>
-                ))}
-              </View>
-              <View style={styles.masonryColumn}>
-                {masonryColumns.rightColumn.map((product) => (
-                  <View key={`search-${product.id}`} style={styles.productItem}>
-                    <ItemCard
-                      product={product}
-                      onPress={onProductPress}
-                      token={token}
-                      isDarkMode={isDarkMode}
-                    />
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-        </ScrollView>
+        />
       )}
     </SafeAreaView>
   )

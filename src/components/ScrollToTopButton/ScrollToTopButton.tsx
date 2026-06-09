@@ -31,7 +31,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
   if (!isVisible) return null
 
   const bgColor = isDarkMode ? "#1e293b" : Colors.white
-  const shadowColor = isDarkMode ? "#000" : "#000"
+  const shadowColor = "#000"
 
   return (
     <Animated.View
@@ -39,7 +39,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
         styles.container,
         {
           opacity: fadeAnim,
-          pointerEvents: isVisible ? "auto" : "none",
+          pointerEvents: "auto",
         },
       ]}
     >

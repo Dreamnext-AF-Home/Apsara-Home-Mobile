@@ -240,7 +240,7 @@ export const productService = {
       headers,
     })
     const products =
-      response.data.products || response.data.data || response.data || []
+      response.data?.products || response.data?.data || response.data || []
     return products // Return all products for shuffling
   },
 

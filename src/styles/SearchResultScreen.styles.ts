@@ -51,10 +51,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   listContent: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 5,
     paddingTop: 16,
     paddingBottom: 32,
-    flexGrow: 1,
+  },
+  gridItem: {
+    paddingHorizontal: 3,
+    paddingBottom: 8,
   },
   masonryGrid: {
     flexDirection: "row",

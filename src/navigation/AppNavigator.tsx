@@ -1531,7 +1531,11 @@ export default function AppNavigator({
               token={token}
               isDarkMode={isDarkMode}
               onBack={() => {
+                // Back from the search screen always returns to the underlying
+                // tab (home). Clear any previous search results so they don't
+                // get revealed underneath.
                 setSearchVisible(false)
+                setSearchQuery(null)
                 setActiveTab(previousTab)
               }}
               onProductPress={(productId) => {

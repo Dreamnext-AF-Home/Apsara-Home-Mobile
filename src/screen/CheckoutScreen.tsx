@@ -328,7 +328,7 @@ export default function CheckoutScreen({
   const checkoutItems = (
     items && items.length > 0 ? items : item ? [item] : []
   ).filter((i): i is CheckoutItem => {
-    if (!i || i === null || i === undefined) return false
+    if (!i) return false
     // Ensure required properties exist
     if (!i.product_id || !i.product_name) {
       console.warn("[CheckoutScreen] Filtering out invalid item:", i)
@@ -844,7 +844,7 @@ export default function CheckoutScreen({
                     borderColor: colors.border,
                     backgroundColor: colors.borderLight,
                     marginHorizontal: 12,
-                    marginTop: itemIndex === 0 ? 8 : 8,
+                    marginTop: 8,
                     marginBottom: 8,
                   },
                 ]}

@@ -57,16 +57,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  scrollView: {
-    flex: 1,
-  },
-
-  scrollContent: {
-    padding: 8,
-    gap: 8,
-    paddingBottom: 16,
-  },
-
   section: {
     borderRadius: 8,
     borderWidth: 1,

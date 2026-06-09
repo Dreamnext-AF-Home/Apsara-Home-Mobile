@@ -140,11 +140,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     maxWidth: SCREEN_WIDTH - 24,
   },
-  discountBadgeText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: "700",
-  },
   discountMessage: {
     color: Colors.white,
     fontSize: 11,
@@ -159,12 +154,6 @@ const styles = StyleSheet.create({
   soldText: {
     fontSize: 12,
     color: Colors.textSecondary,
-  },
-  productName: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Colors.text,
-    lineHeight: 24,
   },
   badgesRow: {
     flexDirection: "row",
@@ -184,11 +173,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.white,
     letterSpacing: 0.2,
-  },
-  priceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
   },
   currentPrice: {
     fontSize: 22,
@@ -931,11 +915,6 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
-  addToCartText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.white,
-  },
   descriptionsWrapper: {
     marginHorizontal: 0,
     marginVertical: 8,
@@ -1473,98 +1452,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: Colors.white,
-  },
-  // Buy Now Button Styles
-  buyNowContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 0,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 0,
-    paddingHorizontal: 0,
-  },
-  addToCartButton: {
-    width: 70,
-    height: 52,
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
-    backgroundColor: "#f97316",
-    borderWidth: 1.5,
-    borderColor: "#f97316",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addToCartContent: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-  },
-  addToCartText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.white,
-    lineHeight: 13,
-    textAlign: "center",
-  },
-  buyNowButtonContainer: {
-    flex: 1,
-    position: "relative",
-  },
-  buyNowButton: {
-    backgroundColor: Colors.sky,
-    height: 52,
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buyNowContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  buyNowTextContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  buyNowTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.white,
-    letterSpacing: 0.3,
-  },
-  buyNowSubtitle: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.85)",
-    marginTop: 2,
-  },
-  saveBadge: {
-    position: "absolute",
-    top: -12,
-    right: 12,
-    backgroundColor: "#f97316",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  saveBadgeText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: "700",
   },
   // New Shopee-style price section
   newPriceSection: {

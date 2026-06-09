@@ -269,6 +269,7 @@ export default function ProductDetailScreen({
       .getProductById(productId, token ?? undefined)
       .then(async (data) => {
         if (!active) return
+        if (!data) return
         console.log(`✅ Product loaded: ${data.name} (ID: ${data.id})`)
         setProduct(data)
 
@@ -1252,8 +1253,7 @@ export default function ProductDetailScreen({
                                 },
                               ]}
                             >
-                              {wishlistCount}{" "}
-                              {wishlistCount === 1 ? "Saved" : "Saved"}
+                              {wishlistCount} Saved
                             </Text>
                           </TouchableOpacity>
                         )}

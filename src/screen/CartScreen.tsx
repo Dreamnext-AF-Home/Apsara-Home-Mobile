@@ -144,7 +144,6 @@ export default function CartScreen({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
-  const [updatingQuantity, setUpdatingQuantity] = useState<number | null>(null)
   const [removingItem, setRemovingItem] = useState<number | null>(null)
   const [confirmDeleteModal, setConfirmDeleteModal] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<{
@@ -162,6 +161,13 @@ export default function CartScreen({
     [key: number]: { [key: number]: string }
   }>({})
   const cartOrderRef = useRef<Record<number, number>>({})
+  // Quantity update: debounce timers, the running desired quantity, and the
+  // pre-edit quantity (for rollback) — all keyed by cart item id.
+  const qtyDebounceRef = useRef<Record<number, ReturnType<typeof setTimeout>>>(
+    {}
+  )
+  const desiredQtyRef = useRef<Record<number, number>>({})
+  const qtyOriginalRef = useRef<Record<number, number>>({})
   const variantModalTranslateY = useRef(
     new Animated.Value(VARIANT_MODAL_HEIGHT)
   ).current
@@ -265,6 +271,27 @@ export default function CartScreen({
 
     return () => sub.remove()
   }, [onBack])
+
+  // On unmount, cancel pending debounce timers and flush any not-yet-synced
+  // quantity change so the backend isn't left stale.
+  useEffect(() => {
+    return () => {
+      Object.keys(qtyDebounceRef.current).forEach((key) => {
+        const crtId = Number(key)
+        clearTimeout(qtyDebounceRef.current[crtId])
+        const quantity = desiredQtyRef.current[crtId]
+        if (quantity !== undefined && token) {
+          axios
+            .put(
+              `${API_CONFIG.BASE_URL}/cart/${crtId}/variant`,
+              { quantity },
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .catch(() => {})
+        }
+      })
+    }
+  }, [token])
 
   useEffect(() => {
     if (variantModalOpen !== null) {
@@ -387,45 +414,78 @@ export default function CartScreen({
     }
   }
 
-  const handleUpdateQuantity = async (crtId: number, newQuantity: number) => {
-    if (newQuantity < 1) return
-
-    let snapshot: CartItem | null = null
+  // Push the latest desired quantity for an item to the server. Called once per
+  // tap-burst (debounced), so rapid +/- taps collapse into a single request.
+  const syncQuantity = async (crtId: number) => {
+    const quantity = desiredQtyRef.current[crtId]
+    if (quantity === undefined || !token) return
     try {
-      setUpdatingQuantity(crtId)
-      const cartItem = cartItems.find((item) => item.crt_id === crtId)
-
-      if (!cartItem) return
-
-      snapshot = { ...cartItem }
-      updateCartItemInState(crtId, (item) => ({
-        ...item,
-        crt_quantity: newQuantity,
-        crt_total_price: (
-          parseFloat(item.crt_unit_price) * newQuantity
-        ).toString(),
-        crt_updated_at: new Date().toISOString(),
-      }))
-
-      // Use the new variant update endpoint
       await axios.put(
         `${API_CONFIG.BASE_URL}/cart/${crtId}/variant`,
-        { quantity: newQuantity },
+        { quantity },
         { headers: { Authorization: `Bearer ${token}` } }
       )
+      delete qtyOriginalRef.current[crtId]
+      delete desiredQtyRef.current[crtId]
     } catch (error: any) {
       console.error("Error updating quantity:", error)
-      if (snapshot) {
-        updateCartItemInState(crtId, () => snapshot as CartItem)
+      // Roll back to the quantity confirmed before this tap-burst started.
+      const original = qtyOriginalRef.current[crtId]
+      if (original !== undefined) {
+        updateCartItemInState(crtId, (item) => ({
+          ...item,
+          crt_quantity: original,
+          crt_total_price: (
+            parseFloat(item.crt_unit_price) * original
+          ).toString(),
+        }))
       }
+      delete qtyOriginalRef.current[crtId]
+      delete desiredQtyRef.current[crtId]
       Toast.show({
         type: "error",
         text1: "Error",
         text2: "Failed to update quantity",
       })
-    } finally {
-      setUpdatingQuantity(null)
     }
+  }
+
+  // delta is +1 / -1. Updates the UI instantly (no list reorder) and debounces
+  // the API call so spamming the buttons doesn't flood the backend.
+  const handleUpdateQuantity = (crtId: number, delta: number) => {
+    const cartItem = cartItems.find((item) => item.crt_id === crtId)
+    if (!cartItem) return
+
+    // Seed the running value and the rollback value at the start of a burst.
+    if (desiredQtyRef.current[crtId] === undefined) {
+      desiredQtyRef.current[crtId] = cartItem.crt_quantity
+    }
+    if (qtyOriginalRef.current[crtId] === undefined) {
+      qtyOriginalRef.current[crtId] = cartItem.crt_quantity
+    }
+
+    const nextQuantity = Math.max(1, desiredQtyRef.current[crtId] + delta)
+    if (nextQuantity === desiredQtyRef.current[crtId]) return // already at min
+    desiredQtyRef.current[crtId] = nextQuantity
+
+    // Instant optimistic update. Note: we deliberately do NOT touch
+    // crt_updated_at here, otherwise the list re-sorts on every tap.
+    updateCartItemInState(crtId, (item) => ({
+      ...item,
+      crt_quantity: nextQuantity,
+      crt_total_price: (
+        parseFloat(item.crt_unit_price) * nextQuantity
+      ).toString(),
+    }))
+
+    // Collapse a burst of taps into one request with the final value.
+    if (qtyDebounceRef.current[crtId]) {
+      clearTimeout(qtyDebounceRef.current[crtId])
+    }
+    qtyDebounceRef.current[crtId] = setTimeout(() => {
+      delete qtyDebounceRef.current[crtId]
+      syncQuantity(crtId)
+    }, 500)
   }
 
   const handleRemoveItem = (crtId: number) => {
@@ -1006,10 +1066,7 @@ export default function CartScreen({
                         backgroundColor: colors.bg,
                       },
                     ]}
-                    onPress={() =>
-                      handleUpdateQuantity(item.crt_id, item.crt_quantity - 1)
-                    }
-                    disabled={updatingQuantity === item.crt_id}
+                    onPress={() => handleUpdateQuantity(item.crt_id, -1)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="remove" size={10} color={colors.text} />
@@ -1027,10 +1084,7 @@ export default function CartScreen({
                         backgroundColor: colors.bg,
                       },
                     ]}
-                    onPress={() =>
-                      handleUpdateQuantity(item.crt_id, item.crt_quantity + 1)
-                    }
-                    disabled={updatingQuantity === item.crt_id}
+                    onPress={() => handleUpdateQuantity(item.crt_id, 1)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="add" size={10} color={colors.text} />
@@ -1079,10 +1133,7 @@ export default function CartScreen({
                         backgroundColor: colors.bg,
                       },
                     ]}
-                    onPress={() =>
-                      handleUpdateQuantity(item.crt_id, item.crt_quantity - 1)
-                    }
-                    disabled={updatingQuantity === item.crt_id}
+                    onPress={() => handleUpdateQuantity(item.crt_id, -1)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="remove" size={10} color={colors.text} />
@@ -1100,10 +1151,7 @@ export default function CartScreen({
                         backgroundColor: colors.bg,
                       },
                     ]}
-                    onPress={() =>
-                      handleUpdateQuantity(item.crt_id, item.crt_quantity + 1)
-                    }
-                    disabled={updatingQuantity === item.crt_id}
+                    onPress={() => handleUpdateQuantity(item.crt_id, 1)}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="add" size={10} color={colors.text} />

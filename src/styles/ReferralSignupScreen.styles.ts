@@ -151,12 +151,6 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 0,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
   termsModalContent: {
     borderRadius: 12,
     width: "100%",

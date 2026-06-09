@@ -239,17 +239,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
   },
-  progressBar: {
-    height: 6,
-    backgroundColor: "#e0e7ff",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: Colors.sky,
-    borderRadius: 3,
-  },
   completionText: {
     fontSize: 11,
     color: Colors.textSecondary,

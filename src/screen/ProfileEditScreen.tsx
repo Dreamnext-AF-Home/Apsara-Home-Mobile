@@ -428,7 +428,7 @@ export default function ProfileEditScreen({
         country: typeof value === "string" ? value : value.name,
       }))
     } else if (selectedDropdown === "region") {
-      const region = typeof value === "string" ? value : value
+      const region = value
       setSelectedRegion(typeof region === "string" ? null : region)
       if (typeof region !== "string") {
         if (
@@ -461,7 +461,7 @@ export default function ProfileEditScreen({
         setBarangays([])
       }
     } else if (selectedDropdown === "province") {
-      const province = typeof value === "string" ? value : value
+      const province = value
       setSelectedProvince(typeof province === "string" ? null : province)
       if (typeof province !== "string") {
         if (isNCRRegion && selectedRegion) {
@@ -475,7 +475,7 @@ export default function ProfileEditScreen({
       setCities([])
       setBarangays([])
     } else if (selectedDropdown === "city") {
-      const city = typeof value === "string" ? value : value
+      const city = value
       setSelectedCity(typeof city === "string" ? null : city)
       if (typeof city !== "string") {
         fetchBarangays(city.code)
@@ -483,7 +483,7 @@ export default function ProfileEditScreen({
       setSelectedBarangay(null)
       setBarangays([])
     } else if (selectedDropdown === "barangay") {
-      const barangay = typeof value === "string" ? value : value
+      const barangay = value
       setSelectedBarangay(typeof barangay === "string" ? null : barangay)
     }
     setSelectedDropdown(null)

@@ -44,11 +44,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerInfo: {
-    flex: 1,
-    alignItems: "flex-start",
-    justifyContent: "center",
-  },
   headerTitle: {
     fontSize: 17,
     fontWeight: "800",

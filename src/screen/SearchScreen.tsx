@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {  View,
+import {
+  View,
   Text,
   TextInput,
   TouchableOpacity,
@@ -606,7 +607,7 @@ export default function SearchScreen({
                     isDarkMode && styles.liveEmptyTextDark,
                   ]}
                 >
-                  No results for "{query}"
+                  No results for {query}
                 </Text>
               </View>
             )}

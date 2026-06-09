@@ -139,6 +139,12 @@ function getBrandLogo(brand: BrandItem) {
   return null
 }
 
+// Spacer between horizontal brand cards. FlashList ignores `gap` on
+// contentContainerStyle, so spacing must come from an item separator.
+function BrandSeparator() {
+  return <View style={styles.brandSeparator} />
+}
+
 function CategoryCircle({
   category,
   index,
@@ -1060,6 +1066,7 @@ function HomeScreen({
               keyExtractor={(item) => `brand-${item.id}`}
               horizontal
               showsHorizontalScrollIndicator={false}
+              ItemSeparatorComponent={BrandSeparator}
               contentContainerStyle={styles.brandRowHorizontal}
             />
           )}

@@ -81,16 +81,6 @@ export default function DailyCheckin({
   const [scaleAnims] = useState(DAY_LABELS.map(() => new Animated.Value(1)))
   const [showClaimModal, setShowClaimModal] = useState(false)
   const [claimedReward, setClaimedReward] = useState(0)
-  const [hasError, setHasError] = useState(false)
-
-  React.useEffect(() => {
-    try {
-      // Component initialization
-    } catch (error) {
-      setHasError(true)
-      console.log("DailyCheckin error:", error)
-    }
-  }, [])
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f5f5f5",
@@ -128,15 +118,6 @@ export default function DailyCheckin({
   }
 
   const todayReward = CHECKIN_REWARDS[0]
-  const totalPV = CHECKIN_REWARDS.reduce((sum, pv) => sum + pv, 0)
-
-  if (hasError) {
-    return (
-      <View style={styles.section}>
-        <Text>Daily Check-In</Text>
-      </View>
-    )
-  }
 
   return (
     <View

@@ -393,8 +393,11 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   brandRowHorizontal: {
-    gap: 14,
+    paddingLeft: 8,
     paddingRight: 8,
+  },
+  brandSeparator: {
+    width: 14,
   },
   brandCard: {
     width: 210,

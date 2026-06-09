@@ -224,6 +224,12 @@ export default function ReferralSignupScreen({
         zip_code: "0000",
       }
       const response = await authService.mobileRegister(payload)
+      if (!response) {
+        setErrors({
+          form: "Registration failed. Please try again.",
+        })
+        return
+      }
       console.log(
         "[ReferralSignup] Registration response - requires_otp:",
         response.requires_otp

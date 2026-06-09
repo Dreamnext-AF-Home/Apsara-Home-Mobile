@@ -8,12 +8,6 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  qrInstructions: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
   headerBackground: {
     position: "relative",
     overflow: "hidden",
@@ -148,10 +142,6 @@ const styles = StyleSheet.create({
     color: "#ef4444",
   },
   dangerButtonDescription: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  passkeyDate: {
     fontSize: 12,
     marginTop: 2,
   },
