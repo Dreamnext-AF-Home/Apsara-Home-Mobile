@@ -186,7 +186,9 @@ export default function PVEarnerScreen({
             ]}
           >
             <Image
-              source={require("../../assets/af_home_logo.png")}
+              source={{
+              uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969765/af_home_logo_hh2qjv.png"
+            }}
               style={styles.dummyImage}
               resizeMode="contain"
               tintColor={isDarkMode ? "#cbd5e1" : "#4b5563"}
@@ -285,7 +287,9 @@ export default function PVEarnerScreen({
       {/* Header with Background Image */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Image
-          source={require("../../assets/pv_earner_bg.png")}
+          source={{
+              uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969375/pv_earner_bg_fzbxf5.png"
+            }}
           style={styles.headerBackgroundImage}
           resizeMode="cover"
         />

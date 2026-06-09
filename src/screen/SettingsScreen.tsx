@@ -107,7 +107,9 @@ export default function SettingsScreen({
           ]}
         >
           <Image
-            source={require("../../assets/settings_bg.png")}
+            source={{
+            uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969378/settings_bg_pz2uw5.png"
+          }}
             style={styles.headerBackgroundImage}
             resizeMode="cover"
           />

@@ -24,11 +24,21 @@ import {
 } from "../../constants/tierConfig"
 
 const BADGE_IMAGES: Record<number, any> = {
-  1: require("../../../assets/Badge/homeStarter.png"),
-  2: require("../../../assets/Badge/homeBuilder.png"),
-  3: require("../../../assets/Badge/homeStylist.png"),
-  4: require("../../../assets/Badge/lifestyleConsultant.png"),
-  5: require("../../../assets/Badge/lifestyleElite.png"),
+  1: {
+    uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969106/homeStarter_s5bfjk.png"
+  },
+  2: {
+    uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969102/homeBuilder_rylc2o.png"
+  },
+  3: {
+    uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969111/homeStylist_hq5dbs.png"
+  },
+  4: {
+    uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969112/lifestyleConsultant_k1mfyn.png"
+  },
+  5: {
+    uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969112/lifestyleElite_nntnjj.png"
+  },
 }
 
 interface LevelProgressProps {

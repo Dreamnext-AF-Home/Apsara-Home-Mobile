@@ -37,4 +37,15 @@
 -dontwarn expo.modules.kotlin.services.Service
 -dontwarn expo.modules.kotlin.services.ServicesRegistry
 
+# Remove logging in production
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+}
+
+# Aggressive optimization for smaller APK
+-repackageclasses ''
+-allowaccessmodification
+
 # Add any project specific keep options here:

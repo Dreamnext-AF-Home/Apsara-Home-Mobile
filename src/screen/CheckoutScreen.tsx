@@ -716,7 +716,9 @@ export default function CheckoutScreen({
       {/* Header with Background Image */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Image
-          source={require("../../assets/checkout_bg.png")}
+          source={{
+            uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969375/checkout_bg_zkqmal.png"
+          }}
           style={styles.headerBackgroundImage}
           resizeMode="cover"
         />

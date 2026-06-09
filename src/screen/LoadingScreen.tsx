@@ -8,7 +8,9 @@ export default function LoadingScreen() {
     <View style={styles.root}>
       <View style={styles.content}>
         <Image
-          source={require("../../assets/home_logo.png")}
+          source={{
+          uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969765/home_logo_zktlq8.png"
+        }}
           style={styles.logo}
           resizeMode="contain"
         />

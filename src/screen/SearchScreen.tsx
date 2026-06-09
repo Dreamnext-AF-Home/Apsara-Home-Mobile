@@ -420,7 +420,9 @@ export default function SearchScreen({
     >
       <View style={styles.headerBackground}>
         <Image
-          source={require("../../assets/header_bg.png")}
+          source={{
+          uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969375/header_bg_jjpkvu.png"
+        }}
           style={styles.headerBackgroundImage}
           resizeMode="cover"
         />

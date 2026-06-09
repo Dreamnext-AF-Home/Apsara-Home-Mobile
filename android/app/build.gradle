@@ -92,8 +92,8 @@ android {
         applicationId 'com.afhome.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "1.3.5"
+        versionCode 13
+        versionName "1.3.9"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -129,6 +129,9 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
+            ndk {
+                debugSymbolLevel 'none'
+            }
         }
     }
     splits {
@@ -173,6 +176,10 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // Firebase - add firebase-bom to manage all Firebase library versions / DO NOT REMOVE
+    implementation platform('com.google.firebase:firebase-bom:34.10.0')
+    implementation 'com.google.firebase:firebase-messaging'
 
     // Google Play Services for Google Sign-In
     implementation 'com.google.android.gms:play-services-auth:21.2.0'

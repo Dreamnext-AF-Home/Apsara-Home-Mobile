@@ -579,7 +579,9 @@ export default function ProfileScreen({
           ]}
         >
           <Image
-            source={require("../../assets/profile_bg.png")}
+            source={{
+            uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969375/profile_bg_pndcaa.png"
+          }}
             style={styles.headerBackgroundImage}
             resizeMode="cover"
           />

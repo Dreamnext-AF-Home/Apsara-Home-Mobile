@@ -1241,7 +1241,9 @@ export default function CartScreen({
             ]}
           >
             <Image
-              source={require("../../assets/cart_bg.png")}
+              source={{
+                uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969374/cart_bg_jofj6o.png"
+              }}
               style={styles.headerBackgroundImage}
               resizeMode="cover"
             />
@@ -1304,7 +1306,9 @@ export default function CartScreen({
             ]}
           >
             <Image
-              source={require("../../assets/cart_bg.png")}
+              source={{
+                uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969374/cart_bg_jofj6o.png"
+              }}
               style={styles.headerBackgroundImage}
               resizeMode="cover"
             />
@@ -1374,7 +1378,9 @@ export default function CartScreen({
           ]}
         >
           <Image
-            source={require("../../assets/cart_bg.png")}
+            source={{
+                uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969374/cart_bg_jofj6o.png"
+              }}
             style={styles.headerBackgroundImage}
             resizeMode="cover"
           />

@@ -793,7 +793,9 @@ export default function SecurityScreen({
           ]}
         >
           <Image
-            source={require("../../assets/security_bg.png")}
+            source={{
+            uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969377/security_bg_r75w4x.png"
+          }}
             style={styles.headerBackgroundImage}
             resizeMode="cover"
           />
