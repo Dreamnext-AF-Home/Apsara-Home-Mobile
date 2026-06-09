@@ -112,11 +112,21 @@ export const getBadgeImageSource = (
   if (!badgeReference) return undefined
 
   const sourceMap: Record<string, any> = {
-    badge_homeStarter: require("../../assets/Badge/homeStarter.png"),
-    badge_homeBuilder: require("../../assets/Badge/homeBuilder.png"),
-    badge_homeStylist: require("../../assets/Badge/homeStylist.png"),
-    badge_lifestyleConsultant: require("../../assets/Badge/lifestyleConsultant.png"),
-    badge_lifestyleElite: require("../../assets/Badge/lifestyleElite.png"),
+    badge_homeStarter: {
+      uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969106/homeStarter_s5bfjk.png"
+    },
+    badge_homeBuilder: {
+      uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969102/homeBuilder_rylc2o.png"
+    },
+    badge_homeStylist: {
+      uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969111/homeStylist_hq5dbs.png"
+    },
+    badge_lifestyleConsultant: {
+      uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969112/lifestyleConsultant_k1mfyn.png"
+    },
+    badge_lifestyleElite: {
+      uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969112/lifestyleElite_nntnjj.png"
+    },
   }
 
   return sourceMap[badgeReference] || undefined
