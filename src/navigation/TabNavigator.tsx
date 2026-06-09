@@ -484,7 +484,9 @@ function CustomTabBar({
                   >
                     <View style={styles.shopDiamondInner}>
                       <Image
-                        source={require("../../assets/home_logo.png")}
+                        source={{
+                        uri: "https://res.cloudinary.com/dc05ncs6l/image/upload/v1780969765/home_logo_zktlq8.png"
+                      }}
                         style={styles.homeLogoImage}
                         resizeMode="contain"
                         tintColor={Colors.white}
