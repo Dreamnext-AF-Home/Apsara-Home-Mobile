@@ -51,12 +51,18 @@ const ConfettiPiece = ({ delay }: { delay: number }) => {
         }),
       ]),
     ]).start()
+    // Run the confetti animation once per piece on mount; animated values and
+    // delay are stable for the lifetime of this instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const confettiEmojis = ["🎉", "🎊", "⭐", "✨", "🎈"]
-  const randomEmoji =
-    confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)]
-  const randomLeft = Math.random() * 300 - 150
+  // Random values are computed once per piece via lazy state initializers so
+  // they stay stable across re-renders (and don't run impurely during render).
+  const [randomEmoji] = useState(() => {
+    const confettiEmojis = ["🎉", "🎊", "⭐", "✨", "🎈"]
+    return confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)]
+  })
+  const [randomLeft] = useState(() => Math.random() * 300 - 150)
 
   return (
     <Animated.Text

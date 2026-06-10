@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useRef } from "react"
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -48,12 +48,12 @@ export interface ItemListProps {
     musthave?: boolean
     bestseller?: boolean
     salespromo?: boolean
-    variants?: Array<{
+    variants?: {
       id: number
       name: string
       color?: string
       size?: string
-    }>
+    }[]
   }
   isSelected?: boolean
   onProductPress?: (id: number) => void
@@ -74,8 +74,7 @@ export default function ItemList({
   onSelect,
   isDarkMode = false,
 }: ItemListProps) {
-  const [isWishlisted, setIsWishlisted] = useState(true)
-  const scaleAnim = useRef(new Animated.Value(1)).current
+  const scaleAnim = useState(() => new Animated.Value(1))[0]
 
   // Handle undefined product
   if (!product) {
@@ -115,11 +114,6 @@ export default function ItemList({
     ]).start()
 
     onSelect?.(wishlist_id)
-  }
-
-  const handleRemoveFromWishlist = () => {
-    setIsWishlisted(false)
-    onRemove?.(wishlist_id)
   }
 
   return (

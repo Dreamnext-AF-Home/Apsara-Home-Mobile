@@ -19,15 +19,22 @@ import Toast from "react-native-toast-message"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
-import axios from "axios"
+import { useQueryClient } from "@tanstack/react-query"
 import { Colors } from "../constants/colors"
-import { API_CONFIG } from "../config/api"
 import PrimaryButton from "../components/Button/PrimaryButton"
 import OutlineButton from "../components/Button/OutlineButton"
 import { referralService, ReferralTree } from "../services/referralService"
 import { getBadgeImageSource } from "../constants/tierConfig"
-import { accountService } from "../services/accountService"
-import { orderService } from "../services/orderService"
+import { useWallet } from "../hooks/query/useWallet"
+import {
+  useLoyaltyData,
+  useOrderCounts,
+  useReferralTree,
+  useSecuritySettings,
+  useGoogleLinked,
+  useUserLeaderboardRank,
+  useProfileScreenInvalidate,
+} from "../hooks/query/useProfileScreenData"
 import LevelProgress from "../components/LevelProgress/LevelProgress"
 // import DailyCheckin from "../components/DailyCheckin/DailyCheckin"
 import LevelProgressDetailsScreen from "./LevelProgressDetailsScreen"
@@ -241,23 +248,43 @@ export default function ProfileScreen({
   const [enlargedQR, setEnlargedQR] = useState<"signup" | "shopping" | null>(
     null
   )
-  const [referralTree, setReferralTree] = useState<ReferralTree | null>(null)
   const [loadingReferral, setLoadingReferral] = useState(false)
-  const [googleLinked, setGoogleLinked] = useState(false)
-  const [biometricEnabled, setBiometricEnabled] = useState(false)
-  const [loadingLoyalty, setLoadingLoyalty] = useState(false)
-  const [loyaltyData, setLoyaltyData] = useState<any>(null)
   const [showLevelProgressDetails, setShowLevelProgressDetails] =
     useState(false)
-  const [orderCounts, setOrderCounts] = useState<any>(null)
   const [showSecurityBanner, setShowSecurityBanner] = useState(true)
-  const [walletData, setWalletData] = useState<any>(null)
-  const [loadingWallet, setLoadingWallet] = useState(false)
   const [dailyCheckinClaimed, setDailyCheckinClaimed] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [userLeaderboardRank, setUserLeaderboardRank] = useState<number | null>(
-    null
-  )
+
+  // ── Server state via React Query ──
+  const { data: loyaltyData = null, isLoading: loadingLoyalty } =
+    useLoyaltyData({ token })
+  const { data: orderCounts = null } = useOrderCounts({ token })
+  const { data: referralTreeData = null } = useReferralTree({ token })
+  const { data: biometricEnabled = false } = useSecuritySettings({ token })
+  const { data: googleLinked = false } = useGoogleLinked({ token })
+  const { data: userLeaderboardRank = null } = useUserLeaderboardRank({
+    token,
+    userId: user?.id,
+  })
+  const { data: walletData = null, isLoading: loadingWallet } = useWallet({
+    token,
+    walletType: "all",
+  })
+  const invalidateProfileScreen = useProfileScreenInvalidate()
+  const queryClient = useQueryClient()
+
+  // Re-check the Google linked status when the parent bumps the trigger
+  // (e.g. after the user links/unlinks an account elsewhere).
+  useEffect(() => {
+    if (linkedAccountsRefreshTrigger && linkedAccountsRefreshTrigger > 0) {
+      queryClient.invalidateQueries({ queryKey: ["googleLinked"] })
+    }
+  }, [linkedAccountsRefreshTrigger, queryClient])
+
+  // handleViewNetwork can fetch a fresher tree on demand; prefer it when set.
+  const [overrideReferralTree, setOverrideReferralTree] =
+    useState<ReferralTree | null>(null)
+  const referralTree = overrideReferralTree ?? referralTreeData
   const photoUrl = user?.avatar_url ?? null
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : "?"
   const firstName = user?.name?.split(" ")[0] ?? "User"
@@ -325,193 +352,12 @@ export default function ProfileScreen({
     return 0
   }
 
-  useEffect(() => {
-    console.log("[ProfileScreen] useEffect token changed:", { token: !!token })
-    if (token) {
-      console.log("[ProfileScreen] Token available, fetching data")
-      fetchLoyaltyData()
-      fetchOrderCounts()
-      fetchReferralTree()
-      fetchLinkedAccounts()
-      fetchSecuritySettings()
-      fetchWalletData()
-      fetchUserLeaderboardRank()
-    }
-  }, [token])
-
-  const fetchUserLeaderboardRank = async () => {
-    if (!token || !user?.id) return
-    try {
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}/public/top-members?sort=referrals&per_page=100`
-      )
-      const result = await response.json()
-      const members = Array.isArray(result?.data) ? result.data : []
-      const userRankIndex = members.findIndex(
-        (member: any) => member.id === parseInt(user.id)
-      )
-      if (userRankIndex !== -1) {
-        setUserLeaderboardRank(userRankIndex + 1)
-      }
-    } catch (error) {
-      console.error("Error fetching user leaderboard rank:", error)
-    }
-  }
-
-  useEffect(() => {
-    console.log(
-      "[ProfileScreen] linkedAccountsRefreshTrigger changed:",
-      linkedAccountsRefreshTrigger
-    )
-    if (linkedAccountsRefreshTrigger && linkedAccountsRefreshTrigger > 0) {
-      console.log(
-        "[ProfileScreen] Trigger detected, refetching linked accounts"
-      )
-      fetchLinkedAccounts()
-    }
-  }, [linkedAccountsRefreshTrigger])
-
-  const fetchReferralTree = async () => {
-    if (!token) return
-    try {
-      const data = await referralService.getReferralTree(token)
-      console.log("[ProfileScreen] fetchReferralTree - initial load:", {
-        hasData: !!data,
-        hasRoot: !!data?.root,
-        totalNetwork: data?.summary?.total_network,
-      })
-      if (data && data.root) {
-        setReferralTree(data)
-      }
-    } catch (error: any) {
-      console.error(
-        "[ProfileScreen] fetchReferralTree - error:",
-        error?.message || error
-      )
-    }
-  }
-
-  const fetchLoyaltyData = async () => {
-    if (!token) return
-    setLoadingLoyalty(true)
-    try {
-      const snapshot = await accountService.getAccountSnapshot(token)
-      setLoyaltyData(snapshot.loyalty)
-    } catch (error: any) {
-      console.error("Error fetching loyalty data:", error)
-    } finally {
-      setLoadingLoyalty(false)
-    }
-  }
-
-  const fetchOrderCounts = async () => {
-    if (!token) return
-    try {
-      const data = await orderService.getOrderCounts(token)
-      console.log("[ProfileScreen] orderCounts payload:", JSON.stringify(data))
-      setOrderCounts({
-        ...data,
-        to_receive: Number(
-          data?.to_receive ??
-            data?.out_for_delivery ??
-            data?.outfordelivery ??
-            data?.toReceive ??
-            0
-        ),
-        delivered: Number(data?.delivered ?? 0),
-        shipped: Number(data?.shipped ?? data?.to_ship ?? data?.toship ?? 0),
-        cancelled: Number(data?.cancelled ?? data?.canceled ?? 0),
-        return: Number(data?.return ?? data?.returned ?? data?.returns ?? 0),
-      })
-    } catch (error: any) {
-      console.error("Error fetching order counts:", error)
-    }
-  }
-
-  const fetchLinkedAccounts = async () => {
-    if (!token) {
-      console.log(
-        "[ProfileScreen] No token available for fetching linked accounts"
-      )
-      return
-    }
-
-    try {
-      console.log("[ProfileScreen] Fetching Google linked status from endpoint")
-      const endpoint = `${require("../config/api").API_CONFIG.BASE_URL}/auth/mobile/check-google-linked`
-      console.log("[ProfileScreen] Endpoint:", endpoint)
-
-      const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-
-      console.log("[ProfileScreen] Response status:", response.status)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error("[ProfileScreen] API Error response:", errorText)
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log("[ProfileScreen] Full API response:", JSON.stringify(data))
-      console.log("[ProfileScreen] data.linked:", data.linked)
-
-      const isLinked = data.linked === true
-      console.log("[ProfileScreen] Setting googleLinked to:", isLinked)
-      setGoogleLinked(isLinked)
-    } catch (error: any) {
-      console.error("[ProfileScreen] Error fetching Google linked status:", {
-        message: error.message,
-        stack: error.stack,
-      })
-    }
-  }
-
-  const fetchSecuritySettings = async () => {
-    if (!token) return
-    try {
-      const headers = { Authorization: `Bearer ${token}` }
-      const res = await axios.get(
-        `${API_CONFIG.BASE_URL}/user/security-settings`,
-        { headers }
-      )
-      const securityData = res?.data?.data
-      setBiometricEnabled(securityData?.biometric_enabled ?? false)
-    } catch (error) {
-      console.log("Error fetching security settings:", error)
-    }
-  }
-
-  const fetchWalletData = async () => {
-    if (!token) return
-    setLoadingWallet(true)
-    try {
-      const headers = { Authorization: `Bearer ${token}` }
-      const res = await axios.get(
-        `${API_CONFIG.BASE_URL}/encashment/wallet?wallet_type=all`,
-        { headers }
-      )
-      const walletSummary = res?.data?.data?.summary || res?.data?.summary
-      setWalletData(walletSummary)
-      console.log("[ProfileScreen] Wallet data fetched:", walletSummary)
-    } catch (error) {
-      console.log("Error fetching wallet data:", error)
-    } finally {
-      setLoadingWallet(false)
-    }
-  }
-
   const handleRefresh = async () => {
     if (!token || refreshing) return
 
     setRefreshing(true)
     try {
-      await Promise.all([fetchOrderCounts(), fetchReferralTree()])
+      await invalidateProfileScreen()
     } finally {
       setRefreshing(false)
     }
@@ -545,7 +391,7 @@ export default function ProfileScreen({
         throw new Error("Unable to load referral network. Please try again.")
       }
 
-      setReferralTree(data)
+      setOverrideReferralTree(data)
       onShowReferralNetwork?.(data)
     } catch (error: any) {
       console.error("[ProfileScreen] handleViewNetwork - error:", error)

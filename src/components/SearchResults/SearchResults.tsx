@@ -63,7 +63,11 @@ export default function SearchResults({ query }: SearchResultsProps) {
         {filtered.length > 0
           ? `${filtered.length} result${filtered.length !== 1 ? "s" : ""} for `
           : "No results for "}
-        <Text style={styles.queryText}>"{query}"</Text>
+        <Text style={styles.queryText}>
+          {'"'}
+          {query}
+          {'"'}
+        </Text>
       </Text>
 
       {filtered.length > 0 ? (

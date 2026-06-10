@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import {
   View,
   Text,
@@ -26,7 +26,8 @@ import { Colors } from "../constants/colors"
 import { authService, SearchHistoryItem } from "../services/authService"
 import { userBehaviorService } from "../services/userBehaviorService"
 import { API_CONFIG } from "../config/api"
-import { meilisearchService } from "../services/meilisearchService"
+import { useLiveSearch } from "../hooks/query/useLiveSearch"
+import { useSearchRecommendations } from "../hooks/query/useSearchRecommendations"
 import Toast from "react-native-toast-message"
 import styles from "../styles/SearchScreen.styles"
 
@@ -47,17 +48,6 @@ interface RecommendationItem {
   image: string
   category_name: string
   type: string
-}
-
-interface LiveSearchItem {
-  id: number
-  name: string
-  original_price: number
-  discounted_price: number
-  pv: number
-  image: string
-  has_discount: boolean
-  discount_percentage: number
 }
 
 function getHistoryLabel(item: SearchHistoryItem) {
@@ -85,22 +75,29 @@ export default function SearchScreen({
   }
 
   const [query, setQuery] = useState("")
+  const [debouncedQuery, setDebouncedQuery] = useState("")
   const [history, setHistory] = useState<SearchHistoryItem[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [savingQuery, setSavingQuery] = useState(false)
-  const [recommendations, setRecommendations] = useState<RecommendationItem[]>(
-    []
-  )
-  const [loadingRecs, setLoadingRecs] = useState(false)
-  const [liveResults, setLiveResults] = useState<LiveSearchItem[]>([])
-  const [loadingLive, setLoadingLive] = useState(false)
   const [showAllRecent, setShowAllRecent] = useState(false)
   const [isVoiceRecording, setIsVoiceRecording] = useState(false)
   const [voiceText, setVoiceText] = useState("")
   const inputRef = useRef<TextInput>(null)
-  const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current
+  const slideAnim = useState(() => new Animated.Value(SCREEN_WIDTH))[0]
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+
+  const { data: recommendations = [], isFetching: loadingRecs } =
+    useSearchRecommendations({ token })
+
+  const { data: liveResults = [], isFetching: isLiveFetching } = useLiveSearch({
+    query: debouncedQuery,
+  })
+  // Show the loading spinner while the user is still typing (query !== debounced)
+  // or while the live query is in flight.
+  const loadingLive =
+    query.trim().length >= 2 &&
+    (isLiveFetching || query.trim() !== debouncedQuery.trim())
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -261,37 +258,8 @@ export default function SearchScreen({
     }
   }, [token])
 
-  useEffect(() => {
-    if (!token) return
-    let active = true
-    setLoadingRecs(true)
-    axios
-      .get(`${API_CONFIG.BASE_URL}/search/recommendations?limit=12`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        if (!active) return
-        if (res.data?.success && Array.isArray(res.data?.data)) {
-          const seen = new Set<number>()
-          const unique = res.data.data.filter((item: RecommendationItem) => {
-            if (seen.has(item.id)) return false
-            seen.add(item.id)
-            return true
-          })
-          setRecommendations(unique)
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoadingRecs(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [token])
-
-  const displayedRecommendations = useMemo(() => {
-    const shuffled = [...recommendations]
+  const displayedRecommendations = useMemo<RecommendationItem[]>(() => {
+    const shuffled = [...(recommendations as RecommendationItem[])]
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
@@ -299,49 +267,17 @@ export default function SearchScreen({
     return shuffled.slice(0, 6)
   }, [recommendations])
 
-  const runLiveSearch = useCallback((q: string) => {
-    const trimmed = q.trim()
-    if (trimmed.length < 2) {
-      setLiveResults([])
-      setLoadingLive(false)
-      return
-    }
-    let active = true
-    setLoadingLive(true)
-    meilisearchService
-      .liveSearch(trimmed, 10)
-      .then((results) => {
-        if (!active) return
-        console.log("🔍 Live search results:", results)
-        setLiveResults(results)
-      })
-      .catch((err) => {
-        if (active) {
-          console.error("🔍 Live search error:", err.message)
-          setLiveResults([])
-        }
-      })
-      .finally(() => {
-        if (active) setLoadingLive(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (query.trim().length < 2) {
-      setLiveResults([])
-      setLoadingLive(false)
+      setDebouncedQuery("")
       return
     }
-    setLoadingLive(true)
-    debounceRef.current = setTimeout(() => runLiveSearch(query), 350)
+    debounceRef.current = setTimeout(() => setDebouncedQuery(query), 350)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [query, runLiveSearch])
+  }, [query])
 
   const recentSearches = useMemo(() => {
     const seen = new Set<string>()

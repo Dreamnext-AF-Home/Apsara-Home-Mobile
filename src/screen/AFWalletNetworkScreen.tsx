@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect } from "react"
 import {  View,
   Text,
   ScrollView,
@@ -10,9 +10,8 @@ import {  View,
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import axios from "axios"
 import { Colors } from "../constants/colors"
-import { API_CONFIG } from "../config/api"
+import { useWalletNetwork } from "../hooks/query/useWallet"
 import styles from "../styles/AFWalletNetworkScreen.styles"
 
 interface AFWalletNetworkScreenProps {
@@ -150,9 +149,9 @@ export default function AFWalletNetworkScreen({
   token,
 }: AFWalletNetworkScreenProps) {
   const insets = useSafeAreaInsets()
-  const [walletData, setWalletData] = useState<any>(null)
-  const [awards, setAwards] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } = useWalletNetwork({ token })
+  const walletData = data?.summary ?? null
+  const awards = data?.unilevelAwards ?? []
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -164,33 +163,6 @@ export default function AFWalletNetworkScreen({
     )
     return () => backHandler.remove()
   }, [onClose])
-
-  useEffect(() => {
-    fetchWalletData()
-  }, [token])
-
-  const fetchWalletData = async () => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      const response = await axios.get(
-        `${API_CONFIG.BASE_URL}/encashment/wallet`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      const data = response.data?.data || response.data
-      const summary = data?.summary || data
-      setWalletData(summary)
-      setAwards(data?.unilevel_awards || [])
-    } catch (error) {
-      console.error("Error fetching wallet data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f0f9ff",

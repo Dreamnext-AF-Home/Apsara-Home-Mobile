@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react"
-import {  View,
+import React, { useEffect } from "react"
+import {
+  View,
   Text,
   ScrollView,
   TouchableOpacity,
@@ -10,9 +11,8 @@ import {  View,
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import axios from "axios"
 import { Colors } from "../constants/colors"
-import { API_CONFIG } from "../config/api"
+import { useWallet } from "../hooks/query/useWallet"
 import styles from "../styles/AFWalletRewardsScreen.styles"
 
 interface AFWalletRewardsScreenProps {
@@ -71,8 +71,7 @@ export default function AFWalletRewardsScreen({
   token,
 }: AFWalletRewardsScreenProps) {
   const insets = useSafeAreaInsets()
-  const [walletData, setWalletData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: walletData, isLoading: loading } = useWallet({ token })
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -84,32 +83,6 @@ export default function AFWalletRewardsScreen({
     )
     return () => backHandler.remove()
   }, [onClose])
-
-  useEffect(() => {
-    fetchWalletData()
-  }, [token])
-
-  const fetchWalletData = async () => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      const response = await axios.get(
-        `${API_CONFIG.BASE_URL}/encashment/wallet`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      const data = response.data?.data || response.data
-      const summary = data?.summary || data
-      setWalletData(summary)
-    } catch (error) {
-      console.error("Error fetching wallet data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f0f9ff",

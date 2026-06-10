@@ -16,7 +16,7 @@ export function WebAuthnView({
   colors,
 }: WebAuthnViewProps) {
   const webViewRef = useRef<WebView>(null)
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
 
   const htmlContent = `
     <!DOCTYPE html>

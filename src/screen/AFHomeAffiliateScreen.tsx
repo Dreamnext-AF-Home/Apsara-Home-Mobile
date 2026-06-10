@@ -52,7 +52,7 @@ export default function AFHomeAffiliateScreen({
             No inventory. No capital. Just real products, real earnings.
           </Text>
           <TouchableOpacity style={styles.cta}>
-            <Text style={styles.ctaText}>Join as an Affiliate — It's Free</Text>
+            <Text style={styles.ctaText}>Join as an Affiliate — It&apos;s Free</Text>
           </TouchableOpacity>
         </View>
 
@@ -63,7 +63,7 @@ export default function AFHomeAffiliateScreen({
             More Than Products. A Better Home Experience.
           </Text>
           <Text style={styles.sectionDescription}>
-            As an AF Home Affiliate, you don't just promote furniture. You help
+            As an AF Home Affiliate, you don&apos;t just promote furniture. You help
             people create better living spaces - homes that feel comfortable,
             functional, and inspiring.
           </Text>
@@ -139,7 +139,7 @@ export default function AFHomeAffiliateScreen({
           </View>
 
           <TouchableOpacity style={styles.cta}>
-            <Text style={styles.ctaText}>Get Started - It's Free</Text>
+            <Text style={styles.ctaText}>Get Started - It&apos;s Free</Text>
           </TouchableOpacity>
         </View>
 
@@ -207,7 +207,7 @@ export default function AFHomeAffiliateScreen({
           </Text>
           <Text style={styles.sectionDescription}>
             As an AF Home Affiliate, you enjoy lifetime member discounts on
-            products—whether you're buying for yourself, your family, or your
+            products—whether you&apos;re buying for yourself, your family, or your
             projects.
           </Text>
 
@@ -275,11 +275,11 @@ export default function AFHomeAffiliateScreen({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Trainings, Events & Support</Text>
           <Text style={styles.sectionSubtitle}>
-            You're Never Doing This Alone.
+            You&apos;re Never Doing This Alone.
           </Text>
           <Text style={styles.sectionDescription}>
             AF Home provides ongoing training, tools, and events to help
-            affiliates succeed—whether you're a beginner or experienced seller.
+            affiliates succeed—whether you&apos;re a beginner or experienced seller.
           </Text>
 
           <View style={styles.supportItems}>
@@ -350,8 +350,9 @@ export default function AFHomeAffiliateScreen({
 
           <View style={styles.testimonial}>
             <Text style={styles.testimonialText}>
-              "Whether you're looking for a side hustle or a full-time career,
-              AF Home gives you the platform to succeed on your own terms."
+              &quot;Whether you&apos;re looking for a side hustle or a full-time
+              career, AF Home gives you the platform to succeed on your own
+              terms.&quot;
             </Text>
           </View>
 

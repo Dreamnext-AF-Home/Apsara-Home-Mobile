@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react"
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -9,19 +9,12 @@ import {
   Modal,
   Share,
   Linking,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   PanResponder,
-  Animated,
 } from "react-native"
 import { Image } from "expo-image"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../../constants/colors"
-import {
-  TIER_REQUIREMENTS,
-  TierRequirement,
-  getTierColor,
-} from "../../constants/tierConfig"
+import { TIER_REQUIREMENTS, getTierColor } from "../../constants/tierConfig"
 
 const BADGE_IMAGES: Record<number, any> = {
   1: {
@@ -77,7 +70,7 @@ export default function LevelProgress({
     progressBg: isDarkMode ? "#334155" : "#f1f5f9",
   }
   const [enlargedBadge, setEnlargedBadge] = useState<number | null>(null)
-  const panResponder = useRef(
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
@@ -85,18 +78,16 @@ export default function LevelProgress({
         const { dx } = gestureState
         const threshold = 50
 
-        if (enlargedBadge !== null) {
-          if (dx > threshold && enlargedBadge > 1) {
-            setEnlargedBadge(enlargedBadge - 1)
-          } else if (dx < -threshold && enlargedBadge < 5) {
-            setEnlargedBadge(enlargedBadge + 1)
-          }
-        }
+        setEnlargedBadge((prev) => {
+          if (prev === null) return prev
+          if (dx > threshold && prev > 1) return prev - 1
+          if (dx < -threshold && prev < 5) return prev + 1
+          return prev
+        })
       },
     })
-  ).current
+  )
 
-  const currentTierReq = TIER_REQUIREMENTS[currentRank]
   const nextRank = Math.min(5, currentRank + 1)
   const nextTierReq = TIER_REQUIREMENTS[nextRank]
   const isMaxRank = currentRank === 5
@@ -178,7 +169,7 @@ export default function LevelProgress({
   const calculateProgress = (): number => {
     if (isMaxRank) return 100
 
-    const requirements: Array<{ current: number; target: number | null }> = []
+    const requirements: { current: number; target: number | null }[] = []
 
     if (nextTierReq.pv !== null) {
       requirements.push({ current: personalPv, target: nextTierReq.pv })

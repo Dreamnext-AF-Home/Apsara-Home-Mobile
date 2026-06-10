@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {  View,
   Text,
   ScrollView,
@@ -7,6 +7,7 @@ import {  View,
   BackHandler,
   ActivityIndicator,
   SafeAreaView,
+  RefreshControl,
 } from "react-native"
 import { Image } from "expo-image"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -14,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons"
 import Toast from "react-native-toast-message"
 import { Colors } from "../constants/colors"
 import { ReferralTree, ReferralUser } from "../services/referralService"
+import { useReferralNetwork } from "../hooks/query/useReferralNetwork"
 import styles from "../styles/ReferralNetworkScreen.styles"
 
 interface ReferralNetworkScreenProps {
@@ -26,12 +28,50 @@ interface ReferralNetworkScreenProps {
 export default function ReferralNetworkScreen({
   token,
   onBack,
-  tree,
+  tree: treeProp,
   isDarkMode = false,
 }: ReferralNetworkScreenProps) {
   const insets = useSafeAreaInsets()
+
+  // Fetch the referral tree via React Query. When a `tree` prop is supplied by
+  // the parent (e.g. AppNavigator pre-fetched it), prefer that and skip the
+  // network request.
+  const {
+    data: fetchedTree,
+    isFetching,
+    refetch,
+    error,
+  } = useReferralNetwork({
+    token,
+    enabled: !treeProp,
+  })
+
+  const tree: ReferralTree | null = treeProp ?? fetchedTree ?? null
+
+  useEffect(() => {
+    if (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2:
+          (error as any)?.message || "Failed to load referral network",
+      })
+    }
+  }, [error])
+
+  // Default-expand the root node. Derived from the tree instead of copying it
+  // into state via an effect (avoids set-state-in-effect re-render loops).
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set())
   const [expandedStats, setExpandedStats] = useState<Set<number>>(new Set())
+
+  const rootId = tree?.root?.id
+
+  const effectiveExpandedNodes = useMemo(() => {
+    if (expandedNodes.size === 0 && rootId != null) {
+      return new Set<number>([rootId])
+    }
+    return expandedNodes
+  }, [expandedNodes, rootId])
 
   const handleBackPress = React.useCallback(() => {
     console.log("[ReferralNetworkScreen] handleBackPress called")
@@ -53,30 +93,6 @@ export default function ReferralNetworkScreen({
   }
 
   useEffect(() => {
-    if (
-      tree &&
-      tree.root &&
-      !tree.root.children &&
-      tree.children &&
-      tree.children.length > 0
-    ) {
-      // Initialize expanded node to show root
-      setExpandedNodes(new Set([tree.root.id]))
-      console.log("[ReferralNetworkScreen] Tree data loaded:", {
-        rootId: tree.root.id,
-        totalNetwork: tree.summary?.total_network,
-        childrenCount: tree.children?.length,
-      })
-    }
-  }, [tree])
-
-  useEffect(() => {
-    if (tree?.root && expandedNodes.size === 0) {
-      setExpandedNodes(new Set([tree.root.id]))
-    }
-  }, [tree?.root?.id])
-
-  useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       console.log("[ReferralNetworkScreen] Hardware back button pressed")
       handleBackPress()
@@ -87,7 +103,7 @@ export default function ReferralNetworkScreen({
   }, [handleBackPress])
 
   const toggleNode = (userId: number) => {
-    const newExpanded = new Set(expandedNodes)
+    const newExpanded = new Set(effectiveExpandedNodes)
     if (newExpanded.has(userId)) {
       newExpanded.delete(userId)
     } else {
@@ -112,7 +128,7 @@ export default function ReferralNetworkScreen({
     isLast: boolean = true
   ) => {
     const hasChildren = user.children && user.children.length > 0
-    const isExpanded = expandedNodes.has(user.id)
+    const isExpanded = effectiveExpandedNodes.has(user.id)
     const isRoot = level === 0
     const statsExpanded = isRoot || expandedStats.has(user.id)
 
@@ -374,6 +390,14 @@ export default function ReferralNetworkScreen({
           style={[styles.scrollView, { backgroundColor: colors.bg }]}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isFetching}
+              onRefresh={refetch}
+              tintColor={Colors.sky}
+              colors={[Colors.sky]}
+            />
+          }
         >
           {/* Summary Stats Section */}
           <View

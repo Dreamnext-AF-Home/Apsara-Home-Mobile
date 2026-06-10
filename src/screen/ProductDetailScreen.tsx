@@ -28,6 +28,7 @@ import {
 } from "../services/productService"
 import { authService } from "../services/authService"
 import { userBehaviorService } from "../services/userBehaviorService"
+import { useProductDetail } from "../hooks/query/useProductDetail"
 import ItemCard from "../components/Items/ItemCard"
 import FeaturedItems from "../components/Items/FeaturedItems"
 import ImageViewerModal from "../components/Items/ImageViewerModal"
@@ -147,15 +148,20 @@ export default function ProductDetailScreen({
   isDarkMode = false,
 }: ProductDetailScreenProps) {
   const insets = useSafeAreaInsets()
-  const [product, setProduct] = useState<Product | null>(null)
 
   // Debug logging
   console.log(`🔍 ProductDetailScreen mounted with productId: ${productId}`)
+
+  // Primary product detail GET migrated to React Query
+  const {
+    data: product = null,
+    isLoading: loading,
+  } = useProductDetail({ productId, token })
+
   const [relatedProducts, setRelatedProducts] = useState<ProductCard[]>([])
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null)
   const [productReviews, setProductReviews] =
     useState<ProductReviewsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
   const [specificationsExpanded, setSpecificationsExpanded] = useState(false)
@@ -168,12 +174,12 @@ export default function ProductDetailScreen({
   const galleryScrollRef = useRef<ScrollView>(null)
   const imageViewerScrollRef = useRef<ScrollView>(null)
   const [showHeaderOnScroll, setShowHeaderOnScroll] = useState(false)
-  const headerTranslateY = useRef(new Animated.Value(-100)).current
-  const headerOpacity = useRef(new Animated.Value(0)).current
-  const imageAnimX = useRef(new Animated.Value(0)).current
-  const imageAnimY = useRef(new Animated.Value(0)).current
-  const imageAnimScale = useRef(new Animated.Value(1)).current
-  const imageAnimOpacity = useRef(new Animated.Value(0)).current
+  const headerTranslateY = useState(() => new Animated.Value(-100))[0]
+  const headerOpacity = useState(() => new Animated.Value(0))[0]
+  const imageAnimX = useState(() => new Animated.Value(0))[0]
+  const imageAnimY = useState(() => new Animated.Value(0))[0]
+  const imageAnimScale = useState(() => new Animated.Value(1))[0]
+  const imageAnimOpacity = useState(() => new Animated.Value(0))[0]
   const [showAnimatedImage, setShowAnimatedImage] = useState(false)
   const [addingToCart, setAddingToCart] = useState(false)
   const [isWishlisted, setIsWishlisted] = useState(false)
@@ -222,24 +228,18 @@ export default function ProductDetailScreen({
   // Fetch wishlist count for the product
   useEffect(() => {
     if (!token || !productId) return
+    let active = true
 
-    const fetchWishlistCount = async () => {
-      try {
-        const response = await axios.get(
-          `${API_CONFIG.BASE_URL}/wishlist/count/${productId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        )
-        if (response.data?.wishlist_count !== undefined) {
-          setWishlistCount(response.data.wishlist_count)
-        }
-      } catch (error) {
-        console.error("Failed to fetch wishlist count:", error)
-      }
+    productService
+      .getWishlistCount(productId, token)
+      .then((count) => {
+        if (active) setWishlistCount(count)
+      })
+      .catch(() => {})
+
+    return () => {
+      active = false
     }
-
-    fetchWishlistCount()
   }, [token, productId])
 
   // Reset optimistic cart count when actual cart count updates from API
@@ -247,9 +247,9 @@ export default function ProductDetailScreen({
     setOptimisticCartCount(0)
   }, [cartCount])
 
+  // Reset secondary UI state whenever the product being viewed changes.
+  // The primary product fetch itself is handled by useProductDetail above.
   useEffect(() => {
-    setLoading(true)
-    setProduct(null)
     setRelatedProducts([])
     setYouMayAlsoLike([])
     setVisibleYouMayAlsoLikeCount(8)
@@ -263,113 +263,98 @@ export default function ProductDetailScreen({
     headerTranslateY.setValue(-100)
     headerOpacity.setValue(0)
     scrollRef.current?.scrollTo({ y: 0, animated: false })
+  }, [productId])
+
+  // When the product (from React Query) is available, run cascading fetches.
+  useEffect(() => {
+    const data = product
+    if (!data) return
+    console.log(`✅ Product loaded: ${data.name} (ID: ${data.id})`)
 
     let active = true
-    productService
-      .getProductById(productId, token ?? undefined)
-      .then(async (data) => {
-        if (!active) return
-        if (!data) return
-        console.log(`✅ Product loaded: ${data.name} (ID: ${data.id})`)
-        setProduct(data)
 
-        // Check if product is in wishlist
-        const isProductWishlisted = wishlistItems.some(
-          (item) => item.product_id === data.id
+    // Check if product is in wishlist
+    const isProductWishlisted = wishlistItems.some(
+      (item) => item.product_id === data.id
+    )
+    setIsWishlisted(isProductWishlisted)
+    console.log(`❤️ Is wishlisted: ${isProductWishlisted}`)
+
+    // Set first variant as default
+    if (data.variants && data.variants.length > 0) {
+      setSelectedVariant(data.variants[0].id)
+    }
+
+    // Fetch brand profile if brandType is available
+    if (data.brandType && token) {
+      authService
+        .getBrandProfile(data.brandType, token)
+        .then((brandData) => {
+          if (active && brandData) setBrandProfile(brandData)
+        })
+        .catch(() => {})
+    }
+
+    // Fetch product reviews
+    if (token) {
+      productService
+        .getProductReviews(productId, token)
+        .then((reviewsData) => {
+          if (active && reviewsData) setProductReviews(reviewsData)
+        })
+        .catch(() => {})
+    }
+
+    // Track product view behavior
+    if (token && data?.id) {
+      userBehaviorService
+        .trackBehavior(
+          token,
+          "product_view",
+          data.id,
+          data.catid,
+          data.brandType
         )
-        setIsWishlisted(isProductWishlisted)
-        console.log(`❤️ Is wishlisted: ${isProductWishlisted}`)
+        .catch(() => {})
+    }
 
-        // Set first variant as default
-        if (data.variants && data.variants.length > 0) {
-          setSelectedVariant(data.variants[0].id)
-        }
+    // Fetch related products by brand type
+    if (data.brandType && token) {
+      productService
+        .getProductsByBrand(data.brandType, token)
+        .then((items) => {
+          if (!active) return
+          const filteredItems = items.filter((p) => p.id !== productId)
+          // Shuffle the array and take 8 items
+          const shuffled = filteredItems.sort(() => Math.random() - 0.5)
+          const cards = shuffled.slice(0, 8).map(toProductCard)
+          setRelatedProducts(cards)
+        })
+        .catch(() => {})
+    }
 
-        // Fetch brand profile if brandType is available
-        if (data.brandType && token) {
-          try {
-            const brandData = await authService.getBrandProfile(
-              data.brandType,
-              token
-            )
-            if (brandData) {
-              setBrandProfile(brandData)
-            }
-          } catch (error) {
-            // Silently fail brand profile fetch
-          }
-        }
-
-        // Fetch product reviews
-        if (token) {
-          try {
-            const reviewsData = await productService.getProductReviews(
-              productId,
-              token
-            )
-            if (reviewsData) {
-              setProductReviews(reviewsData)
-            }
-          } catch (error) {
-            // Silently fail reviews fetch
-          }
-        }
-
-        // Track product view behavior
-        if (token && active && data?.id) {
-          userBehaviorService
-            .trackBehavior(
-              token,
-              "product_view",
-              data.id,
-              data.catid,
-              data.brandType
-            )
-            .catch(() => {})
-        }
-
-        // Fetch related products by brand type
-        if (data.brandType && token) {
-          productService
-            .getProductsByBrand(data.brandType, token)
-            .then((items) => {
-              if (!active) return
-              const filteredItems = items.filter((p) => p.id !== productId)
-              // Shuffle the array and take 8 items
-              const shuffled = filteredItems.sort(() => Math.random() - 0.5)
-              const cards = shuffled.slice(0, 8).map(toProductCard)
-              setRelatedProducts(cards)
-            })
-            .catch(() => {})
-        }
-
-        // Fetch "You May Also Like" products
-        if (token) {
-          productService
-            .getProducts(token)
-            .then((items) => {
-              if (!active) return
-              // Filter out current product and shuffle
-              const filteredItems = items.filter((p) => p.id !== productId)
-              const shuffled = filteredItems.sort(() => Math.random() - 0.5)
-              // Take at least 20 items for lazy loading
-              const cards = shuffled
-                .slice(0, Math.max(20, shuffled.length))
-                .map(toProductCard)
-              setYouMayAlsoLike(cards)
-            })
-            .catch(() => {})
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    // Fetch "You May Also Like" products
+    if (token) {
+      productService
+        .getProducts(token)
+        .then((items) => {
+          if (!active) return
+          // Filter out current product and shuffle
+          const filteredItems = items.filter((p) => p.id !== productId)
+          const shuffled = filteredItems.sort(() => Math.random() - 0.5)
+          // Take at least 20 items for lazy loading
+          const cards = shuffled
+            .slice(0, Math.max(20, shuffled.length))
+            .map(toProductCard)
+          setYouMayAlsoLike(cards)
+        })
+        .catch(() => {})
+    }
 
     return () => {
       active = false
     }
-  }, [productId, token])
+  }, [product, productId, token])
 
   // Create image list with variant mapping (unique images only)
   const imagesWithVariants = useMemo(() => {

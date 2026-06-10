@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons"
 import Toast from "react-native-toast-message"
 import { Colors } from "../constants/colors"
 import { addressService, LocationData } from "../services/addressService"
+import { useRegions } from "../hooks/query/useRegions"
 import Button from "../components/Button/PrimaryButton"
 import styles from "../styles/ProfileEditScreen.styles"
 
@@ -117,7 +118,7 @@ export default function ProfileEditScreen({
   const [selectedBarangay, setSelectedBarangay] =
     useState<LocationData | null>(initLocation(user?.barangay))
 
-  const [regions, setRegions] = useState<LocationData[]>([])
+  const { data: regions = [], isLoading: loadingRegions } = useRegions()
   const [provinces, setProvinces] = useState<LocationData[]>([])
   const [cities, setCities] = useState<LocationData[]>([])
   const [barangays, setBarangays] = useState<LocationData[]>([])
@@ -129,9 +130,13 @@ export default function ProfileEditScreen({
   const [datePickerMode, setDatePickerMode] = useState<
     "year" | "month" | "day"
   >("year")
-  const [tempYear, setTempYear] = useState(2000)
-  const [tempMonth, setTempMonth] = useState(0)
-  const [tempDay, setTempDay] = useState(1)
+  const initialBirthDate = (() => {
+    const parsed = new Date(user?.birth_date || "2000-01-01")
+    return isNaN(parsed.getTime()) ? new Date(2000, 0, 1) : parsed
+  })()
+  const [tempYear, setTempYear] = useState(() => initialBirthDate.getFullYear())
+  const [tempMonth, setTempMonth] = useState(() => initialBirthDate.getMonth())
+  const [tempDay, setTempDay] = useState(() => initialBirthDate.getDate())
   const [isNCRRegion, setIsNCRRegion] = useState(false)
 
   const c = {
@@ -148,7 +153,7 @@ export default function ProfileEditScreen({
     selectedBg: isDarkMode ? "#0c4a6e" : "#eff6ff",
   }
 
-  const modalTranslateY = useRef(new Animated.Value(MODAL_HEIGHT)).current
+  const modalTranslateY = useState(() => new Animated.Value(MODAL_HEIGHT))[0]
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -190,17 +195,6 @@ export default function ProfileEditScreen({
   }, [selectedDropdown, modalTranslateY])
 
   useEffect(() => {
-    fetchRegions()
-    const parsedDate = new Date(profileData.birthDate)
-    if (!isNaN(parsedDate.getTime())) {
-      setTempYear(parsedDate.getFullYear())
-      setTempMonth(parsedDate.getMonth())
-      setTempDay(parsedDate.getDate())
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
@@ -213,17 +207,6 @@ export default function ProfileEditScreen({
 
   const showLocationError = (what: string) =>
     Toast.show({ type: "error", text1: "Error", text2: `Failed to load ${what}` })
-
-  const fetchRegions = async () => {
-    try {
-      setLoadingLocations(true)
-      setRegions(await addressService.getRegions())
-    } catch {
-      showLocationError("regions")
-    } finally {
-      setLoadingLocations(false)
-    }
-  }
 
   const fetchProvinces = async (regionCode: string) => {
     try {
@@ -509,8 +492,10 @@ export default function ProfileEditScreen({
 
   const isLocationDropdown =
     selectedDropdown !== null && LOCATION_FIELDS.includes(selectedDropdown)
+  const isLocationLoading =
+    loadingLocations || (selectedDropdown === "region" && loadingRegions)
   const showDropdownLoading =
-    isLocationDropdown && loadingLocations && dropdownOptions.length === 0
+    isLocationDropdown && isLocationLoading && dropdownOptions.length === 0
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>

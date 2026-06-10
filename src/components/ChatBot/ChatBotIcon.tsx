@@ -25,10 +25,6 @@ interface ChatBotIconProps {
   isDarkMode?: boolean
 }
 
-interface CollapsedTabStyle {
-  [key: string]: number | string
-}
-
 interface ChatMessage {
   id: string
   type: "user" | "bot"
@@ -75,14 +71,14 @@ export default function ChatBotIcon({
   ])
   const [inputText, setInputText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const scaleAnim = useRef(new Animated.Value(1)).current
-  const slideAnim = useRef(new Animated.Value(SHEET_OFFSET)).current
-  const floatingAnim = useRef(new Animated.Value(0)).current
-  const headNodAnim = useRef(new Animated.Value(0)).current
-  const glowAnim = useRef(new Animated.Value(0)).current
-  const hideSlideAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useState(() => new Animated.Value(1))[0]
+  const slideAnim = useState(() => new Animated.Value(SHEET_OFFSET))[0]
+  const floatingAnim = useState(() => new Animated.Value(0))[0]
+  const headNodAnim = useState(() => new Animated.Value(0))[0]
+  const glowAnim = useState(() => new Animated.Value(0))[0]
+  const hideSlideAnim = useState(() => new Animated.Value(0))[0]
   const flatListRef = useRef<FlatList>(null)
-  const scrollY = useRef(0)
+  const scrollYRef = useRef(0)
 
   // Load saved icon hidden state on mount
   useEffect(() => {
@@ -97,13 +93,19 @@ export default function ChatBotIcon({
       }
     }
     loadIconState()
-  }, [])
+  }, [hideSlideAnim])
 
-  // Sync with AppContext chatbotHidden state
+  // Sync animation value with AppContext chatbotHidden state (external sync)
   useEffect(() => {
-    setIsIconHidden(chatbotHidden)
     hideSlideAnim.setValue(chatbotHidden ? 100 : 0)
   }, [chatbotHidden, hideSlideAnim])
+
+  // Mirror chatbotHidden into local state during render (avoids setState-in-effect)
+  const [prevChatbotHidden, setPrevChatbotHidden] = useState(chatbotHidden)
+  if (chatbotHidden !== prevChatbotHidden) {
+    setPrevChatbotHidden(chatbotHidden)
+    setIsIconHidden(chatbotHidden)
+  }
 
   // Save icon hidden state whenever it changes
   useEffect(() => {
@@ -260,20 +262,23 @@ export default function ChatBotIcon({
     }
   }, [chatVisible, slideAnim])
 
-  const panResponder = useRef(
+  // scrollYRef.current is only read inside the gesture callbacks (at gesture
+  // time), never during render — the lazy initializer just defines the handlers.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
-      onStartShouldSetPanResponder: () => scrollY.current === 0,
+      onStartShouldSetPanResponder: () => scrollYRef.current === 0,
       onMoveShouldSetPanResponder: (_, g) => {
-        if (scrollY.current > 0) return false
+        if (scrollYRef.current > 0) return false
         return g.dy > 5 && Math.abs(g.dy) > Math.abs(g.dx)
       },
       onPanResponderMove: (_, g) => {
-        if (scrollY.current === 0 && g.dy > 0) {
+        if (scrollYRef.current === 0 && g.dy > 0) {
           slideAnim.setValue(g.dy)
         }
       },
       onPanResponderRelease: (_, g) => {
-        if (scrollY.current === 0 && g.dy > 100) {
+        if (scrollYRef.current === 0 && g.dy > 100) {
           closeChat()
           return
         }
@@ -285,7 +290,7 @@ export default function ChatBotIcon({
         }).start()
       },
     })
-  ).current
+  )
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return
@@ -596,7 +601,7 @@ export default function ChatBotIcon({
               contentContainerStyle={styles.messagesListContent}
               scrollEnabled={true}
               onScroll={(event) => {
-                scrollY.current = event.nativeEvent.contentOffset.y
+                scrollYRef.current = event.nativeEvent.contentOffset.y
               }}
               scrollEventThrottle={16}
               onContentSizeChange={() =>

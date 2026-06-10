@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
-import {  View,
+import {
+  View,
   Text,
   ScrollView,
   TouchableOpacity,
@@ -10,11 +11,13 @@ import {  View,
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import axios from "axios"
 import { Colors } from "../constants/colors"
-import { API_CONFIG } from "../config/api"
 import Toast from "react-native-toast-message"
 import BottomSheetSelector from "../components/BottomSheetSelector/BottomSheetSelector"
+import { useRegions } from "../hooks/query/useRegions"
+import { useProvinces } from "../hooks/query/useProvinces"
+import { useCities } from "../hooks/query/useCities"
+import { useBarangays } from "../hooks/query/useBarangays"
 import styles from "../styles/AddAddressScreen.styles"
 
 interface LocationData {
@@ -38,7 +41,6 @@ export default function AddAddressScreen({
 }: AddAddressScreenProps) {
   const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(false)
-  const [loadingLocations, setLoadingLocations] = useState(false)
 
   // Form states
   const [locationType, setLocationType] = useState("Home")
@@ -57,10 +59,26 @@ export default function AddAddressScreen({
   const [showBarangayModal, setShowBarangayModal] = useState(false)
 
   // Data states
-  const [regions, setRegions] = useState<LocationData[]>([])
-  const [provinces, setProvinces] = useState<LocationData[]>([])
-  const [cities, setCities] = useState<LocationData[]>([])
-  const [barangays, setBarangays] = useState<LocationData[]>([])
+  const {
+    data: regions = [],
+    isLoading: loadingRegions,
+    isError: regionsError,
+  } = useRegions()
+  const {
+    data: provinces = [],
+    isLoading: loadingProvinces,
+    isError: provincesError,
+  } = useProvinces(region?.code)
+  const {
+    data: cities = [],
+    isLoading: loadingCities,
+    isError: citiesError,
+  } = useCities(province?.code)
+  const {
+    data: barangays = [],
+    isLoading: loadingBarangays,
+    isError: barangaysError,
+  } = useBarangays(city?.code)
 
   const locationTypes = ["Home", "Office", "Other"]
 
@@ -72,11 +90,6 @@ export default function AddAddressScreen({
     border: isDarkMode ? "#374151" : "#e5e7eb",
     borderLight: isDarkMode ? "#475569" : "#f1f5f9",
   }
-
-  // Fetch regions on mount
-  useEffect(() => {
-    fetchRegions()
-  }, [])
 
   // Handle back button
   useEffect(() => {
@@ -90,313 +103,39 @@ export default function AddAddressScreen({
     return () => backHandler.remove()
   }, [onBack])
 
-  const fetchRegions = async () => {
-    try {
-      setLoadingLocations(true)
-      console.log("[fetchRegions] Starting")
-
-      // Try backend first
-      try {
-        const url = `${API_CONFIG.BASE_URL}/address/regions`
-        console.log("[fetchRegions] Trying backend URL:", url)
-        const response = await axios.get(url)
-        console.log("[fetchRegions] Backend response:", response.data)
-
-        if (
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data) &&
-          response.data.data.length > 0
-        ) {
-          const formattedData = response.data.data.map((item: any) => ({
-            code: item.code || item.id,
-            name: item.name,
-            zipCode: item.zip_code,
-          }))
-          console.log(
-            "[fetchRegions] Backend formatted data count:",
-            formattedData.length
-          )
-          setRegions(formattedData)
-          return
-        } else {
-          console.log(
-            "[fetchRegions] Backend returned empty or unexpected structure, trying PSGC..."
-          )
-        }
-      } catch (backendError: any) {
-        console.log(
-          "[fetchRegions] Backend failed:",
-          backendError.message,
-          "trying PSGC..."
-        )
-      }
-
-      // Fallback to PSGC
-      const psgcUrl = "https://psgc.gitlab.io/api/regions/"
-      console.log("[fetchRegions] Trying PSGC URL:", psgcUrl)
-      const response = await axios.get(psgcUrl)
-      console.log(
-        "[fetchRegions] PSGC response count:",
-        Array.isArray(response.data) ? response.data.length : "not an array"
-      )
-
-      if (response.data && Array.isArray(response.data)) {
-        const formattedData = response.data.map((item: any) => ({
-          code: item.code,
-          name: item.name,
-        }))
-        console.log(
-          "[fetchRegions] PSGC formatted data count:",
-          formattedData.length
-        )
-        setRegions(formattedData)
-      } else {
-        console.log(
-          "[fetchRegions] PSGC response is not an array:",
-          response.data
-        )
-        setRegions([])
-      }
-    } catch (error) {
-      console.error("[fetchRegions] Error:", error)
-      setRegions([])
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load regions",
-      })
-    } finally {
-      setLoadingLocations(false)
+  // Surface a toast if any location lookup fails. The lists themselves load via
+  // the useRegions/useProvinces/useCities/useBarangays dependent queries.
+  useEffect(() => {
+    if (regionsError) {
+      Toast.show({ type: "error", text1: "Error", text2: "Failed to load regions" })
     }
-  }
+  }, [regionsError])
 
-  const fetchProvinces = async (regionCode: string) => {
-    try {
-      setLoadingLocations(true)
-      console.log("[fetchProvinces] Starting with regionCode:", regionCode)
-
-      // Try backend first
-      try {
-        const url = `${API_CONFIG.BASE_URL}/address/provinces?region_code=${regionCode}`
-        console.log("[fetchProvinces] Trying backend URL:", url)
-        const response = await axios.get(url)
-        console.log("[fetchProvinces] Backend response:", response.data)
-
-        if (
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data) &&
-          response.data.data.length > 0
-        ) {
-          const formattedData = response.data.data.map((item: any) => ({
-            code: item.code || item.id,
-            name: item.name,
-            zipCode: item.zip_code,
-          }))
-          console.log("[fetchProvinces] Backend formatted data:", formattedData)
-          setProvinces(formattedData)
-          return
-        } else {
-          console.log(
-            "[fetchProvinces] Backend returned empty or unexpected structure, trying PSGC..."
-          )
-        }
-      } catch (backendError: any) {
-        console.log(
-          "[fetchProvinces] Backend failed:",
-          backendError.message,
-          "trying PSGC..."
-        )
-      }
-
-      // Fallback to PSGC
-      const psgcUrl = `https://psgc.gitlab.io/api/regions/${regionCode}/provinces/`
-      console.log("[fetchProvinces] Trying PSGC URL:", psgcUrl)
-      const response = await axios.get(psgcUrl)
-      console.log("[fetchProvinces] PSGC response:", response.data)
-
-      if (response.data && Array.isArray(response.data)) {
-        const formattedData = response.data.map((item: any) => ({
-          code: item.code,
-          name: item.name,
-        }))
-        console.log("[fetchProvinces] PSGC formatted data:", formattedData)
-        setProvinces(formattedData)
-      } else {
-        console.log(
-          "[fetchProvinces] PSGC response is not an array:",
-          response.data
-        )
-        setProvinces([])
-      }
-    } catch (error) {
-      console.error("[fetchProvinces] Error:", error)
-      setProvinces([])
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load provinces",
-      })
-    } finally {
-      setLoadingLocations(false)
+  useEffect(() => {
+    if (provincesError) {
+      Toast.show({ type: "error", text1: "Error", text2: "Failed to load provinces" })
     }
-  }
+  }, [provincesError])
 
-  const fetchCities = async (provinceCode: string) => {
-    try {
-      setLoadingLocations(true)
-      console.log("[fetchCities] Starting with provinceCode:", provinceCode)
-
-      // Try backend first
-      try {
-        const url = `${API_CONFIG.BASE_URL}/address/cities?province_code=${provinceCode}`
-        console.log("[fetchCities] Trying backend URL:", url)
-        const response = await axios.get(url)
-        console.log("[fetchCities] Backend response:", response.data)
-
-        if (
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data) &&
-          response.data.data.length > 0
-        ) {
-          const formattedData = response.data.data.map((item: any) => ({
-            code: item.code || item.id,
-            name: item.name,
-            zipCode: item.zip_code,
-          }))
-          console.log("[fetchCities] Backend formatted data:", formattedData)
-          setCities(formattedData)
-          return
-        } else {
-          console.log(
-            "[fetchCities] Backend returned empty or unexpected structure, trying PSGC..."
-          )
-        }
-      } catch (backendError: any) {
-        console.log(
-          "[fetchCities] Backend failed:",
-          backendError.message,
-          "trying PSGC..."
-        )
-      }
-
-      // Fallback to PSGC
-      const psgcUrl = `https://psgc.gitlab.io/api/provinces/${provinceCode}/cities-municipalities/`
-      console.log("[fetchCities] Trying PSGC URL:", psgcUrl)
-      const response = await axios.get(psgcUrl)
-      console.log("[fetchCities] PSGC response:", response.data)
-
-      if (response.data && Array.isArray(response.data)) {
-        const formattedData = response.data.map((item: any) => ({
-          code: item.code,
-          name: item.name,
-          zipCode: item.zipCode || item.zip_code,
-        }))
-        console.log("[fetchCities] PSGC formatted data:", formattedData)
-        setCities(formattedData)
-      } else {
-        console.log(
-          "[fetchCities] PSGC response is not an array:",
-          response.data
-        )
-        setCities([])
-      }
-    } catch (error) {
-      console.error("[fetchCities] Error:", error)
-      setCities([])
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load cities",
-      })
-    } finally {
-      setLoadingLocations(false)
+  useEffect(() => {
+    if (citiesError) {
+      Toast.show({ type: "error", text1: "Error", text2: "Failed to load cities" })
     }
-  }
+  }, [citiesError])
 
-  const fetchBarangays = async (cityCode: string) => {
-    try {
-      setLoadingLocations(true)
-      console.log("[fetchBarangays] Starting with cityCode:", cityCode)
-
-      // Try backend first
-      try {
-        const url = `${API_CONFIG.BASE_URL}/address/barangays?city_code=${cityCode}`
-        console.log("[fetchBarangays] Trying backend URL:", url)
-        const response = await axios.get(url)
-        console.log("[fetchBarangays] Backend response:", response.data)
-
-        if (
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data) &&
-          response.data.data.length > 0
-        ) {
-          const formattedData = response.data.data.map((item: any) => ({
-            code: item.code || item.id,
-            name: item.name,
-            zipCode: item.zip_code,
-          }))
-          console.log("[fetchBarangays] Backend formatted data:", formattedData)
-          setBarangays(formattedData)
-          return
-        } else {
-          console.log(
-            "[fetchBarangays] Backend returned empty or unexpected structure, trying PSGC..."
-          )
-        }
-      } catch (backendError: any) {
-        console.log(
-          "[fetchBarangays] Backend failed:",
-          backendError.message,
-          "trying PSGC..."
-        )
-      }
-
-      // Fallback to PSGC
-      const psgcUrl = `https://psgc.gitlab.io/api/cities-municipalities/${cityCode}/barangays/`
-      console.log("[fetchBarangays] Trying PSGC URL:", psgcUrl)
-      const response = await axios.get(psgcUrl)
-      console.log("[fetchBarangays] PSGC response:", response.data)
-
-      if (response.data && Array.isArray(response.data)) {
-        const formattedData = response.data.map((item: any) => ({
-          code: item.code,
-          name: item.name,
-        }))
-        console.log("[fetchBarangays] PSGC formatted data:", formattedData)
-        setBarangays(formattedData)
-      } else {
-        console.log(
-          "[fetchBarangays] PSGC response is not an array:",
-          response.data
-        )
-        setBarangays([])
-      }
-    } catch (error) {
-      console.error("[fetchBarangays] Error:", error)
-      setBarangays([])
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load barangays",
-      })
-    } finally {
-      setLoadingLocations(false)
+  useEffect(() => {
+    if (barangaysError) {
+      Toast.show({ type: "error", text1: "Error", text2: "Failed to load barangays" })
     }
-  }
+  }, [barangaysError])
 
+  // Selecting a parent clears the child selections; the dependent queries then
+  // refetch the next level automatically from the new region/province/city code.
   const handleRegionSelect = (selectedRegion: LocationData) => {
     setRegion(selectedRegion)
     setProvince(null)
     setCity(null)
     setBarangay(null)
-    setProvinces([])
-    setCities([])
-    setBarangays([])
-    fetchProvinces(selectedRegion.code)
     setShowRegionModal(false)
   }
 
@@ -404,17 +143,12 @@ export default function AddAddressScreen({
     setProvince(selectedProvince)
     setCity(null)
     setBarangay(null)
-    setCities([])
-    setBarangays([])
-    fetchCities(selectedProvince.code)
     setShowProvinceModal(false)
   }
 
   const handleCitySelect = (selectedCity: LocationData) => {
     setCity(selectedCity)
     setBarangay(null)
-    setBarangays([])
-    fetchBarangays(selectedCity.code)
     setShowCityModal(false)
   }
 
@@ -755,7 +489,7 @@ export default function AddAddressScreen({
         title="Select Region"
         items={regions}
         selectedItem={region}
-        loading={loadingLocations}
+        loading={loadingRegions}
         isDarkMode={isDarkMode}
         onSelect={handleRegionSelect}
         onClose={() => setShowRegionModal(false)}
@@ -767,7 +501,7 @@ export default function AddAddressScreen({
         title="Select Province"
         items={provinces}
         selectedItem={province}
-        loading={loadingLocations}
+        loading={loadingProvinces}
         isDarkMode={isDarkMode}
         onSelect={handleProvinceSelect}
         onClose={() => setShowProvinceModal(false)}
@@ -779,7 +513,7 @@ export default function AddAddressScreen({
         title="Select City"
         items={cities}
         selectedItem={city}
-        loading={loadingLocations}
+        loading={loadingCities}
         isDarkMode={isDarkMode}
         onSelect={handleCitySelect}
         onClose={() => setShowCityModal(false)}
@@ -791,7 +525,7 @@ export default function AddAddressScreen({
         title="Select Barangay"
         items={barangays}
         selectedItem={barangay}
-        loading={loadingLocations}
+        loading={loadingBarangays}
         isDarkMode={isDarkMode}
         onSelect={handleBarangaySelect}
         onClose={() => setShowBarangayModal(false)}

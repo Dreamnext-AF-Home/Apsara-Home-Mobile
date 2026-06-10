@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useCallback } from "react"
 import {  View,
   Text,
   RefreshControl,
@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../constants/colors"
 import ItemCard from "../components/Items/ItemCard"
 import Toast from "react-native-toast-message"
-import { meilisearchService } from "../services/meilisearchService"
+import { useSearchResults } from "../hooks/query/useSearchResults"
 import type { ProductCard } from "../services/productService"
 import styles from "../styles/SearchResultScreen.styles"
 
@@ -30,46 +30,27 @@ export default function SearchResultScreen({
   onProductPress,
   isDarkMode = false,
 }: SearchResultScreenProps) {
-  const [products, setProducts] = useState<ProductCard[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const {
+    data: products = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+  } = useSearchResults({ query, limit: 50 })
 
-  const fetchResults = useCallback(async () => {
-    if (!query.trim()) {
-      setProducts([])
-      setLoading(false)
-      setRefreshing(false)
-      return
-    }
-    try {
-      setLoading(true)
-      const results = await meilisearchService.searchProducts(query.trim(), 50)
+  const loading = isLoading
+  const refreshing = isRefetching
 
-      console.log("🔍 Search Results:", {
-        count: results.length,
-        firstItem: results[0] && {
-          id: results[0].id,
-          name: results[0].name,
-          hasImage: !!results[0].image,
-        },
-      })
-      setProducts(results)
-    } catch (error: any) {
+  useEffect(() => {
+    if (isError) {
       Toast.show({
         type: "error",
         text1: "Search Failed",
-        text2: error.message || "Unable to load search results",
+        text2: (error as any)?.message || "Unable to load search results",
       })
-      setProducts([])
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
     }
-  }, [query])
-
-  useEffect(() => {
-    fetchResults()
-  }, [fetchResults])
+  }, [isError, error])
 
   useEffect(() => {
     const onBackPress = () => {
@@ -88,8 +69,7 @@ export default function SearchResultScreen({
   }, [onBack])
 
   const onRefresh = () => {
-    setRefreshing(true)
-    fetchResults()
+    refetch()
   }
 
   const renderItem = useCallback(

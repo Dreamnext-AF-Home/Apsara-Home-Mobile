@@ -1,14 +1,6 @@
 // @ts-nocheck
-import React, { useState } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Animated,
-  FlatList,
-} from "react-native"
+import React from "react"
+import { View, Text, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../../constants/colors"
 
@@ -142,7 +134,6 @@ const MissionCard = ({
     (mission.progress / mission.target) * 100,
     100
   )
-  const isCompleted = mission.completed
 
   return (
     <View

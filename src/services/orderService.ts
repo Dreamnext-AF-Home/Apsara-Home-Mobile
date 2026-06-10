@@ -42,7 +42,88 @@ export interface Notifications {
   generated_at: string
 }
 
+export interface OrderHistoryItem {
+  id: number
+  order_number: string
+  mobile_order_id: string
+  status: string
+  created_at: string
+  total_amount: number
+  shipping_fee: number
+  payment_method: string
+  tracking_number?: string
+  checkout_id?: string
+  refund_reason?: string
+  items: any[]
+}
+
+export interface OrderHistoryResponse {
+  orders: OrderHistoryItem[]
+}
+
+export interface LoginHistoryItem {
+  id: number
+  description: string
+  method: string
+  method_icon: string
+  device: string
+  platform: string
+  browser: string
+  ip_address: string
+  location?: string
+  created_at: string
+  timestamp: number
+}
+
+export interface LoginHistoryResponse {
+  data: LoginHistoryItem[]
+  pagination?: {
+    has_more?: boolean
+  }
+}
+
 export const orderService = {
+  async getOrderHistory(token: string): Promise<OrderHistoryResponse> {
+    try {
+      const response = await api.get("/orders/history", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      // Preserve exact normalization the screen used: response.data?.orders || []
+      return { orders: response.data?.orders || [] }
+    } catch (error: any) {
+      throw {
+        message: error.response?.data?.message || "Failed to load orders",
+        details: error.response?.data,
+        status: error.response?.status,
+      }
+    }
+  },
+
+  async getLoginHistory(
+    token: string,
+    page: number = 1,
+    perPage: number = 20
+  ): Promise<LoginHistoryResponse> {
+    try {
+      const response = await api.get("/login-history", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, per_page: perPage },
+      })
+      // Preserve exact normalization the screen used
+      return {
+        data: response.data?.data || [],
+        pagination: response.data?.pagination,
+      }
+    } catch (error: any) {
+      throw {
+        message:
+          error.response?.data?.message || "Failed to load login history",
+        details: error.response?.data,
+        status: error.response?.status,
+      }
+    }
+  },
+
   async getOrderCounts(token: string): Promise<OrderCounts> {
     try {
       const response = await api.get("/orders/counts", {

@@ -359,6 +359,88 @@ export const productService = {
     }
   },
 
+  async getSearchRecommendations(
+    token: string,
+    limit: number = 12
+  ): Promise<any[]> {
+    const headers = { Authorization: `Bearer ${token}` }
+
+    try {
+      const response = await api.get(
+        `/search/recommendations?limit=${limit}`,
+        { headers }
+      )
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        const seen = new Set<number>()
+        return response.data.data.filter((item: any) => {
+          if (seen.has(item.id)) return false
+          seen.add(item.id)
+          return true
+        })
+      }
+      return []
+    } catch (error) {
+      console.error("Error fetching search recommendations:", error)
+      return []
+    }
+  },
+
+  async getWishlistCount(productId: number, token: string): Promise<number> {
+    const headers = { Authorization: `Bearer ${token}` }
+
+    try {
+      const response = await api.get(`/wishlist/count/${productId}`, { headers })
+      return response.data?.wishlist_count ?? 0
+    } catch (error) {
+      console.error("Failed to fetch wishlist count:", error)
+      throw error
+    }
+  },
+
+  async getBrandProductsPaged(
+    token: string,
+    brandType: number,
+    options: {
+      page?: number
+      perPage?: number
+      roomId?: number | null
+      categoryId?: number | null
+      search?: string
+    } = {}
+  ): Promise<{ products: any[]; totalPages: number; total: number }> {
+    const headers = { Authorization: `Bearer ${token}` }
+    const { page = 1, perPage = 20, roomId = null, categoryId = null, search } =
+      options
+
+    let url = `${API_CONFIG.BASE_URL}/products?status=1&page=${page}&per_page=${perPage}&brand_type=${brandType}`
+    if (roomId) url += `&room_type=${roomId}`
+    if (categoryId) url += `&cat_id=${categoryId}`
+    if (search && search.trim()) url += `&search=${encodeURIComponent(search)}`
+
+    const response = await axios.get(url, { headers })
+    let products = response.data?.data || response.data?.products || []
+    if (!Array.isArray(products)) products = []
+
+    const total =
+      response.data?.meta?.total ||
+      response.data?.total ||
+      response.data?.pagination?.total ||
+      products.length
+    const totalPages = Math.ceil(total / perPage)
+
+    return { products, totalPages, total }
+  },
+
+  async getZqCachedProducts(token: string): Promise<any[]> {
+    const headers = { Authorization: `Bearer ${token}` }
+
+    const response = await axios.get(
+      `${API_CONFIG.BASE_URL}/products/zq/cached`,
+      { headers }
+    )
+    return (response.data?.products ?? []) as any[]
+  },
+
   async getZqBrandNames(token?: string): Promise<Set<string>> {
     const headers = {
       "Content-Type": "application/json",

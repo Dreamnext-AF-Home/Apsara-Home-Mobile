@@ -5,11 +5,9 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Dimensions,
   ActivityIndicator,
   BackHandler,
   Animated,
-  Modal,
   PanResponder,
 } from "react-native"
 import { Image } from "expo-image"
@@ -28,14 +26,14 @@ interface CartItem {
     priceMember: number
     priceSrp?: number
     qty: number
-    variants?: Array<{
+    variants?: {
       id: number
       name?: string
       color?: string
       colorHex?: string
       size?: string
       images?: string[]
-    }>
+    }[]
   }
 }
 
@@ -44,11 +42,11 @@ interface MultipleItemsCartModalProps {
   items: CartItem[]
   onClose: () => void
   onAddToCart: (
-    items: Array<{
+    items: {
       product_id: number
       quantity: number
       variant_id?: number
-    }>
+    }[]
   ) => Promise<void>
   loading?: boolean
   token?: string | null
@@ -68,7 +66,7 @@ export default function MultipleItemsCartModal({
 }: MultipleItemsCartModalProps) {
   const insets = useSafeAreaInsets()
   const scrollY = useRef(0)
-  const slideAnim = useRef(new Animated.Value(300)).current
+  const slideAnim = useState(() => new Animated.Value(300))[0]
   const [quantities, setQuantities] = useState<{ [key: number]: number }>({})
   const [selectedVariants, setSelectedVariants] = useState<{
     [key: number]: number | null
@@ -90,7 +88,10 @@ export default function MultipleItemsCartModal({
   }>({})
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const panResponder = useRef(
+  // scrollY.current is only read inside the gesture callbacks (at gesture time),
+  // never during render — the lazy initializer just defines the handlers.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => scrollY.current === 0,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -118,17 +119,14 @@ export default function MultipleItemsCartModal({
         }
       },
     })
-  ).current
+  )
 
-  useEffect(() => {
+  // Initialize form state from `items` on the visible->true transition during
+  // render (avoids set-state-in-effect cascading renders).
+  const [prevVisible, setPrevVisible] = useState(visible)
+  if (visible !== prevVisible) {
+    setPrevVisible(visible)
     if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        friction: 8,
-        tension: 60,
-        useNativeDriver: true,
-      }).start()
-
       // Initialize quantities and variants
       const initialQuantities: { [key: number]: number } = {}
       const initialVariants: { [key: number]: number | null } = {}
@@ -152,6 +150,17 @@ export default function MultipleItemsCartModal({
       setSelectedSizes(initialSizes)
       setSelectedTypes(initialTypes)
       setDisplayedImages(initialImages)
+    }
+  }
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 60,
+        useNativeDriver: true,
+      }).start()
     } else {
       Animated.timing(slideAnim, {
         toValue: 300,
@@ -159,7 +168,7 @@ export default function MultipleItemsCartModal({
         useNativeDriver: true,
       }).start()
     }
-  }, [visible, slideAnim, items])
+  }, [visible, slideAnim])
 
   useEffect(() => {
     if (!visible) return

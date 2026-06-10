@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useRef, useMemo, useEffect } from "react"
+import React, { useRef, useEffect } from "react"
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
-  RefreshControl,
 } from "react-native"
 import { Image } from "expo-image"
 import { LinearGradient } from "expo-linear-gradient"
@@ -27,7 +26,7 @@ interface Product {
   priceMember?: number
   priceSrp?: number
   soldCount: number
-  variants?: Array<{
+  variants?: {
     id: number
     color?: string
     name?: string
@@ -35,7 +34,7 @@ interface Product {
     images?: string[]
     priceMember?: number
     priceSrp?: number
-  }>
+  }[]
 }
 
 interface BrandProfile {

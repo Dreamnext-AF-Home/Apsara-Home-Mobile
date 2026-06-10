@@ -10,6 +10,7 @@ interface PasswordChecklistProps<T extends FieldValues> {
   /** When provided, adds a "passwords match" row comparing this field. */
   confirmName?: Path<T>
   rules?: Array<{ label: string; test: (v: string) => boolean }>
+  rules?: { label: string; test: (v: string) => boolean }[]
   matchLabel?: string
   variant?: "dark" | "light"
 }

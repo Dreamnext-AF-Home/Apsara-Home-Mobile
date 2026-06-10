@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../constants/colors"
-import { authService } from "../services/authService"
 import { profileService } from "../services/profileService"
+import { useProfile } from "../hooks/query/useProfile"
+import { useQueryClient } from "@tanstack/react-query"
 import { TIER_REQUIREMENTS } from "../constants/tierConfig"
 import Toast from "react-native-toast-message"
 import * as ImagePicker from "expo-image-picker"
@@ -153,8 +154,13 @@ export default function ProfileDetailsScreen({
   isDarkMode = false,
 }: ProfileDetailsScreenProps) {
   const insets = useSafeAreaInsets()
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const {
+    data: userProfile = null,
+    isLoading: loading,
+    isError,
+    refetch,
+  } = useProfile({ token })
+  const queryClient = useQueryClient()
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const c = {
@@ -172,26 +178,6 @@ export default function ProfileDetailsScreen({
     ? ["#075985", "#0c4a6e"]
     : [Colors.sky, Colors.skyDark]
 
-  const fetchUserProfile = useCallback(async () => {
-    if (!token) return
-    setLoading(true)
-    try {
-      setUserProfile(await authService.getCurrentUser(token))
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.message || "Failed to load profile details",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [token])
-
-  useEffect(() => {
-    fetchUserProfile()
-  }, [fetchUserProfile])
-
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       onClose?.()
@@ -199,6 +185,16 @@ export default function ProfileDetailsScreen({
     })
     return () => sub.remove()
   }, [onClose])
+
+  useEffect(() => {
+    if (isError) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to load profile details",
+      })
+    }
+  }, [isError])
 
   const handleAvatarUpload = async () => {
     try {
@@ -225,8 +221,9 @@ export default function ProfileDetailsScreen({
         result.assets[0].uri
       )
       if (newAvatarUrl) {
-        setUserProfile((prev) =>
-          prev ? { ...prev, avatar_url: newAvatarUrl } : prev
+        queryClient.setQueryData<UserProfile | null>(
+          ["profile", token],
+          (prev) => (prev ? { ...prev, avatar_url: newAvatarUrl } : prev)
         )
         Toast.show({
           type: "success",
@@ -698,7 +695,7 @@ export default function ProfileDetailsScreen({
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={fetchUserProfile}
+            onPress={() => refetch()}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Retry loading profile"

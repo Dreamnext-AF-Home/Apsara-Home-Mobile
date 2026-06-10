@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState } from "react"
 import {  View,
   Text,
   TouchableOpacity,
@@ -13,8 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../constants/colors"
-import { API_CONFIG } from "../config/api"
-import axios from "axios"
+import { useLoginHistory } from "../hooks/query/useLoginHistory"
 import styles from "../styles/HistoryScreen.styles"
 
 interface HistoryScreenProps {
@@ -43,12 +42,27 @@ export default function HistoryScreen({
   token,
 }: HistoryScreenProps) {
   const insets = useSafeAreaInsets()
-  const slideAnim = useRef(new Animated.Value(100)).current
-  const [history, setHistory] = useState<LoginHistoryItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const slideAnim = useState(() => new Animated.Value(100))[0]
+
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    isRefetching,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+    error,
+  } = useLoginHistory({ token })
+
+  // Flatten paginated pages into a single list (preserves order)
+  const history: LoginHistoryItem[] =
+    data?.pages.flatMap((page) => page.items) ?? []
+
+  // Footer/initial loading spinner; refreshing drives pull-to-refresh
+  const loading = isLoading || isFetchingNextPage
+  const refreshing = isRefetching
+  const hasMore = hasNextPage
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f0f9ff",
@@ -81,48 +95,11 @@ export default function HistoryScreen({
   }, [onBack])
 
   useEffect(() => {
-    if (token) {
-      fetchLoginHistory(true)
-    }
-  }, [token])
-
-  const fetchLoginHistory = async (isRefresh: boolean = false) => {
-    if (!token) return
-    if (loading && !isRefresh) return
-
-    try {
-      const page = isRefresh ? 1 : currentPage
-      setLoading(true)
-      if (isRefresh) {
-        setRefreshing(true)
-      }
-
-      const headers = { Authorization: `Bearer ${token}` }
-      const response = await axios.get(`${API_CONFIG.BASE_URL}/login-history`, {
-        headers,
-        params: { page, per_page: 20 },
-      })
-
-      console.log("[HistoryScreen] Login history response:", response.data)
-
-      const newData = response.data.data || []
-      if (isRefresh) {
-        setHistory(newData)
-        setCurrentPage(1)
-      } else {
-        setHistory([...history, ...newData])
-        setCurrentPage(currentPage + 1)
-      }
-
-      setHasMore(response.data.pagination?.has_more || false)
-    } catch (error) {
+    if (error) {
       console.error("[HistoryScreen] Error fetching login history:", error)
       Alert.alert("Error", "Failed to load login history")
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
     }
-  }
+  }, [error])
 
   const formatDate = (dateString: string): string => {
     try {
@@ -308,13 +285,13 @@ export default function HistoryScreen({
             ) : null
           }
           onEndReached={() => {
-            if (hasMore && !loading) {
-              fetchLoginHistory(false)
+            if (hasMore && !isFetchingNextPage) {
+              fetchNextPage()
             }
           }}
           onEndReachedThreshold={0.5}
           refreshing={refreshing}
-          onRefresh={() => fetchLoginHistory(true)}
+          onRefresh={() => refetch()}
           scrollEnabled={true}
         />
       </SafeAreaView>

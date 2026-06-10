@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   StyleSheet,
-  Dimensions,
   BackHandler,
   Animated,
   ActivityIndicator,
@@ -17,8 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { Colors } from "../../constants/colors"
-
-const SCREEN_WIDTH = Dimensions.get("window").width
 
 interface Product {
   id: number
@@ -31,7 +28,7 @@ interface Product {
   prodpv?: number
   soldCount: number
   qty: number
-  variants?: Array<{
+  variants?: {
     id: number
     color?: string
     name?: string
@@ -40,7 +37,7 @@ interface Product {
     priceMember?: number
     priceSrp?: number
     qty: number
-  }>
+  }[]
 }
 
 interface BuyNowModalProps {
@@ -81,11 +78,14 @@ export default function BuyNowModal({
 }: BuyNowModalProps) {
   const insets = useSafeAreaInsets()
   const scrollY = useRef(0)
-  const slideAnim = useRef(new Animated.Value(300)).current
+  const slideAnim = useState(() => new Animated.Value(300))[0]
   const [addingToCart, setAddingToCart] = React.useState(false)
   const [checkoutLoading, setCheckoutLoading] = React.useState(false)
 
-  const panResponder = useRef(
+  // scrollY.current is only read inside the gesture callbacks (at gesture time),
+  // never during render — the lazy initializer just defines the handlers.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => scrollY.current === 0,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -113,7 +113,7 @@ export default function BuyNowModal({
         }
       },
     })
-  ).current
+  )
 
   useEffect(() => {
     if (visible) {

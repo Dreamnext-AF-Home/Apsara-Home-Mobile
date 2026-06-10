@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   ImageSourcePropType,
   Animated,
 } from "react-native"
@@ -86,7 +85,7 @@ function ItemCard({
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  const menuScaleAnim = useRef(new Animated.Value(0)).current
+  const menuScaleAnim = useState(() => new Animated.Value(0))[0]
   const lastClickTimeRef = useRef(0)
 
   // Sync incoming isWishlisted prop, but only if user didn't just click (avoid override)
@@ -219,7 +218,7 @@ function ItemCard({
     } finally {
       setIsTogglingWishlist(false)
     }
-  }, [token, product.id, wishlisted, onWishlistToggle, isTogglingWishlist])
+  }, [token, product, wishlisted, onWishlistToggle, isTogglingWishlist])
 
   const handlePress = () => {
     console.log(`👆 ItemCard pressed: ${product.name} (ID: ${product.id})`)

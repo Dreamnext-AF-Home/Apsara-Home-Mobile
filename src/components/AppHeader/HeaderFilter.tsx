@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {
   View,
   Text,
@@ -73,10 +73,27 @@ export default function HeaderFilter({
   const [minPrice, setMinPrice] = useState("")
   const [maxPrice, setMaxPrice] = useState("")
   const [activeRoom, setActiveRoom] = useState(selectedRoom)
+  const [prevSelectedRoom, setPrevSelectedRoom] = useState(selectedRoom)
   const [activeCategory, setActiveCategory] = useState(selectedCategory)
+  const [prevSelectedCategory, setPrevSelectedCategory] =
+    useState(selectedCategory)
   const [activeBrand, setActiveBrand] = useState(selectedBrand)
+  const [prevSelectedBrand, setPrevSelectedBrand] = useState(selectedBrand)
   const [expandedFilter, setExpandedFilter] = useState<string | null>(null)
   const [brandSearch, setBrandSearch] = useState("")
+
+  if (selectedRoom !== prevSelectedRoom) {
+    setPrevSelectedRoom(selectedRoom)
+    setActiveRoom(selectedRoom)
+  }
+  if (selectedCategory !== prevSelectedCategory) {
+    setPrevSelectedCategory(selectedCategory)
+    setActiveCategory(selectedCategory)
+  }
+  if (selectedBrand !== prevSelectedBrand) {
+    setPrevSelectedBrand(selectedBrand)
+    setActiveBrand(selectedBrand)
+  }
 
   const colors = {
     bg: isDarkMode ? "#1e293b" : Colors.white,
@@ -93,8 +110,8 @@ export default function HeaderFilter({
     handle: isDarkMode ? "#475569" : "#cbd5e1",
   }
 
-  const modalTranslateY = useRef(new Animated.Value(MODAL_HEIGHT)).current
-  const panResponder = useRef(
+  const modalTranslateY = useState(() => new Animated.Value(MODAL_HEIGHT))[0]
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -122,7 +139,7 @@ export default function HeaderFilter({
         }
       },
     })
-  ).current
+  )
 
   useEffect(() => {
     if (
@@ -144,18 +161,6 @@ export default function HeaderFilter({
       modalTranslateY.setValue(MODAL_HEIGHT)
     }
   }, [expandedFilter, modalTranslateY])
-
-  useEffect(() => {
-    setActiveRoom(selectedRoom)
-  }, [selectedRoom])
-
-  useEffect(() => {
-    setActiveCategory(selectedCategory)
-  }, [selectedCategory])
-
-  useEffect(() => {
-    setActiveBrand(selectedBrand)
-  }, [selectedBrand])
 
   const handleSort = (sort: string) => {
     setActiveSort(sort)

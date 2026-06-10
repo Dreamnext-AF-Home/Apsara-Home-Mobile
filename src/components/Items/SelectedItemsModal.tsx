@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import {
   View,
   Text,
@@ -45,7 +45,7 @@ export default function SelectedItemsModal({
   onAddToCart,
   loading = false,
 }: SelectedItemsModalProps) {
-  const slideAnim = React.useRef(new Animated.Value(300)).current
+  const slideAnim = useState(() => new Animated.Value(300))[0]
 
   React.useEffect(() => {
     if (visible) {

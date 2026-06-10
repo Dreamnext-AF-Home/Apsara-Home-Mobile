@@ -19,6 +19,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { Colors } from "../constants/colors"
 import { API_CONFIG } from "../config/api"
 import Toast from "react-native-toast-message"
+import { useAddresses } from "../hooks/query/useAddresses"
 import styles from "../styles/CheckoutScreen.styles"
 
 const SCREEN_WIDTH = Dimensions.get("window").width
@@ -148,7 +149,6 @@ export default function CheckoutScreen({
 
   const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(false)
-  const [loadingAddresses, setLoadingAddresses] = useState(false)
   const [loadingShippingRates, setLoadingShippingRates] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     string | null
@@ -156,12 +156,18 @@ export default function CheckoutScreen({
   const [selectedVoucher, setSelectedVoucher] = useState<number | null>(null)
   const [voucherCode, setVoucherCode] = useState("")
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([])
-  const [addresses, setAddresses] = useState<UserAddress[]>([])
   const [selectedAddress, setSelectedAddress] = useState<UserAddress | null>(
     null
   )
   const [isShippingExpanded, setIsShippingExpanded] = useState(true)
   const [isAddressExpanded, setIsAddressExpanded] = useState(false)
+
+  // Addresses GET migrated to React Query
+  const {
+    data: addresses = [],
+    isLoading: loadingAddresses,
+    isError: addressesError,
+  } = useAddresses({ token })
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f5f5f5",
@@ -209,39 +215,6 @@ export default function CheckoutScreen({
 
   const vouchers: any[] = []
 
-  // Fetch user addresses
-  const fetchAddresses = async () => {
-    setLoadingAddresses(true)
-    try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
-      const response = await axios.get(
-        `${API_CONFIG.BASE_URL}/auth/addresses`,
-        { headers }
-      )
-      if (response.data && response.data.addresses) {
-        setAddresses(response.data.addresses)
-        // Set default address as selected
-        const defaultAddr = response.data.addresses.find(
-          (a: UserAddress) => a.is_default
-        )
-        if (defaultAddr) {
-          setSelectedAddress(defaultAddr)
-        } else if (response.data.addresses.length > 0) {
-          setSelectedAddress(response.data.addresses[0])
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch addresses:", error)
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to load addresses",
-      })
-    } finally {
-      setLoadingAddresses(false)
-    }
-  }
-
   // Fetch shipping rates based on selected address
   const fetchShippingRates = async (address?: UserAddress) => {
     const targetAddress = address || selectedAddress
@@ -286,12 +259,24 @@ export default function CheckoutScreen({
     }
   }
 
+  // Select default address once addresses are loaded from React Query.
   useEffect(() => {
-    const initialize = async () => {
-      await fetchAddresses()
+    if (addresses.length === 0) return
+    if (selectedAddress) return
+    const defaultAddr = addresses.find((a) => a.is_default)
+    setSelectedAddress(defaultAddr || addresses[0])
+  }, [addresses, selectedAddress])
+
+  // Surface address load failures via toast (mirrors previous behavior).
+  useEffect(() => {
+    if (addressesError) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to load addresses",
+      })
     }
-    initialize()
-  }, [token])
+  }, [addressesError])
 
   useEffect(() => {
     if (selectedAddress) {

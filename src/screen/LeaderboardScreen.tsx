@@ -58,9 +58,9 @@ export default function LeaderboardScreen({
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([])
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null)
   const [showCurrentUserIndicator, setShowCurrentUserIndicator] = useState(true)
-  const glow = useRef(new Animated.Value(0)).current
-  const bob = useRef(new Animated.Value(0)).current
-  const pulse = useRef(new Animated.Value(1)).current
+  const glow = useState(() => new Animated.Value(0))[0]
+  const bob = useState(() => new Animated.Value(0))[0]
+  const pulse = useState(() => new Animated.Value(1))[0]
   const scrollViewRef = useRef<ScrollView>(null)
 
   const colors = {

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import {
   View,
   Text,
@@ -63,7 +64,7 @@ export default function OurBranchesScreen({
   isDarkMode,
 }: OurBranchesScreenProps) {
   const insets = useSafeAreaInsets()
-  const slideAnim = React.useRef(new Animated.Value(100)).current
+  const slideAnim = useState(() => new Animated.Value(100))[0]
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f0f9ff",

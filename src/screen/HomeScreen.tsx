@@ -17,13 +17,11 @@ import { Image } from "expo-image"
 import { Ionicons } from "@expo/vector-icons"
 import { VideoView, useVideoPlayer } from "expo-video"
 import { LinearGradient } from "expo-linear-gradient"
-import axios from "axios"
 import { Colors } from "../constants/colors"
 import { authService, BrandItem, CategoryItem } from "../services/authService"
 import { productService } from "../services/productService"
 import { getBadgeImageSource } from "../constants/tierConfig"
 import type { ProductCard } from "../services/productService"
-import { API_CONFIG } from "../config/api"
 import ItemCard from "../components/Items/ItemCard"
 import Toast from "react-native-toast-message"
 import {
@@ -35,6 +33,7 @@ import {
   BrandCardSkeleton,
 } from "../components/SkeletonLoader/SkeletonLoader"
 import { usePrefetchProducts } from "../hooks/usePrefetchProducts"
+import { useCartCount } from "../hooks/query/useCartCount"
 import { ChatBotIcon } from "../components/ChatBot"
 import { FlashList } from "@shopify/flash-list"
 import styles, { BANNER_HEIGHT } from "../styles/HomeScreen.styles"
@@ -159,8 +158,8 @@ function CategoryCircle({
   colors?: any
 }) {
   const image = useMemo(() => getCategoryImages(category)[0], [category])
-  const pulseAnim = useRef(new Animated.Value(1)).current
-  const scale = useRef(new Animated.Value(1)).current
+  const pulseAnim = useState(() => new Animated.Value(1))[0]
+  const scale = useState(() => new Animated.Value(1))[0]
 
   const badgeType = index === 0 ? "Hot" : index === 2 ? "New" : null
 
@@ -286,7 +285,7 @@ function RoomItemComponent({
   isDarkMode?: boolean
   colors?: any
 }) {
-  const scale = useRef(new Animated.Value(1)).current
+  const scale = useState(() => new Animated.Value(1))[0]
 
   const handlePressIn = () => {
     Animated.spring(scale, {
@@ -425,12 +424,15 @@ function HomeScreen({
   const [refreshing, setRefreshing] = useState(false)
   const [activeBanner, setActiveBanner] = useState(0)
   const [totalOrders, setTotalOrders] = useState(0)
-  const [totalCart, setTotalCart] = useState(0)
   const [totalReferrals, setTotalReferrals] = useState(0)
   const bannerRef = useRef<ScrollView>(null)
 
   // Prefetch products in background for instant Shop screen load
   usePrefetchProducts(token)
+
+  // Cart count GET migrated to React Query
+  const { data: cartCountData } = useCartCount({ token })
+  const totalCart = cartCountData?.count ?? 0
 
   // Track when data updates
   useEffect(() => {
@@ -463,17 +465,14 @@ function HomeScreen({
       try {
         const { orderService } = require("../services/orderService")
         const { referralService } = require("../services/referralService")
-        const headers = { Authorization: `Bearer ${token}` }
 
-        const [orderCounts, referralData, cartRes] = await Promise.all([
+        const [orderCounts, referralData] = await Promise.all([
           orderService.getOrderCounts(token),
           referralService.getReferralTree(token),
-          axios.get(`${API_CONFIG.BASE_URL}/cart`, { headers }),
         ])
 
         setTotalOrders(orderCounts?.all || 0)
         setTotalReferrals(referralData?.summary?.direct_count || 0)
-        setTotalCart(cartRes?.data?.cart_items?.length || 0)
       } catch (error) {
         console.log("Error fetching stats:", error)
       }

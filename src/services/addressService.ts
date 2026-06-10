@@ -16,6 +16,7 @@ const normalize = (items: any[]): LocationData[] =>
   (items || []).map((item) => ({
     code: String(item.code ?? item.id),
     name: item.name,
+    zipCode: item.zip_code ?? item.zipCode,
   }))
 
 export const addressService = {

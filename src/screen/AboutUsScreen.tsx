@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import {  View,
   Text,
   ScrollView,
@@ -22,7 +22,7 @@ export default function AboutUsScreen({
   isDarkMode,
 }: AboutUsScreenProps) {
   const insets = useSafeAreaInsets()
-  const slideAnim = React.useRef(new Animated.Value(100)).current
+  const slideAnim = useState(() => new Animated.Value(100))[0]
 
   const colors = {
     bg: isDarkMode ? "#0f172a" : "#f0f9ff",

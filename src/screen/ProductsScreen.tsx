@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect } from "react"
 import {  View,
   Text,
   FlatList,
@@ -9,7 +9,8 @@ import {  View,
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../constants/colors"
-import { productService, Product } from "../services/productService"
+import { Product } from "../services/productService"
+import { useFilteredProducts } from "../hooks/query/useFilteredProducts"
 import ItemCard from "../components/Items/ItemCard"
 import Toast from "react-native-toast-message"
 import styles from "../styles/ProductsScreen.styles"
@@ -34,54 +35,27 @@ export default function ProductsScreen({
   roomType,
   title = "Products",
 }: ProductsScreenProps) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const {
+    data: products = [],
+    isLoading: loading,
+    isRefetching: refreshing,
+    isError,
+    error,
+    refetch,
+  } = useFilteredProducts({ token, catid, brandType, roomType })
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true)
-      let data: Product[]
-
-      if (catid) {
-        data = await productService.getProductsByCategory(
-          catid,
-          token || undefined
-        )
-      } else if (brandType) {
-        data = await productService.getProductsByBrand(
-          brandType,
-          token || undefined
-        )
-      } else if (roomType) {
-        data = await productService.getProductsByRoom(
-          roomType,
-          token || undefined
-        )
-      } else {
-        data = await productService.getProducts(token || undefined)
-      }
-
-      setProducts(data)
-    } catch (error: any) {
+  useEffect(() => {
+    if (isError) {
       Toast.show({
         type: "error",
         text1: "Failed to load products",
-        text2: error.message || "Please try again",
+        text2: (error as any)?.message || "Please try again",
       })
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
     }
-  }, [token, catid, brandType, roomType])
-
-  useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
+  }, [isError, error])
 
   const onRefresh = () => {
-    setRefreshing(true)
-    fetchProducts()
+    refetch()
   }
 
   const handleProductPress = (product: Product) => {

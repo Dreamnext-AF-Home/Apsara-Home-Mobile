@@ -8,7 +8,6 @@ import {
   Share,
   Linking,
   Clipboard,
-  Dimensions,
   BackHandler,
   Animated,
   PanResponder,
@@ -22,8 +21,6 @@ import { Colors } from "../../constants/colors"
 import PrimaryButton from "../Button/PrimaryButton"
 import OutlineButton from "../Button/OutlineButton"
 import { ReferralTree } from "../../services/referralService"
-
-const SCREEN_WIDTH = Dimensions.get("window").width
 
 interface AffiliateReferralModalProps {
   visible: boolean
@@ -46,15 +43,11 @@ export default function AffiliateReferralModal({
   onViewNetwork,
   loading = false,
 }: AffiliateReferralModalProps) {
-  const insets = useSafeAreaInsets()
-  const slideAnim = useRef(new Animated.Value(300)).current
-  const scrollY = useRef(0)
+  const slideAnim = useState(() => new Animated.Value(300))[0]
+  const scrollYRef = useRef(0)
   const safeUsername = username || "guest"
   const signupUrl = `https://afhome.ph/ref/${safeUsername}`
   const shoppingUrl = `https://afhome.ph/shop?ref=${safeUsername}`
-  const totalNetwork = referralTree?.summary?.total_network ?? 0
-  const directCount = referralTree?.summary?.direct_count ?? 0
-  const earned = referralTree?.root?.total_earnings ?? 0
 
   const colors = {
     bg: isDarkMode ? "#111827" : Colors.white,
@@ -66,24 +59,27 @@ export default function AffiliateReferralModal({
     dragHandle: isDarkMode ? "#4b5563" : "#cbd5e1",
   }
 
-  const panResponder = useRef(
+  // scrollYRef.current is only read inside the gesture callbacks (at gesture
+  // time), never during render — the lazy initializer just defines the handlers.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
-      onStartShouldSetPanResponder: () => scrollY.current === 0,
+      onStartShouldSetPanResponder: () => scrollYRef.current === 0,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        if (scrollY.current > 0) return false
+        if (scrollYRef.current > 0) return false
         return (
           gestureState.dy > 5 &&
           Math.abs(gestureState.dy) > Math.abs(gestureState.dx)
         )
       },
       onPanResponderMove: (evt, gestureState) => {
-        if (scrollY.current === 0 && gestureState.dy > 0) {
+        if (scrollYRef.current === 0 && gestureState.dy > 0) {
           slideAnim.setValue(gestureState.dy)
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        if (scrollY.current === 0 && gestureState.dy > 100) {
-          handleClose()
+        if (scrollYRef.current === 0 && gestureState.dy > 100) {
+          onClose()
         } else {
           Animated.spring(slideAnim, {
             toValue: 0,
@@ -94,7 +90,7 @@ export default function AffiliateReferralModal({
         }
       },
     })
-  ).current
+  )
 
   useEffect(() => {
     if (visible) {
@@ -208,7 +204,7 @@ export default function AffiliateReferralModal({
               { backgroundColor: colors.bg },
             ]}
             onScroll={(event) => {
-              scrollY.current = event.nativeEvent.contentOffset.y
+              scrollYRef.current = event.nativeEvent.contentOffset.y
             }}
             scrollEventThrottle={16}
           >

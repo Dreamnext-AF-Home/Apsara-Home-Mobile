@@ -38,7 +38,66 @@ const authHeaders = (token: string) => ({
   "Content-Type": "application/json",
 })
 
+export interface SecuritySettings {
+  biometric_enabled: boolean
+  [key: string]: any
+}
+
 export const profileService = {
+  // GET /auth/me — the canonical current-user profile payload.
+  async getCurrentUser(token: string): Promise<any> {
+    try {
+      const res = await api.get("/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return res.data
+    } catch (error: any) {
+      throw toError(error, "Failed to load profile details")
+    }
+  },
+
+  // GET /user/security-settings — returns the biometric_enabled flag (and more).
+  // Mirrors ProfileScreen's `res?.data?.data` unwrap with a false fallback.
+  async getSecuritySettings(token: string): Promise<SecuritySettings> {
+    try {
+      const res = await api.get("/user/security-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = res?.data?.data
+      return { biometric_enabled: data?.biometric_enabled ?? false, ...data }
+    } catch (error: any) {
+      throw toError(error, "Failed to load security settings")
+    }
+  },
+
+  // GET /auth/mobile/check-google-linked — true when a Google account is linked.
+  async getGoogleLinkedStatus(token: string): Promise<boolean> {
+    try {
+      const res = await api.get("/auth/mobile/check-google-linked", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return res?.data?.linked === true
+    } catch (error: any) {
+      throw toError(error, "Failed to load Google linked status")
+    }
+  },
+
+  // GET /public/top-members — public leaderboard list. Returns the raw member
+  // array; callers derive a user's rank by index.
+  async getTopMembers(
+    sort = "referrals",
+    perPage = 100
+  ): Promise<any[]> {
+    try {
+      const res = await api.get("/public/top-members", {
+        params: { sort, per_page: perPage },
+      })
+      return Array.isArray(res.data?.data) ? res.data.data : []
+    } catch (error: any) {
+      throw toError(error, "Failed to load top members")
+    }
+  },
+
   async updateProfile(token: string, payload: ProfileUpdatePayload) {
     try {
       const res = await api.put("/auth/me", payload, {

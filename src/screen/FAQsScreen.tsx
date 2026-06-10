@@ -77,7 +77,7 @@ const faqs: FAQ[] = [
 
 export default function FAQsScreen({ onBack, isDarkMode }: FAQsScreenProps) {
   const insets = useSafeAreaInsets()
-  const slideAnim = React.useRef(new Animated.Value(100)).current
+  const slideAnim = useState(() => new Animated.Value(100))[0]
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 
   const colors = {

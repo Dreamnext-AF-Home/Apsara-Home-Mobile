@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { Colors } from "../constants/colors"
 import { API_CONFIG } from "../config/api"
 import Toast from "react-native-toast-message"
+import { useOrders } from "../hooks/query/useOrders"
 import styles from "../styles/PurchasesScreen.styles"
 const { height: screenHeight } = Dimensions.get("window")
 
@@ -170,17 +171,48 @@ export default function PurchasesScreen({
   onBuyAgain,
 }: PurchasesScreenProps) {
   const insets = useSafeAreaInsets()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
   const [timeLeft, setTimeLeft] = useState<Record<number, string>>({})
   const [paymentLoading, setPaymentLoading] = useState<number | null>(null)
   const [cancelLoading, setCancelLoading] = useState<number | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<any>(initialStatus)
-  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [allOrders, setAllOrders] = useState<Order[]>([])
+
+  const {
+    data: allOrders = [],
+    isLoading: ordersLoading,
+    isFetching: ordersFetching,
+    refetch: refetchOrders,
+  } = useOrders({ token })
+
+  // Tab/status filtering is done client-side from the full orders list
+  const orders = useMemo(
+    () =>
+      (allOrders as Order[]).filter(
+        (order) =>
+          normalizeStatusKey(order.status) ===
+          normalizeStatusKey(selectedStatus)
+      ),
+    [allOrders, selectedStatus]
+  )
+
+  const statusCounts = useMemo(
+    () =>
+      (allOrders as Order[]).reduce(
+        (acc: Record<string, number>, order: Order) => {
+          const key = normalizeStatusKey(order.status)
+          acc[key] = (acc[key] || 0) + 1
+          return acc
+        },
+        {}
+      ),
+    [allOrders]
+  )
+
+  // Only show the full-screen loader on the very first load (no cached data)
+  const loading = ordersLoading && allOrders.length === 0
+  // Pull-to-refresh indicator: fetching while we already have data
+  const refreshing = ordersFetching && !ordersLoading
   const [detailSlideAnim] = useState(new Animated.Value(0))
   const [cancellationReasons, setCancellationReasons] = useState<
     Record<string, string>
@@ -294,81 +326,10 @@ export default function PurchasesScreen({
     borderLight: isDarkMode ? "#475569" : "#f1f5f9",
   }
 
-  const fetchOrders = async (showLoading = true) => {
-    if (!token) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Authentication required",
-      })
-      return
-    }
-
-    if (showLoading) setLoading(true)
-    try {
-      console.log(
-        "[PurchasesScreen] Fetching orders with status:",
-        selectedStatus
-      )
-      const response = await axios.get(
-        `${API_CONFIG.BASE_URL}/orders/history`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-
-      console.log("[PurchasesScreen] All orders fetched:", response.data)
-
-      // Save all orders for searching, even if they don't match current filter
-      const fetchedAllOrders = response.data?.orders || []
-      setAllOrders(fetchedAllOrders)
-
-      const counts = fetchedAllOrders.reduce(
-        (acc: Record<string, number>, order: Order) => {
-          const key = normalizeStatusKey(order.status)
-          acc[key] = (acc[key] || 0) + 1
-          return acc
-        },
-        {}
-      )
-      setStatusCounts(counts)
-
-      const normalizedSelected = normalizeStatusKey(selectedStatus)
-      const filteredOrders = fetchedAllOrders.filter(
-        (order: Order) =>
-          normalizeStatusKey(order.status) === normalizedSelected
-      )
-
-      console.log(
-        "[PurchasesScreen] Filtered orders for status",
-        selectedStatus,
-        ":",
-        {
-          totalOrders: fetchedAllOrders.length,
-          filteredCount: filteredOrders.length,
-          requestedStatus: selectedStatus,
-          statuses: fetchedAllOrders.map((o: Order) => o.status),
-        }
-      )
-      setOrders(filteredOrders)
-    } catch (error: any) {
-      console.error("[PurchasesScreen] Error fetching orders:", error)
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to load orders",
-      })
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }
-
   useEffect(() => {
-    // Clear modal when switching tabs
+    // Clear modal when switching tabs (data is fetched via useOrders + filtered)
     setShowDetailModal(false)
     setSelectedOrder(null)
-    fetchOrders()
   }, [token, selectedStatus])
 
   // COMMENTED OUT: Fetch cancellation reasons - API endpoint returns 404
@@ -463,8 +424,7 @@ export default function PurchasesScreen({
   }, [orders])
 
   const handleRefresh = () => {
-    setRefreshing(true)
-    fetchOrders(false)
+    refetchOrders()
   }
 
   const handleProceedToPayment = async (order: Order) => {

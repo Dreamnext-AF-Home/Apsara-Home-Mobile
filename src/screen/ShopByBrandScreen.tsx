@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "../constants/colors"
 import { CategoryItem } from "../services/authService"
+import { useBrandProducts } from "../hooks/query/useBrandProducts"
 import ShopByBrandHomeScreen from "./ShopByBrand/ShopByBrandHomeScreen"
 import ShopByBrandProductsScreen from "./ShopByBrand/ShopByBrandProductsScreen"
 import ShopByBrandCategoriesScreen from "./ShopByBrand/ShopByBrandCategoriesScreen"
@@ -126,11 +127,7 @@ export default function ShopByBrandScreen({
   const selectedRoomId: number | null = null
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [products, setProducts] = useState<BrandProduct[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
   const [selectedTab, setSelectedTab] = useState<"home" | "products" | "categories">("home")
@@ -146,106 +143,43 @@ export default function ShopByBrandScreen({
   )
   void selectedRoom // referenced via filter params
 
-  const fetchProducts = useCallback(
-    async (page: number = 1) => {
-      if (!token) return
+  const {
+    data: brandProductsData,
+    isLoading,
+    isRefetching,
+    isError,
+    error,
+    refetch,
+  } = useBrandProducts({
+    token,
+    brandId,
+    isZqBrand,
+    page: currentPage,
+    perPage,
+    roomId: selectedRoomId,
+    categoryId: selectedCategoryId,
+    search: searchQuery,
+  })
 
-      try {
-        setLoading(page === 1)
-        const headers = { Authorization: `Bearer ${token}` }
-
-        if (isZqBrand) {
-          const response = await axios.get<{ products: unknown[] }>(
-            `${API_CONFIG.BASE_URL}/products/zq/cached`,
-            { headers }
-          )
-          let raw = (response.data?.products ?? []) as Record<string, unknown>[]
-
-          if (searchQuery.trim()) {
-            const q = searchQuery.trim().toLowerCase()
-            raw = raw.filter((p) => {
-              const dp = p.displayProduct as Record<string, unknown> | undefined
-              const name = (dp?.name as string | undefined)?.toLowerCase() ?? ""
-              const subject = (p.subject as string | undefined)?.toLowerCase() ?? ""
-              return name.includes(q) || subject.includes(q)
-            })
-          }
-
-          // Normalize ZQ shape — both FeaturedItems (snake_case) and ItemCard
-          // (camelCase) need numeric price values with safe fallbacks.
-          const normalized: BrandProduct[] = raw.map((p) => {
-            const dp = p.displayProduct as Record<string, unknown> | undefined
-            const salePrice = (dp?.price as number | undefined) ?? 0
-            const comparePrice = (dp?.compareAtPrice as number | undefined) ?? salePrice
-            return {
-              id: p.id as number,
-              name: (dp?.name as string | undefined) || (p.subject as string | undefined) || "",
-              image: (dp?.image as string | undefined) || (p.primaryImage as string | undefined) || "",
-              price: salePrice,
-              priceMember: salePrice,
-              original_price: comparePrice,
-              memberPrice: salePrice,
-              originalPrice: comparePrice,
-              brand: (dp?.brand as string | undefined) || "",
-              isZqProduct: true,
-            }
-          })
-
-          setProducts(normalized)
-          setTotalPages(1)
-          setCurrentPage(1)
-        } else {
-          if (!brandId) return
-
-          let url = `${API_CONFIG.BASE_URL}/products?status=1&page=${page}&per_page=${perPage}&brand_type=${brandId}`
-          if (selectedRoomId) url += `&room_type=${selectedRoomId}`
-          if (selectedCategoryId) url += `&cat_id=${selectedCategoryId}`
-          if (searchQuery.trim()) url += `&search=${encodeURIComponent(searchQuery)}`
-
-          const response = await axios.get<{
-            data?: BrandProduct[]
-            products?: BrandProduct[]
-            meta?: { total?: number }
-            total?: number
-            pagination?: { total?: number }
-          }>(url, { headers })
-
-          let data: BrandProduct[] =
-            response.data?.data ?? response.data?.products ?? []
-          if (!Array.isArray(data)) data = []
-
-          const total =
-            response.data?.meta?.total ??
-            response.data?.total ??
-            response.data?.pagination?.total ??
-            data.length
-          const pages = Math.ceil(total / perPage)
-
-          setProducts(data)
-          setTotalPages(pages)
-          setCurrentPage(page)
-        }
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : "Please try again"
-        console.error("Error fetching products:", error)
-        Toast.show({ type: "error", text1: "Failed to load products", text2: msg })
-        setProducts([])
-      } finally {
-        setLoading(false)
-        setRefreshing(false)
-      }
-    },
-    [token, brandId, isZqBrand, selectedRoomId, selectedCategoryId, searchQuery, perPage]
-  )
+  const products: BrandProduct[] = brandProductsData?.products ?? []
+  const totalPages = brandProductsData?.totalPages ?? 0
+  const loading = isLoading
+  const refreshing = isRefetching
 
   useEffect(() => {
+    if (isError) {
+      const msg = error instanceof Error ? error.message : "Please try again"
+      Toast.show({ type: "error", text1: "Failed to load products", text2: msg })
+    }
+  }, [isError, error])
+
+  // Reset to first page when filters change
+  useEffect(() => {
     setCurrentPage(1)
-    fetchProducts(1)
-  }, [selectedRoomId, selectedCategoryId, searchQuery, fetchProducts])
+  }, [selectedRoomId, selectedCategoryId, searchQuery])
 
   const onRefresh = () => {
-    setRefreshing(true)
-    fetchProducts(currentPage)
+    refetch()
   }
 
   const checkFollowingStatus = useCallback(async () => {
@@ -314,14 +248,14 @@ export default function ShopByBrandScreen({
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       scrollViewRef.current?.scrollTo({ y: 0, animated: true })
-      fetchProducts(currentPage + 1)
+      setCurrentPage((p) => p + 1)
     }
   }
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       scrollViewRef.current?.scrollTo({ y: 0, animated: true })
-      fetchProducts(currentPage - 1)
+      setCurrentPage((p) => p - 1)
     }
   }
 
