@@ -2002,6 +2002,7 @@ export default function AppNavigator({
           <View style={styles.cartScreenOverlay}>
             <ProfileDetailsScreen
               token={token}
+              placeholderUser={enrichedUser}
               cartCount={cartCount}
               isDarkMode={isDarkMode}
               onClose={() => setShowProfileDetails(false)}
