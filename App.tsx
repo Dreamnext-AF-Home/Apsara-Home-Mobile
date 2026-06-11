@@ -1,11 +1,7 @@
-// @ts-nocheck
 import React, { useState, useEffect } from "react"
 import { View, LogBox, Linking, Modal } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { NavigationContainer } from "@react-navigation/native"
-
-// Suppress the "Text strings must be rendered within a <Text> component" error
-LogBox.ignoreLogs(["Text strings must be rendered within a <Text> component"])
 import Toast from "react-native-toast-message"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import IndexScreen from "./src/screen/IndexScreen"
@@ -23,6 +19,20 @@ import ReferralSignupScreen from "./src/screen/ReferralSignupScreen"
 import ReferralOtpScreen from "./src/screen/ReferralOtpScreen"
 import AFHomeAffiliateScreen from "./src/screen/AFHomeAffiliateScreen"
 import { referralService } from "./src/services/referralService"
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans"
+import { setupGlobalFont } from "./src/utils/fonts"
+// Suppress the "Text strings must be rendered within a <Text> component" error
+LogBox.ignoreLogs(["Text strings must be rendered within a <Text> component"])
+
+// Apply Plus Jakarta Sans as the default font for all Text/TextInput
+setupGlobalFont()
 
 type AuthScreen =
   | "index"
@@ -105,6 +115,17 @@ export default function App() {
     string | null
   >(null)
 
+  // Load Plus Jakarta Sans font variants (embedded at build time)
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  })
+  // Don't block startup forever if fonts fail — fall back to system font
+  const fontsReady = fontsLoaded || !!fontError
+
   // Initialize FCM and register device when authenticated
   useFirebaseMessaging(authToken, authUser?.id || null)
 
@@ -112,6 +133,29 @@ export default function App() {
   useAppUpdates()
 
   useEffect(() => {
+    async function checkStoredAuth() {
+      try {
+        const [isAuth, onboarded] = await Promise.all([
+          storageService.isAuthenticated(),
+          storageService.hasOnboarded(),
+        ])
+        setHasOnboarded(onboarded)
+        if (isAuth) {
+          const token = await storageService.getToken()
+          const user = await storageService.getUser()
+          if (token && user) {
+            setAuthToken(token)
+            setAuthUser(user)
+            setAuthenticated(true)
+          }
+        }
+      } catch (error) {
+        console.error("Error checking stored auth:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     checkStoredAuth()
   }, [])
 
@@ -155,29 +199,6 @@ export default function App() {
 
     return () => subscription.remove()
   }, [])
-
-  async function checkStoredAuth() {
-    try {
-      const [isAuth, onboarded] = await Promise.all([
-        storageService.isAuthenticated(),
-        storageService.hasOnboarded(),
-      ])
-      setHasOnboarded(onboarded)
-      if (isAuth) {
-        const token = await storageService.getToken()
-        const user = await storageService.getUser()
-        if (token && user) {
-          setAuthToken(token)
-          setAuthUser(user)
-          setAuthenticated(true)
-        }
-      }
-    } catch (error) {
-      console.error("Error checking stored auth:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   async function handleOnboardingDone() {
     await storageService.setOnboarded()
@@ -280,7 +301,7 @@ export default function App() {
     if (screen === "referral-otp") {
       return (
         <ReferralOtpScreen
-          email={referralOtpEmail}
+          phone={referralOtpEmail}
           verificationToken={referralOtpToken}
           isDarkMode={false}
           onBack={() => setScreen("referral-signup")}
@@ -318,7 +339,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        {isLoading ? (
+        {isLoading || !fontsReady ? (
           <LoadingScreen />
         ) : !hasOnboarded ? (
           <OnboardingScreen onDone={handleOnboardingDone} />

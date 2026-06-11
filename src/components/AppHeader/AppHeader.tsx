@@ -213,7 +213,10 @@ export default function AppHeader({
     ? user?.avatar_url || user?.avatar_original_url
     : null
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : null
-  const fullName = user?.name || "Guest"
+  // Show only the first name, with its first letter capitalized
+  const firstNameRaw = user?.name?.trim().split(/\s+/)[0] || "Guest"
+  const firstName =
+    firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1).toLowerCase()
   const badgeName = user?.badge_name
   const moneyBalance = user?.money_balance ?? user?.wallet_balance ?? 0
 
@@ -321,7 +324,7 @@ export default function AppHeader({
                       style={[styles.nameText, { color: Colors.white }]}
                       numberOfLines={1}
                     >
-                      {fullName}
+                      {firstName}
                     </Text>
                     <Ionicons
                       name="chevron-forward"

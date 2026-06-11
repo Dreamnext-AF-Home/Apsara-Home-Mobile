@@ -827,7 +827,7 @@ export default function AppNavigator({
     return () => clearInterval(interval)
   }, [isDarkMode])
 
-  const fetchHomeData = async (forceRefresh = false) => {
+  const fetchHomeData = useCallback(async (forceRefresh = false) => {
     if (!token) return
 
     try {
@@ -958,7 +958,13 @@ export default function AppNavigator({
     } finally {
       setHomeLoadingFeatured(false)
     }
-  }
+  }, [
+    token,
+    homeCategories.length,
+    homeBrands.length,
+    homeRoomTypes.length,
+    homeFeaturedProducts.length,
+  ])
 
   // Fetch cart count, notification count, and home data once the auth token is
   // available. Declared after fetchHomeData so it can call it directly. This is a
@@ -991,7 +997,7 @@ export default function AppNavigator({
   }, [fetchHomeData])
   console.log(homeBrands)
 
-  const handleOpenAffiliateReferralModal = async () => {
+  const handleOpenAffiliateReferralModal = useCallback(async () => {
     if (!token) {
       Toast.show({
         type: "error",
@@ -1020,7 +1026,7 @@ export default function AppNavigator({
         setAffiliateLoading(false)
       }
     }
-  }
+  }, [token, referralTree])
 
   // Optimistic wishlist toggle handler
   const handleOptimisticWishlistToggle = useCallback(
@@ -1163,21 +1169,213 @@ export default function AppNavigator({
     }
 
     fetchReferrerProfile()
-  }, [referralCodeFromDeepLink])
+    // Safe to depend on referrerProfileData: the early-return guard above stops
+    // a re-fetch once it's set, so this can't loop.
+  }, [referralCodeFromDeepLink, referrerProfileData])
 
 
-  // Navigation context value for notifications to use
-  const navigationValue: NavigationContextType = {
-    openPurchaseOrder: (checkoutId: string, status?: string) => {
-      console.log("[AppNavigator] openPurchaseOrder called:", {
-        checkoutId,
-        status,
-      })
-      setPurchasesStatus(normalizePurchaseStatus(status))
-      setPurchasesInitialOrderId(checkoutId)
-      setShowPurchases(true)
-    },
-  }
+  // Navigation context value for notifications to use. Memoized so it doesn't
+  // recreate every render (its callback only uses stable setters + a module-level
+  // helper), preventing needless re-renders of NavigationProvider consumers.
+  const navigationValue: NavigationContextType = useMemo(
+    () => ({
+      openPurchaseOrder: (checkoutId: string, status?: string) => {
+        console.log("[AppNavigator] openPurchaseOrder called:", {
+          checkoutId,
+          status,
+        })
+        setPurchasesStatus(normalizePurchaseStatus(status))
+        setPurchasesInitialOrderId(checkoutId)
+        setShowPurchases(true)
+      },
+    }),
+    []
+  )
+
+  // Memoized AppContext value. Recreated only when one of the values it actually
+  // exposes changes — so unrelated state churn (modal booleans like showCart,
+  // showCheckout, etc., which are NOT in this object) no longer re-renders every
+  // useAppContext consumer. The dep array is verified by react-hooks/exhaustive-deps.
+  const appContextValue = useMemo(
+    () => ({
+      token: token || "",
+      enrichedUser,
+      isDarkMode,
+      setIsDarkMode,
+      cartCount,
+      wishlistItems,
+      wishlistLoading,
+      wishlistRefreshing,
+      invalidateWishlist,
+      onWishlistChange: () => invalidateWishlist(),
+      handleOptimisticWishlistToggle,
+      homeCategories,
+      setHomeCategories,
+      homeBrands,
+      setHomeBrands,
+      homeRoomTypes,
+      setHomeRoomTypes,
+      homeFeaturedProducts,
+      setHomeFeaturedProducts,
+      homeLoadingFeatured,
+      setHomeLoadingFeatured,
+      isInitialHomeDataReady,
+      homeInitialFetchRef,
+      refreshHomeData,
+      activeTab,
+      setActiveTab,
+      previousTab,
+      setPreviousTab,
+      selectedRoomId,
+      setSelectedRoomId,
+      selectedCategoryId,
+      setSelectedCategoryId,
+      selectedBrandId,
+      setSelectedBrandId,
+      selectedBrand,
+      setSelectedBrand,
+      shopSourceIsCart,
+      setShopSourceIsCart,
+      shopSourceIsCheckout,
+      setShopSourceIsCheckout,
+      shopSourceProductId,
+      setShopSourceProductId,
+      searchQuery: null,
+      setSearchQuery: () => {},
+      searchVisible: false,
+      setSearchVisible: () => {},
+      selectedProductId: null,
+      setSelectedProductId,
+      previousSearchQuery: null,
+      setPreviousSearchQuery,
+      searchSourceProductId: null,
+      setSearchSourceProductId,
+      showPVEarnerFromTab,
+      setShowPVEarnerFromTab,
+      showLeaderboard,
+      setShowLeaderboard,
+      profileDetailsFromTab: false,
+      setProfileDetailsFromTab: () => {},
+      currentProfile: null,
+      setCurrentProfile: () => {},
+      referralNetworkFromTab,
+      setReferralNetworkFromTab,
+      closeReferralNetwork,
+      setCloseReferralNetwork: () => {},
+      referralTree,
+      setReferralTree,
+      purchasesStatus: purchasesStatus,
+      setPurchasesStatus,
+      purchasesInitialOrderId: purchasesInitialOrderId,
+      setPurchasesInitialOrderId,
+      linkedAccountsRefreshTrigger,
+      setLinkedAccountsRefreshTrigger: () => {},
+      showShopProductDetail,
+      setShowShopProductDetail,
+      shopSelectedProductId,
+      setShopSelectedProductId,
+      shopSelectedProductIsZq,
+      setShopSelectedProductIsZq,
+      onProductPress: (id: number) => {
+        setPreviousSearchQuery(null)
+        setPreviousTab(activeTab)
+        setSelectedProductId(id)
+      },
+      onCartPress: () => setShowCart(true),
+      onSearchPress: () => {
+        setSearchSourceProductId(null)
+        setPreviousTab(activeTab)
+        setSearchVisible(true)
+      },
+      onShopByRoomPress: (roomId: number) => {
+        setPreviousTab(activeTab)
+        setSelectedRoomId(roomId)
+        setSelectedCategoryId(null)
+        setActiveTab("shop")
+      },
+      onShopByCategoryPress: (categoryId: number) => {
+        setPreviousTab(activeTab)
+        setSelectedCategoryId(categoryId)
+        setSelectedRoomId(null)
+        setActiveTab("shop")
+      },
+      onShopByBrandPress: (brandId: number) => {
+        const brand = homeBrands.find((b) => b.id === brandId)
+        setPreviousTab(activeTab)
+        setSelectedBrandId(brandId)
+        setSelectedBrand(brand || null)
+        setSelectedRoomId(null)
+        setSelectedCategoryId(null)
+        setActiveTab("shop")
+      },
+      onShopNavigate: () => {
+        setPreviousTab("profile")
+        setActiveTab("shop")
+      },
+      onNavigateWishlist: () => {
+        setPreviousTab("profile")
+        setActiveTab("wishlist")
+      },
+      onShowProfileDetails: (show: boolean) => setShowProfileDetails(show),
+      onShowReferralNetwork: (tree: ReferralTree | null) => {
+        setReferralNetworkFromTab(true)
+        if (tree) setReferralTree(tree)
+      },
+      onPurchaseItemClick: (status: string) => {
+        setPurchasesStatus(normalizePurchaseStatus(status))
+        setShowPurchases(true)
+      },
+      onSecuritySettingsPress: () => setShowSecurity(true),
+      setShowSettings,
+      onShowAFWalletOverview: () => openWalletPage("overview"),
+      onShowAFWalletVoucher: () => openWalletPage("voucher"),
+      onShowAFWalletRewards: () => openWalletPage("rewards"),
+      onShowAFWalletNetwork: () => openWalletPage("network"),
+      handleOpenAffiliateReferralModal,
+      onLogout,
+    }),
+    [
+      token,
+      enrichedUser,
+      isDarkMode,
+      cartCount,
+      wishlistItems,
+      wishlistLoading,
+      wishlistRefreshing,
+      invalidateWishlist,
+      handleOptimisticWishlistToggle,
+      homeCategories,
+      homeBrands,
+      homeRoomTypes,
+      homeFeaturedProducts,
+      homeLoadingFeatured,
+      isInitialHomeDataReady,
+      refreshHomeData,
+      activeTab,
+      previousTab,
+      selectedRoomId,
+      selectedCategoryId,
+      selectedBrandId,
+      selectedBrand,
+      shopSourceIsCart,
+      shopSourceIsCheckout,
+      shopSourceProductId,
+      showPVEarnerFromTab,
+      showLeaderboard,
+      referralNetworkFromTab,
+      closeReferralNetwork,
+      referralTree,
+      purchasesStatus,
+      purchasesInitialOrderId,
+      linkedAccountsRefreshTrigger,
+      showShopProductDetail,
+      shopSelectedProductId,
+      shopSelectedProductIsZq,
+      handleOpenAffiliateReferralModal,
+      onLogout,
+      openWalletPage,
+    ]
+  )
 
   return (
     <NavigationProvider value={navigationValue}>
@@ -1298,146 +1496,7 @@ export default function AppNavigator({
 
             {/* Tab Screens using React Navigation */}
             {!selectedProductId && !searchQuery && (
-              <AppContextProvider
-                value={{
-                  token: token || "",
-                  enrichedUser,
-                  isDarkMode,
-                  setIsDarkMode,
-                  cartCount,
-                  wishlistItems,
-                  wishlistLoading,
-                  wishlistRefreshing,
-                  invalidateWishlist,
-                  onWishlistChange: () => invalidateWishlist(),
-                  handleOptimisticWishlistToggle,
-                  homeCategories,
-                  setHomeCategories,
-                  homeBrands,
-                  setHomeBrands,
-                  homeRoomTypes,
-                  setHomeRoomTypes,
-                  homeFeaturedProducts,
-                  setHomeFeaturedProducts,
-                  homeLoadingFeatured,
-                  setHomeLoadingFeatured,
-                  isInitialHomeDataReady,
-                  homeInitialFetchRef,
-                  refreshHomeData,
-                  activeTab,
-                  setActiveTab,
-                  previousTab,
-                  setPreviousTab,
-                  selectedRoomId,
-                  setSelectedRoomId,
-                  selectedCategoryId,
-                  setSelectedCategoryId,
-                  selectedBrandId,
-                  setSelectedBrandId,
-                  selectedBrand,
-                  setSelectedBrand,
-                  shopSourceIsCart,
-                  setShopSourceIsCart,
-                  shopSourceIsCheckout,
-                  setShopSourceIsCheckout,
-                  shopSourceProductId,
-                  setShopSourceProductId,
-                  searchQuery: null,
-                  setSearchQuery: () => {},
-                  searchVisible: false,
-                  setSearchVisible: () => {},
-                  selectedProductId: null,
-                  setSelectedProductId,
-                  previousSearchQuery: null,
-                  setPreviousSearchQuery,
-                  searchSourceProductId: null,
-                  setSearchSourceProductId,
-                  showPVEarnerFromTab,
-                  setShowPVEarnerFromTab,
-                  showLeaderboard,
-                  setShowLeaderboard,
-                  profileDetailsFromTab: false,
-                  setProfileDetailsFromTab: () => {},
-                  currentProfile: null,
-                  setCurrentProfile: () => {},
-                  referralNetworkFromTab,
-                  setReferralNetworkFromTab,
-                  closeReferralNetwork,
-                  setCloseReferralNetwork: () => {},
-                  referralTree,
-                  setReferralTree,
-                  purchasesStatus: purchasesStatus,
-                  setPurchasesStatus,
-                  purchasesInitialOrderId: purchasesInitialOrderId,
-                  setPurchasesInitialOrderId,
-                  linkedAccountsRefreshTrigger,
-                  setLinkedAccountsRefreshTrigger: () => {},
-                  showShopProductDetail,
-                  setShowShopProductDetail,
-                  shopSelectedProductId,
-                  setShopSelectedProductId,
-                  shopSelectedProductIsZq,
-                  setShopSelectedProductIsZq,
-                  onProductPress: (id: number) => {
-                    setPreviousSearchQuery(null)
-                    setPreviousTab(activeTab)
-                    setSelectedProductId(id)
-                  },
-                  onCartPress: () => setShowCart(true),
-                  onSearchPress: () => {
-                    setSearchSourceProductId(null)
-                    setPreviousTab(activeTab)
-                    setSearchVisible(true)
-                  },
-                  onShopByRoomPress: (roomId: number) => {
-                    setPreviousTab(activeTab)
-                    setSelectedRoomId(roomId)
-                    setSelectedCategoryId(null)
-                    setActiveTab("shop")
-                  },
-                  onShopByCategoryPress: (categoryId: number) => {
-                    setPreviousTab(activeTab)
-                    setSelectedCategoryId(categoryId)
-                    setSelectedRoomId(null)
-                    setActiveTab("shop")
-                  },
-                  onShopByBrandPress: (brandId: number) => {
-                    const brand = homeBrands.find((b) => b.id === brandId)
-                    setPreviousTab(activeTab)
-                    setSelectedBrandId(brandId)
-                    setSelectedBrand(brand || null)
-                    setSelectedRoomId(null)
-                    setSelectedCategoryId(null)
-                    setActiveTab("shop")
-                  },
-                  onShopNavigate: () => {
-                    setPreviousTab("profile")
-                    setActiveTab("shop")
-                  },
-                  onNavigateWishlist: () => {
-                    setPreviousTab("profile")
-                    setActiveTab("wishlist")
-                  },
-                  onShowProfileDetails: (show: boolean) =>
-                    setShowProfileDetails(show),
-                  onShowReferralNetwork: (tree: ReferralTree | null) => {
-                    setReferralNetworkFromTab(true)
-                    if (tree) setReferralTree(tree)
-                  },
-                  onPurchaseItemClick: (status: string) => {
-                    setPurchasesStatus(normalizePurchaseStatus(status))
-                    setShowPurchases(true)
-                  },
-                  onSecuritySettingsPress: () => setShowSecurity(true),
-                  setShowSettings,
-                  onShowAFWalletOverview: () => openWalletPage("overview"),
-                  onShowAFWalletVoucher: () => openWalletPage("voucher"),
-                  onShowAFWalletRewards: () => openWalletPage("rewards"),
-                  onShowAFWalletNetwork: () => openWalletPage("network"),
-                  handleOpenAffiliateReferralModal,
-                  onLogout,
-                }}
-              >
+              <AppContextProvider value={appContextValue}>
                 <TabNavigator
                   hideTabBar={
                     !isInitialHomeDataReady ||
@@ -1943,6 +2002,7 @@ export default function AppNavigator({
           <View style={styles.cartScreenOverlay}>
             <ProfileDetailsScreen
               token={token}
+              placeholderUser={enrichedUser}
               cartCount={cartCount}
               isDarkMode={isDarkMode}
               onClose={() => setShowProfileDetails(false)}

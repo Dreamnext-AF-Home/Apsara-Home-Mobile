@@ -19,6 +19,7 @@ import { TIER_REQUIREMENTS } from "../constants/tierConfig"
 import Toast from "react-native-toast-message"
 import * as ImagePicker from "expo-image-picker"
 import styles from "../styles/ProfileDetailsScreen.styles"
+import ProfileDetailsSkeleton from "../components/ProfileDetailsSkeleton/ProfileDetailsSkeleton"
 
 interface UserProfile {
   [key: string]: any
@@ -31,6 +32,8 @@ interface ProfileDetailsScreenProps {
   onCartPress?: () => void
   onEditProfile?: (profileData: UserProfile) => void
   isDarkMode?: boolean
+  /** Already-known user (from context) shown instantly while fresh data loads */
+  placeholderUser?: UserProfile | null
 }
 
 type IconName = keyof typeof Ionicons.glyphMap
@@ -152,6 +155,7 @@ export default function ProfileDetailsScreen({
   onCartPress,
   onEditProfile,
   isDarkMode = false,
+  placeholderUser = null,
 }: ProfileDetailsScreenProps) {
   const insets = useSafeAreaInsets()
   const {
@@ -159,7 +163,7 @@ export default function ProfileDetailsScreen({
     isLoading: loading,
     isError,
     refetch,
-  } = useProfile({ token })
+  } = useProfile({ token, placeholderData: placeholderUser ?? undefined })
   const queryClient = useQueryClient()
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
@@ -290,12 +294,7 @@ export default function ProfileDetailsScreen({
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.sky} />
-          <Text style={[styles.loadingText, { color: c.textSec }]}>
-            Loading profile...
-          </Text>
-        </View>
+        <ProfileDetailsSkeleton c={c} insets={insets} isDarkMode={isDarkMode} />
       ) : userProfile ? (
         <ScrollView
           showsVerticalScrollIndicator={false}

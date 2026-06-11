@@ -66,6 +66,7 @@ function HomeTabScreen() {
     setSelectedBrand,
     setPreviousTab,
     activeTab,
+    onShowProfileDetails,
   } = useAppContext()
 
   const handleShopByRoom = useCallback(
@@ -135,9 +136,7 @@ function HomeTabScreen() {
           console.log("Camera pressed")
         }}
         onSearchPress={onSearchPress}
-        onProfilePress={() => {
-          // handled via context
-        }}
+        onProfilePress={() => onShowProfileDetails(true)}
         onLogout={onLogout}
       />
       <HomeScreen
