@@ -599,7 +599,9 @@ export default function TabNavigator({
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        lazy: false, // Pre-mount all screens immediately = instant switching
+        // Lazy-mount tabs on first focus (not all at login) to cut startup work.
+        // They stay mounted after the first visit, so switching remains instant.
+        lazy: true,
         tabBarHideOnKeyboard: true,
       }}
       tabBar={(props) => <CustomTabBar {...props} hideTabBar={hideTabBar} />}
